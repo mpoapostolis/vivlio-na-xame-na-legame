@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Quiet Volume — three.js</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #efe6d3;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #2a1f15;
+  }
+  canvas { display: block; }
+
+  /* warm vignette over the scene */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 4;
+    background:
+      radial-gradient(ellipse at 50% 60%, transparent 35%, rgba(60, 38, 18, 0.25) 100%);
+  }
+  #grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    opacity: 0.05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* HUD */
+  #hud {
+    position: fixed; inset: 0; z-index: 10;
+    pointer-events: none;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    color: #2a1f15;
+  }
+  #hud > * { pointer-events: auto; }
+
+  .brand {
+    position: fixed; top: 28px; left: 32px;
+    font-size: 11px; letter-spacing: 0.45em;
+    text-transform: uppercase; opacity: 0.55;
+  }
+  .brand b {
+    display: block; font-weight: 400; font-style: italic;
+    font-size: 26px; letter-spacing: 0.02em;
+    text-transform: none; margin-top: 4px;
+    color: #6b4422;
+  }
+
+  .pagecount {
+    position: fixed; top: 32px; right: 32px;
+    font-size: 12px; letter-spacing: 0.35em; opacity: 0.55;
+    font-variant-numeric: tabular-nums;
+  }
+  .pagecount em { font-style: italic; color: #6b4422; opacity: 0.8; padding: 0 6px; }
+
+  .nav {
+    position: fixed; bottom: 36px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(248, 240, 222, 0.7);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(107, 68, 34, 0.18);
+    border-radius: 999px;
+    padding: 6px;
+    box-shadow: 0 18px 40px -12px rgba(60, 38, 18, 0.35);
+  }
+  .nav button {
+    background: transparent;
+    border: none;
+    color: #2a1f15;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav button:hover:not(:disabled) {
+    background: rgba(107, 68, 34, 0.08);
+    color: #6b4422;
+  }
+  .nav button:disabled { opacity: 0.25; cursor: not-allowed; }
+  .nav button .arrow { font-size: 16px; line-height: 1; transition: transform 0.4s; }
+  .nav button:hover:not(:disabled) .arrow.l { transform: translateX(-3px); }
+  .nav button:hover:not(:disabled) .arrow.r { transform: translateX(3px); }
+
+  .nav .pages-strip {
+    display: flex; gap: 5px; padding: 0 10px;
+    align-items: center;
+  }
+  .nav .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(60, 38, 18, 0.25);
+    transition: all 0.35s;
+    cursor: pointer;
+    border: none; padding: 0;
+  }
+  .nav .dot.active {
+    background: #6b4422;
+    width: 22px; border-radius: 3px;
+  }
+  .nav .dot:hover { background: rgba(60, 38, 18, 0.55); }
+  .nav .dot.active:hover { background: #6b4422; }
+
+  .hint {
+    position: fixed; bottom: 36px; right: 32px;
+    font-size: 10px; letter-spacing: 0.32em;
+    text-transform: uppercase; opacity: 0.5;
+    text-align: right; line-height: 1.8;
+    font-family: 'Inter', sans-serif;
+  }
+  .hint kbd {
+    border: 1px solid rgba(60, 38, 18, 0.3);
+    padding: 1px 6px; border-radius: 3px;
+    margin: 0 2px; font-size: 9px;
+    color: #6b4422; font-family: inherit;
+  }
+
+  #loading {
+    position: fixed; inset: 0;
+    background: #efe6d3;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+    z-index: 100; transition: opacity 0.7s ease;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  #loading .ring {
+    width: 38px; height: 38px;
+    border: 1px solid rgba(107, 68, 34, 0.3);
+    border-top-color: #6b4422;
+    border-radius: 50%;
+    animation: spin 1.4s linear infinite;
+  }
+  #loading .label {
+    font-style: italic; letter-spacing: 0.4em;
+    text-transform: uppercase; font-size: 11px;
+    opacity: 0.55; color: #6b4422;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ring"></div>
+  <div class="label">opening the book…</div>
+</div>
+
+<div id="hud">
+  <div class="brand">
+    <span>three.js · grimoire</span>
+    <b>The Quiet Volume</b>
+  </div>
+  <div class="pagecount">
+    <span id="cur">cover</span><em>/</em><span id="tot">—</span>
+  </div>
+  <div class="nav">
+    <button id="prev"><span class="arrow l">←</span> prev</button>
+    <div class="pages-strip" id="strip"></div>
+    <button id="next">next <span class="arrow r">→</span></button>
+  </div>
+  <div class="hint">
+    <kbd>←</kbd> <kbd>→</kbd> turn pages<br>
+    drag · explore the book
+  </div>
+</div>
+
+<div id="vignette"></div>
+<div id="grain"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ============================================================
+//   CONSTANTS  (matched to wass08/r3f-animated-book-slider)
+// ============================================================
+const PAGE_WIDTH   = 1.28;
+const PAGE_HEIGHT  = 1.71;
+const PAGE_DEPTH   = 0.003;
+const PAGE_SEGMENTS = 30;
+const SEGMENT_WIDTH = PAGE_WIDTH / PAGE_SEGMENTS;
+
+const easingFactor       = 0.5;
+const easingFactorFold   = 0.3;
+const insideCurveStrength  = 0.18;
+const outsideCurveStrength = 0.05;
+const turningCurveStrength = 0.09;
+
+const TEX_W = 900;
+const TEX_H = Math.round(TEX_W * (PAGE_HEIGHT / PAGE_WIDTH));
+
+// ============================================================
+//   PAGE CONTENT  (HTML rendered to texture)
+// ============================================================
+const PAGE_CSS = `
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .root {
+    width: ${TEX_W}px; height: ${TEX_H}px;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #2a1f15; position: relative; overflow: hidden;
+  }
+  .page {
+    width: 100%; height: 100%;
+    padding: 90px 70px;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 18% 14%, rgba(150, 100, 50, 0.05) 0%, transparent 55%),
+      radial-gradient(ellipse at 82% 86%, rgba(110, 70, 30, 0.04) 0%, transparent 55%),
+      linear-gradient(135deg, #f5ebd2 0%, #ecdcb6 100%);
+  }
+  .page::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 8% 4%, rgba(140, 90, 40, 0.10) 0%, transparent 14%),
+      radial-gradient(circle at 96% 94%, rgba(80, 50, 20, 0.08) 0%, transparent 12%);
+    mix-blend-mode: multiply;
+  }
+  h1 { font-size: 84px; font-weight: 400; line-height: 0.95; margin-bottom: 24px; font-style: italic; color: #1a1208; letter-spacing: -0.02em; }
+  h2 { font-size: 50px; font-weight: 400; font-style: italic; line-height: 1.05; margin-bottom: 28px; color: #1a1208; }
+  h3 { font-size: 22px; font-weight: 400; letter-spacing: 0.42em; text-transform: uppercase; margin-bottom: 26px; color: #6b4422; }
+  .chapter { font-size: 13px; letter-spacing: 0.5em; text-transform: uppercase; color: #8b5a2b; margin-bottom: 18px; }
+  .subtitle { font-size: 22px; font-style: italic; color: #5a3f24; margin-bottom: 30px; line-height: 1.45; }
+  p { font-size: 18px; line-height: 1.75; margin-bottom: 16px; text-align: justify; }
+  .lead { font-size: 21px; font-style: italic; line-height: 1.6; margin-bottom: 18px; color: #3a281a; text-align: left; }
+  .lead::first-letter { font-size: 76px; float: left; line-height: 0.85; padding: 8px 12px 0 0; font-style: normal; color: #8b5a2b; font-weight: 700; }
+  blockquote { border-left: 2px solid #8b5a2b; padding: 4px 0 4px 24px; margin: 28px 0; font-style: italic; font-size: 19px; color: #4a3220; line-height: 1.55; }
+  blockquote em { display: block; margin-top: 12px; font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase; font-style: normal; color: #8b5a2b; }
+  .ornament { font-size: 50px; text-align: center; color: #8b5a2b; margin: 24px 0; }
+  .ornament-large { font-size: 110px; text-align: center; color: #8b5a2b; margin: 40px 0 28px; line-height: 1; }
+  .rule { width: 60px; height: 1px; background: #8b5a2b; margin: 26px 0; }
+  .rule.center { margin: 26px auto; }
+  .meta { font-size: 12px; letter-spacing: 0.35em; text-transform: uppercase; color: #6a4824; line-height: 1.85; }
+  ul, ol { padding-left: 32px; margin: 10px 0 20px; }
+  li { font-size: 18px; line-height: 1.75; margin-bottom: 6px; }
+  .fragments { list-style: none; padding-left: 0; }
+  .fragments li { font-style: italic; padding-left: 22px; position: relative; font-size: 21px; color: #3a281a; margin-bottom: 8px; }
+  .fragments li::before { content: '—'; position: absolute; left: 0; color: #8b5a2b; }
+  .centered { text-align: center; }
+  .quote-large { font-size: 36px; font-style: italic; line-height: 1.32; margin: 36px 0; color: #2a1f15; }
+  .attribution { font-size: 13px; letter-spacing: 0.4em; text-transform: uppercase; color: #8b5a2b; margin-top: 14px; }
+  .aside { font-style: italic; color: #5a3f24; margin-top: 24px; font-size: 18px; }
+  .hand { font-family: 'Brush Script MT', cursive; font-size: 30px; color: #4a3220; margin-bottom: 12px; line-height: 1.4; }
+  .signature { font-family: 'Brush Script MT', cursive; font-size: 30px; color: #8b5a2b; margin-top: 22px; }
+  .folio { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.5em; color: #8b5a2b; font-style: italic; }
+  .corner { position: absolute; top: 50px; right: 70px; font-size: 11px; letter-spacing: 0.5em; text-transform: uppercase; color: #8b5a2b; opacity: 0.7; }
+  .corner.left { left: 70px; right: auto; }
+
+  /* Cover */
+  .cover {
+    background: radial-gradient(ellipse at 50% 30%, #4a2f1a 0%, #1a0f08 90%);
+    color: #d9b478; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    padding: 90px 70px;
+  }
+  .cover .ornament-large { color: #d9b478; }
+  .cover h1 { color: #efddb0; font-size: 92px; }
+  .cover .subtitle { color: #c9a96a; font-size: 20px; margin: 20px 0 36px; }
+  .cover .border { border: 1px solid #8b6628; padding: 60px 50px; border-radius: 2px; position: relative; }
+  .cover .border::before, .cover .border::after { content: ''; position: absolute; width: 12px; height: 12px; border: 1px solid #c9a96a; }
+  .cover .border::before { top: -6px; left: -6px; border-right: none; border-bottom: none; }
+  .cover .border::after { bottom: -6px; right: -6px; border-left: none; border-top: none; }
+  .cover .meta { color: #a08c64; }
+  .back-cover h2 { color: #efddb0; font-size: 30px; font-style: italic; margin-bottom: 20px; }
+  .back-cover p { color: #c9a96a; font-size: 18px; line-height: 1.7; }
+  .back-cover .signature { color: #d9b478; }
+
+  /* Title page special */
+  .title-page { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .title-page h1 { font-size: 92px; }
+
+  .toc-row { display: flex; align-items: baseline; margin-bottom: 16px; gap: 14px; }
+  .toc-row .num { font-size: 13px; letter-spacing: 0.32em; color: #8b5a2b; width: 38px; flex-shrink: 0; }
+  .toc-row .name { font-size: 22px; font-style: italic; color: #2a1f15; flex: 1; border-bottom: 1px dotted rgba(139, 90, 43, 0.4); padding-bottom: 4px; }
+  .toc-row .pg { font-size: 13px; letter-spacing: 0.18em; color: #8b5a2b; }
+
+  .swatch-row { display: flex; gap: 14px; margin: 26px 0; justify-content: center; }
+  .swatch-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .swatch { width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(139, 90, 43, 0.3); box-shadow: inset 0 0 12px rgba(0,0,0,0.18); }
+  .swatch-label { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #8b5a2b; }
+
+  .finis { font-size: 30px; letter-spacing: 0.7em; color: #8b5a2b; margin: 24px 0; font-weight: 500; }
+  .calligraphy { font-family: 'Brush Script MT', cursive; font-size: 60px; color: #6b4422; text-align: center; line-height: 1.1; margin: 18px 0; }
+
+  .columns { columns: 2; column-gap: 32px; column-rule: 1px solid rgba(139, 90, 43, 0.18); }
+  .columns p { font-size: 16px; line-height: 1.7; margin-bottom: 12px; }
+`;
+
+const SPREADS = [
+  // 0 — front cover
+  {
+    front: `<div class="page cover">
+      <div class="border">
+        <div class="ornament-large">❦</div>
+        <p class="meta" style="margin-bottom:14px;">volume one</p>
+        <h1>The Quiet<br>Volume</h1>
+        <div class="rule center" style="background:#c9a96a;"></div>
+        <p class="subtitle">a small book of fragments,<br>made in low light</p>
+        <div class="ornament" style="font-size:36px; margin-top:30px;">✦</div>
+        <p class="meta">·  mmxxvi  ·</p>
+      </div>
+    </div>`,
+    back: `<div class="page title-page">
+      <p class="meta" style="margin-bottom:30px;">volume one</p>
+      <h1>The Quiet<br>Volume</h1>
+      <div class="rule center"></div>
+      <p class="subtitle">a small book of curiosities,<br>fragments &amp; observations<br>made in low light</p>
+      <div class="ornament" style="margin-top:34px;">✦</div>
+      <p class="meta" style="margin-top:24px;">printed in dust &amp; amber</p>
+    </div>`
+  },
+  // 1
+  {
+    front: `<div class="page">
+      <div class="corner left">contents</div>
+      <h2 style="margin-top:24px;">Contents</h2>
+      <div class="rule"></div>
+      <div style="margin-top:26px;">
+        <div class="toc-row"><div class="num">i.</div><div class="name">On Beginnings</div><div class="pg">iii</div></div>
+        <div class="toc-row"><div class="num">ii.</div><div class="name">The Hand of Light</div><div class="pg">v</div></div>
+        <div class="toc-row"><div class="num">iii.</div><div class="name">Marginalia</div><div class="pg">vii</div></div>
+        <div class="toc-row"><div class="num">iv.</div><div class="name">A Recipe for an Evening</div><div class="pg">ix</div></div>
+        <div class="toc-row"><div class="num">v.</div><div class="name">On Closing</div><div class="pg">xi</div></div>
+        <div class="toc-row"><div class="num">vi.</div><div class="name">— Finis —</div><div class="pg">xii</div></div>
+      </div>
+      <div class="folio">— ii —</div>
+    </div>`,
+    back: `<div class="page">
+      <div class="corner">chapter i</div>
+      <div class="chapter">Chapter I</div>
+      <h2>On Beginnings</h2>
+      <div class="rule"></div>
+      <p class="lead">Every book is a small door. You open it and step through, leaving the room you stood in for a room of someone else's making — or your own, returning, transformed.</p>
+      <p>This one is small. Six leaves, give or take. Some words. A few decorations. Nothing more.</p>
+      <p>And yet, the first time you turn a page, you are agreeing to something. You are agreeing to let the next thing be unknown, until it is no longer unknown.</p>
+      <div class="folio">— iii —</div>
+    </div>`
+  },
+  // 2
+  {
+    front: `<div class="page">
+      <blockquote>"A book is a heart that only beats in the chest of another."<em>— Rebecca Solnit</em></blockquote>
+      <p>And so we begin slowly. Not with a thunder of declarations, but with the quiet shuffle of paper, the soft creak of a binding being opened, the way a small light leans into the page as if listening.</p>
+      <div class="ornament">✦</div>
+      <p>Pay attention to what the book asks of you: nothing more than your attention. That is no small thing.</p>
+      <div class="folio">— iv —</div>
+    </div>`,
+    back: `<div class="page">
+      <div class="corner">chapter ii</div>
+      <div class="chapter">Chapter II</div>
+      <h2>The Hand of Light</h2>
+      <div class="rule"></div>
+      <p class="lead">Light falls on the open book and the page absorbs it slowly, like a stone takes warmth on a south-facing wall.</p>
+      <p>Pay attention to the light. The room you read in is not separate from the book. The shadow of your hand on the paper is part of the text.</p>
+      <p>Notice the grain of the paper. Notice the imperfections. The book is a thing, and things are beautiful for being themselves.</p>
+      <div class="folio">— v —</div>
+    </div>`
+  },
+  // 3
+  {
+    front: `<div class="page">
+      <div class="chapter">Chapter III</div>
+      <h2>Marginalia</h2>
+      <div class="rule"></div>
+      <h3>fragments</h3>
+      <ul class="fragments">
+        <li>a fox crossing a field at dusk</li>
+        <li>the sound of pages in another room</li>
+        <li>rain on a wooden roof</li>
+        <li>the smell of an attic in september</li>
+        <li>a clock striking three in the night</li>
+      </ul>
+      <p class="hand" style="margin-top:24px;">// I read this in october, by the window.</p>
+      <p class="hand">// the rain was the kind that whispers.</p>
+      <div class="folio">— vi —</div>
+    </div>`,
+    back: `<div class="page">
+      <div class="corner">chapter iv</div>
+      <div class="chapter">Chapter IV</div>
+      <h2>A Recipe</h2>
+      <div class="rule"></div>
+      <p>For an evening alone:</p>
+      <ol>
+        <li>One small light.</li>
+        <li>A blanket — weight as desired.</li>
+        <li>Tea. Black, with milk; or a tisane of chamomile.</li>
+        <li>Silence — or a record played low.</li>
+        <li>This book, or another.</li>
+      </ol>
+      <div class="ornament">✦</div>
+      <p class="aside">Take all evening. There is no hurry, and no one is keeping score.</p>
+      <div class="folio">— vii —</div>
+    </div>`
+  },
+  // 4
+  {
+    front: `<div class="page">
+      <div class="chapter">Chapter V</div>
+      <h2>On Closing</h2>
+      <div class="rule"></div>
+      <p class="lead">You are nearly at the end. Not of reading — that goes on forever — but of this small book.</p>
+      <p>Close it gently. Let it sit a while on the table before you reach for the next thing. The light will be different by then.</p>
+      <blockquote>"The cure for boredom is curiosity. There is no cure for curiosity."<em>— Dorothy Parker</em></blockquote>
+      <div class="folio">— x —</div>
+    </div>`,
+    back: `<div class="page centered" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div class="ornament-large">❦</div>
+      <p class="finis">FINIS</p>
+      <div class="rule center"></div>
+      <p class="calligraphy" style="margin-top:22px;">thank you<br>for reading.</p>
+      <p class="meta" style="margin-top:32px;">— printed by the night,<br>bound by the morning —</p>
+      <div class="folio">— xi —</div>
+    </div>`
+  },
+  // 5
+  {
+    front: `<div class="page">
+      <div class="corner left">colophon</div>
+      <h3 style="margin-top:24px;">Colophon</h3>
+      <div class="rule"></div>
+      <p style="font-size:17px;">The text of this book is set in <em>Georgia</em>, with display lines in italic. The illustrations, where they appear, are imagined. The grain of the paper is real.</p>
+      <p style="font-size:17px;">Assembled in the small hours, with a cup that was already cold.</p>
+      <div class="ornament">✦</div>
+      <div class="swatch-row">
+        <div class="swatch-item"><div class="swatch" style="background:#f5ebd2;"></div><div class="swatch-label">paper</div></div>
+        <div class="swatch-item"><div class="swatch" style="background:#8b5a2b;"></div><div class="swatch-label">amber</div></div>
+        <div class="swatch-item"><div class="swatch" style="background:#2a1f15;"></div><div class="swatch-label">night</div></div>
+        <div class="swatch-item"><div class="swatch" style="background:#d9b478;"></div><div class="swatch-label">leaf</div></div>
+      </div>
+      <div class="folio">— xii —</div>
+    </div>`,
+    back: `<div class="page cover back-cover" style="padding:100px 70px;">
+      <div class="ornament-large">✦</div>
+      <p class="meta" style="margin-bottom:18px;">·  the end  ·</p>
+      <h2>a quiet volume</h2>
+      <div class="rule center" style="background:#c9a96a;"></div>
+      <p style="margin-top:24px;">six leaves, set in ink and dust.<br>let it close softly.</p>
+      <p class="signature" style="margin-top:36px;">— with thanks —</p>
+      <p class="meta" style="margin-top:38px;">three.js · webgl · paper &amp; light<br>· mmxxvi ·</p>
+    </div>`
+  },
+];
+
+// ============================================================
+//   HTML → CanvasTexture (SVG foreignObject)
+// ============================================================
+function htmlToTexture(html) {
+  return new Promise((resolve) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TEX_W}" height="${TEX_H}">
+      <foreignObject width="100%" height="100%">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="root">
+          <style>${PAGE_CSS}</style>
+          ${html}
+        </div>
+      </foreignObject>
+    </svg>`;
+    const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = TEX_W; c.height = TEX_H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#f5ebd2';
+      ctx.fillRect(0, 0, TEX_W, TEX_H);
+      ctx.drawImage(img, 0, 0, TEX_W, TEX_H);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 16;
+      t.needsUpdate = true;
+      resolve(t);
+    };
+    img.onerror = () => {
+      const c = document.createElement('canvas');
+      c.width = TEX_W; c.height = TEX_H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#f5ebd2';
+      ctx.fillRect(0, 0, TEX_W, TEX_H);
+      ctx.fillStyle = '#8b5a2b';
+      ctx.font = '24px Georgia';
+      ctx.textAlign = 'center';
+      ctx.fillText('— page —', TEX_W / 2, TEX_H / 2);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      resolve(t);
+    };
+    img.src = url;
+  });
+}
+
+// ============================================================
+//   PAGE GEOMETRY (shared, with skin attributes)
+// ============================================================
+const pageGeometry = new THREE.BoxGeometry(
+  PAGE_WIDTH, PAGE_HEIGHT, PAGE_DEPTH, PAGE_SEGMENTS, 2
+);
+pageGeometry.translate(PAGE_WIDTH / 2, 0, 0);
+
+{
+  const pos = pageGeometry.attributes.position;
+  const v = new THREE.Vector3();
+  const skinIdx = [];
+  const skinW = [];
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const x = v.x;
+    const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH));
+    const skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH;
+    skinIdx.push(skinIndex, skinIndex + 1, 0, 0);
+    skinW.push(1 - skinWeight, skinWeight, 0, 0);
+  }
+  pageGeometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIdx, 4));
+  pageGeometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinW, 4));
+}
+
+// Procedural paper edge texture for the four "edge" sides
+function makeEdgeTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  // base warm cream
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#e8d9b2');
+  grad.addColorStop(0.5, '#d6c08d');
+  grad.addColorStop(1, '#bfa674');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+  // page lines (stack of paper edges)
+  for (let i = 0; i < 256; i += 1) {
+    ctx.strokeStyle = `rgba(${100 + Math.random() * 30}, ${75 + Math.random() * 25}, ${40 + Math.random() * 15}, ${0.04 + Math.random() * 0.08})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(256, i);
+    ctx.stroke();
+  }
+  // subtle grain
+  for (let i = 0; i < 600; i++) {
+    ctx.fillStyle = `rgba(${60 + Math.random() * 40}, ${40 + Math.random() * 25}, ${15}, ${Math.random() * 0.18})`;
+    ctx.fillRect(Math.random() * 256, Math.random() * 256, 1, 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const edgeTex = makeEdgeTexture();
+
+const edgePaperMat = new THREE.MeshStandardMaterial({
+  map: edgeTex,
+  color: 0xe7d5a8,
+  roughness: 0.95,
+  metalness: 0.0,
+});
+
+const edgeDarkMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1208,
+  roughness: 0.85,
+  metalness: 0.0,
+});
+
+// ============================================================
+//   PAGE CLASS  (one SkinnedMesh + bones per page)
+// ============================================================
+class Page {
+  constructor(number, frontTex, backTex, totalPages) {
+    this.number = number;
+    this.totalPages = totalPages;
+    this.group = new THREE.Group();
+
+    // Build bones
+    const bones = [];
+    for (let i = 0; i <= PAGE_SEGMENTS; i++) {
+      const b = new THREE.Bone();
+      b.position.x = i === 0 ? 0 : SEGMENT_WIDTH;
+      bones.push(b);
+      if (i > 0) bones[i - 1].add(b);
+    }
+    const skeleton = new THREE.Skeleton(bones);
+
+    // Materials: 6 sides on the BoxGeometry
+    // Index order in THREE: +x, -x, +y, -y, +z (front), -z (back)
+    const isCover = (number === 0 || number === totalPages - 1);
+    const frontMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: frontTex,
+      roughness: isCover && number === 0 ? 0.7 : 0.55,
+      metalness: 0.0,
+      emissive: new THREE.Color(0xff8a3a),
+      emissiveIntensity: 0,
+    });
+    const backMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: backTex,
+      roughness: isCover && number === totalPages - 1 ? 0.7 : 0.55,
+      metalness: 0.0,
+      emissive: new THREE.Color(0xff8a3a),
+      emissiveIntensity: 0,
+    });
+
+    const materials = [
+      edgePaperMat,  // +x  (free edge of the page)
+      edgeDarkMat,   // -x  (spine edge)
+      edgePaperMat,  // +y  (top edge)
+      edgePaperMat,  // -y  (bottom edge)
+      frontMat,      // +z  (front face) — visible when page is closed/right
+      backMat,       // -z  (back face)  — visible after page is turned
+    ];
+
+    const mesh = new THREE.SkinnedMesh(pageGeometry, materials);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    mesh.add(bones[0]);
+    mesh.bind(skeleton);
+
+    this.mesh = mesh;
+    this.bones = bones;
+    this.skeleton = skeleton;
+    this.frontMat = frontMat;
+    this.backMat = backMat;
+
+    this.group.add(mesh);
+    // Stack offset along z so pages don't z-fight; will be re-set by Book each frame
+    mesh.position.z = -number * PAGE_DEPTH;
+
+    // Page-turn state
+    this.lastOpened = false;
+    this.turnedAt = 0;
+    this.highlighted = false;
+  }
+
+  setOpened(opened) {
+    if (this.lastOpened !== opened) {
+      this.turnedAt = performance.now();
+      this.lastOpened = opened;
+    }
+  }
+
+  update(dt, currentDelayedPage, isBookClosed) {
+    const opened = this.lastOpened;
+
+    let turningTime = Math.min(400, performance.now() - this.turnedAt) / 400;
+    turningTime = Math.sin(turningTime * Math.PI);
+
+    let targetRotation = opened ? -Math.PI / 2 : Math.PI / 2;
+    if (!isBookClosed) {
+      targetRotation += this.number * 0.8 * Math.PI / 180;
+    }
+
+    // Restack along z based on the "delayedPage"
+    this.mesh.position.z = -this.number * PAGE_DEPTH + currentDelayedPage * PAGE_DEPTH;
+
+    // Emissive lerp for hover highlight
+    const targetEmissive = this.highlighted ? 0.18 : 0;
+    this.frontMat.emissiveIntensity = THREE.MathUtils.lerp(this.frontMat.emissiveIntensity, targetEmissive, 0.1);
+    this.backMat.emissiveIntensity  = THREE.MathUtils.lerp(this.backMat.emissiveIntensity,  targetEmissive, 0.1);
+
+    const bones = this.bones;
+    for (let i = 0; i < bones.length; i++) {
+      const target = i === 0 ? this.group : bones[i];
+
+      const insideCurveIntensity  = i < 8  ? Math.sin(i * 0.2 + 0.25) : 0;
+      const outsideCurveIntensity = i >= 8 ? Math.cos(i * 0.3 + 0.09) : 0;
+      const turningIntensity = Math.sin(i * Math.PI * (1 / bones.length)) * turningTime;
+
+      let rotationAngle =
+          insideCurveStrength  * insideCurveIntensity  * targetRotation
+        - outsideCurveStrength * outsideCurveIntensity * targetRotation
+        + turningCurveStrength * turningIntensity      * targetRotation;
+
+      let foldRotationAngle = THREE.MathUtils.degToRad(Math.sign(targetRotation) * 2);
+
+      if (isBookClosed) {
+        if (i === 0) {
+          rotationAngle = targetRotation;
+          foldRotationAngle = 0;
+        } else {
+          rotationAngle = 0;
+          foldRotationAngle = 0;
+        }
+      }
+
+      target.rotation.y = dampAngle(target.rotation.y, rotationAngle, easingFactor, dt);
+
+      const foldIntensity = i > 8
+        ? Math.sin(i * Math.PI * (1 / bones.length) - 0.5) * turningTime
+        : 0;
+      target.rotation.x = dampAngle(target.rotation.x, foldRotationAngle * foldIntensity, easingFactorFold, dt);
+    }
+  }
+}
+
+// Exponential damping toward target angle (like maath/easing.dampAngle)
+function dampAngle(current, target, smoothing, dt) {
+  // smoothing = "time to reach approximately the target"; we use exp decay
+  const factor = 1 - Math.exp(-dt / smoothing);
+  let diff = target - current;
+  // wrap
+  while (diff >  Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return current + diff * factor;
+}
+
+// ============================================================
+//   THREE.JS SCENE
+// ============================================================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xefe6d3);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0.0, 0.4, 4.6);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Studio environment for nice reflections + soft GI
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+// ----- LIGHTS (soft, like studio) -----
+const hemi = new THREE.HemisphereLight(0xfff0d8, 0xb39370, 0.45);
+scene.add(hemi);
+
+const keyLight = new THREE.DirectionalLight(0xffe9c8, 2.5);
+keyLight.position.set(2.5, 5.0, 2.5);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.bias = -0.0001;
+keyLight.shadow.camera.near = 0.1;
+keyLight.shadow.camera.far = 20;
+keyLight.shadow.camera.left = -3;
+keyLight.shadow.camera.right = 3;
+keyLight.shadow.camera.top = 3;
+keyLight.shadow.camera.bottom = -3;
+keyLight.shadow.radius = 4;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xa8c8ff, 0.4);
+fillLight.position.set(-3, 2, -2);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffd4a8, 0.6);
+rimLight.position.set(0, 3, -4);
+scene.add(rimLight);
+
+// ----- SHADOW CATCHER -----
+const shadowGeo = new THREE.PlaneGeometry(40, 40);
+const shadowMat = new THREE.ShadowMaterial({ opacity: 0.22 });
+const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = -1.5;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
+
+// ----- BOOK -----
+const bookFloat = new THREE.Group(); // for floating animation
+const bookGroup = new THREE.Group(); // children = pages
+bookGroup.rotation.y = -Math.PI / 2; // open book facing camera
+bookFloat.add(bookGroup);
+scene.add(bookFloat);
+
+const pages = [];
+
+async function buildBook() {
+  // Build all textures first (parallel)
+  const total = SPREADS.length;
+  const texPromises = [];
+  for (let i = 0; i < total; i++) {
+    texPromises.push(htmlToTexture(SPREADS[i].front));
+    texPromises.push(htmlToTexture(SPREADS[i].back));
+  }
+  const tex = await Promise.all(texPromises);
+
+  for (let i = 0; i < total; i++) {
+    const front = tex[i * 2];
+    const back  = tex[i * 2 + 1];
+    const p = new Page(i, front, back, total);
+    pages.push(p);
+    bookGroup.add(p.group);
+  }
+}
+
+// ============================================================
+//   PAGE STATE / DELAYED PAGE LOGIC (sequential turn)
+// ============================================================
+let targetPage = 0;
+let delayedPage = 0;
+
+function goToPage(n) {
+  targetPage = THREE.MathUtils.clamp(n, 0, SPREADS.length);
+  updateUI();
+}
+
+let pageStepTimer = 0;
+function stepDelayedPage(dt) {
+  if (delayedPage === targetPage) return;
+  pageStepTimer += dt;
+  const stepInterval = Math.abs(targetPage - delayedPage) > 2 ? 0.05 : 0.15;
+  if (pageStepTimer >= stepInterval) {
+    pageStepTimer = 0;
+    delayedPage += targetPage > delayedPage ? 1 : -1;
+    playPageFlip();
+    updateUI();
+  }
+}
+
+// ============================================================
+//   AUDIO  (synthesized page-flip)
+// ============================================================
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+function playPageFlip() {
+  if (!audioCtx) return;
+  // White-noise burst with a fast envelope -> simulates paper rustle
+  const dur = 0.18;
+  const sr = audioCtx.sampleRate;
+  const buffer = audioCtx.createBuffer(1, sr * dur, sr);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    const t = i / data.length;
+    const env = Math.exp(-t * 14) * (1 - t);
+    data[i] = (Math.random() * 2 - 1) * env;
+  }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2500 + Math.random() * 800;
+  filter.Q.value = 0.7;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.35;
+  src.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+  src.start();
+}
+
+// ============================================================
+//   UI
+// ============================================================
+const numerals = ['cover','i','ii','iii','iv','v','back'];
+function updateUI() {
+  document.getElementById('cur').textContent = numerals[delayedPage] || delayedPage;
+  document.getElementById('tot').textContent = numerals[SPREADS.length] || SPREADS.length;
+  document.getElementById('prev').disabled = targetPage <= 0;
+  document.getElementById('next').disabled = targetPage >= SPREADS.length;
+
+  const strip = document.getElementById('strip');
+  if (strip.children.length === 0) {
+    for (let i = 0; i <= SPREADS.length; i++) {
+      const b = document.createElement('button');
+      b.className = 'dot';
+      b.addEventListener('click', () => { ensureAudio(); goToPage(i); });
+      strip.appendChild(b);
+    }
+  }
+  Array.from(strip.children).forEach((d, i) => {
+    d.classList.toggle('active', i === targetPage);
+  });
+}
+
+document.getElementById('prev').addEventListener('click', () => { ensureAudio(); goToPage(targetPage - 1); });
+document.getElementById('next').addEventListener('click', () => { ensureAudio(); goToPage(targetPage + 1); });
+addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { ensureAudio(); goToPage(targetPage + 1); }
+  if (e.key === 'ArrowLeft')                   { ensureAudio(); goToPage(targetPage - 1); }
+});
+
+// ----- Hover / click on pages -----
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let hovered = null;
+
+function pickPage(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+  const meshes = pages.map(p => p.mesh);
+  const hits = raycaster.intersectObjects(meshes, false);
+  return hits.length ? pages.find(p => p.mesh === hits[0].object) : null;
+}
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  const p = pickPage(e);
+  if (p !== hovered) {
+    if (hovered) hovered.highlighted = false;
+    hovered = p;
+    if (hovered) hovered.highlighted = true;
+    document.body.style.cursor = hovered ? 'pointer' : '';
+  }
+});
+renderer.domElement.addEventListener('click', (e) => {
+  const p = pickPage(e);
+  if (!p) return;
+  ensureAudio();
+  // If page is currently opened (its own state), clicking should close back to it; else advance to it+1
+  goToPage(p.lastOpened ? p.number : p.number + 1);
+});
+
+// ----- Orbit controls -----
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.enablePan = false;
+controls.minDistance = 1.8;
+controls.maxDistance = 6;
+controls.minPolarAngle = 0.15;
+controls.maxPolarAngle = Math.PI * 0.62;
+controls.target.set(0, 0, 0);
+
+// ============================================================
+//   POST-PROCESSING (subtle bloom only)
+// ============================================================
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.18, 0.6, 0.92);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// ============================================================
+//   RESIZE
+// ============================================================
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+// ============================================================
+//   LOOP
+// ============================================================
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 1 / 30);
+  const t = clock.elapsedTime;
+
+  controls.update();
+
+  // Float animation on the whole book (like drei <Float>) — base tilt -45° back
+  bookFloat.position.y = Math.sin(t * 1.4) * 0.05;
+  bookFloat.rotation.x = -Math.PI / 4 + Math.sin(t * 1.0) * 0.05;
+  bookFloat.rotation.y = Math.sin(t * 0.8) * 0.06;
+  bookFloat.rotation.z = Math.cos(t * 0.7) * 0.03;
+
+  // Step delayed page (sequential turn)
+  stepDelayedPage(dt);
+
+  // Update each page's state + bones
+  for (const p of pages) {
+    const isOpened = delayedPage > p.number;
+    const isBookClosed = (delayedPage === 0) || (delayedPage === SPREADS.length);
+    p.setOpened(isOpened);
+    p.update(dt, delayedPage, isBookClosed);
+  }
+
+  composer.render();
+}
+
+// ============================================================
+//   BOOTSTRAP
+// ============================================================
+(async () => {
+  await buildBook();
+  updateUI();
+  animate();
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+  }, 200);
+})();
+
+</script>
+</body>
+</html>
