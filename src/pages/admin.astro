@@ -54,6 +54,17 @@
 
   main{display:grid;grid-template-columns:240px 1fr 320px;height:calc(100vh - 54px);overflow:hidden}
   main.view-content{grid-template-columns:240px 1fr}
+  main.view-content.with-preview{grid-template-columns:240px 1fr 1fr}
+  main.view-content.with-preview #book-preview-panel{display:flex !important;flex-direction:column;
+    border-left:1px solid rgba(217,180,120,0.18);background:#000;min-width:0;overflow:hidden}
+  #book-preview-panel.hidden{display:none}
+  .bp-header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(8,4,2,0.85);
+    border-bottom:1px solid rgba(217,180,120,0.15);font-size:8px;letter-spacing:0.32em;text-transform:uppercase;color:#9a6730;font-weight:700}
+  .bp-label{flex:1}
+  .bp-refresh{background:transparent;border:1px solid rgba(217,180,120,0.25);color:#d9b478;padding:3px 8px;
+    border-radius:2px;font-family:inherit;font-size:11px;cursor:pointer}
+  .bp-refresh:hover{background:rgba(217,180,120,0.13);color:#efddb0}
+  #book-preview-iframe{flex:1;width:100%;border:none;background:#000;min-height:0}
 
   /* === TABS === */
   .tabs{display:flex;gap:2px;background:rgba(8,4,2,0.6);border-radius:4px;padding:3px;margin-left:8px}
@@ -97,6 +108,18 @@
     border-radius:3px;min-height:120px;display:flex;align-items:center;justify-content:center}
   .photo-preview img{max-width:100%;max-height:200px;display:block;border:1px solid rgba(217,180,120,0.2)}
   .photo-preview .empty-img{color:#9a6730;font-style:italic;font-size:12px;opacity:0.5}
+
+  /* Upload rows under the file fields */
+  .upload-row{display:flex;align-items:center;gap:10px;margin:-4px 0 12px;padding:9px 12px;background:rgba(154,103,48,0.06);
+    border:1px dashed rgba(217,180,120,0.25);border-radius:3px}
+  .upload-row input[type=file]{font-size:11px;color:#c9a96a;background:transparent;border:none;padding:0}
+  .upload-row input[type=file]::file-selector-button{padding:5px 12px;background:rgba(154,103,48,0.4);
+    color:#efddb0;border:1px solid rgba(217,180,120,0.4);border-radius:3px;font-family:inherit;
+    font-size:9px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;margin-right:10px}
+  .upload-row input[type=file]::file-selector-button:hover{background:rgba(154,103,48,0.6)}
+  .upload-hint{font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:#9a6730;opacity:0.7;flex-shrink:0}
+  .upload-row.pending{background:rgba(154,103,48,0.2);border-style:solid;border-color:rgba(217,180,120,0.6)}
+  .upload-row.pending::after{content:'⌛ ἐκκρεμεῖ — πάτα Save';font-size:8px;letter-spacing:0.2em;color:#efddb0;margin-left:auto}
 
   .audio-preview{margin-top:10px;padding:10px;background:rgba(8,4,2,0.55);border:1px solid rgba(217,180,120,0.15);border-radius:3px}
   .audio-preview audio{width:100%;height:32px}
@@ -224,11 +247,11 @@
   <form id="login-form">
     <h1>Ἅγιος Ἀνδρέας</h1>
     <div class="sub">CMS · διαχείρισις</div>
-    <input type="text" id="login-user" placeholder="χρήστης" autocomplete="username" autofocus>
+    <input type="email" id="login-user" placeholder="email · superuser" autocomplete="username" autofocus>
     <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
     <button type="submit">Εἴσοδος</button>
     <div id="login-error"></div>
-    <div class="hint">προεπιλογή · admin / admin</div>
+    <div class="hint">PocketBase · superuser credentials</div>
   </form>
 </div>
 
@@ -247,7 +270,8 @@
     <button class="toolbtn" id="reset-btn" title="Επαναφορὰ προεπιλογῶν">↺ reset</button>
     <button class="toolbtn primary" id="save-btn" title="Cmd + S">💾 save</button>
     <button class="toolbtn" id="export-btn">📁 export json</button>
-    <button class="toolbtn" id="preview-btn">👁 preview book</button>
+    <button class="toolbtn" id="preview-toggle">📖 preview pane</button>
+    <button class="toolbtn" id="preview-btn">↗ open book</button>
     <button class="toolbtn danger" id="logout-btn">↪ logout</button>
   </header>
 
@@ -261,6 +285,15 @@
     </aside>
 
     <section id="content-editor">
+      <!-- Optional live book preview, toggled via header button -->
+      <div id="book-preview-panel" class="book-preview-panel hidden">
+        <div class="bp-header">
+          <span class="bp-label">live preview · /book</span>
+          <button class="bp-refresh" id="bp-refresh" title="refresh">↻</button>
+        </div>
+        <iframe id="book-preview-iframe" src="/book" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </div>
+
       <div id="content-empty" class="content-empty">— ἐπίλεξε σελίδα ἀπὸ τὴν λίστα —</div>
       <div id="content-form" class="hidden">
         <div class="content-section">
@@ -302,10 +335,14 @@
         <div class="content-section">
           <h3>Φωτογραφία</h3>
           <div class="field-row">
-            <label>Path εἰκόνας
-              <input type="text" id="ce-photo-src" data-field="photoSrc" placeholder="/photos/...">
+            <label>Τρέχουσα εἰκόνα
+              <input type="text" id="ce-photo-src" data-field="photoSrc" readonly placeholder="(κενό)">
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="photoSrc"> 🔒</label>
+          </div>
+          <div class="upload-row">
+            <input type="file" id="ce-photo-upload" accept="image/jpeg,image/png,image/webp,image/gif" data-upload="photo">
+            <span class="upload-hint">JPG / PNG / WEBP · μέγιστο 15 MB</span>
           </div>
           <div class="field-row">
             <label>Τίτλος φωτογραφίας <input type="text" id="ce-photo-title" data-field="photoTitle"></label>
@@ -316,7 +353,7 @@
             <label class="field-lock"><input type="checkbox" data-lock="photoCap"> 🔒</label>
           </div>
           <div class="field-row">
-            <label>Περιγραφή
+            <label>Περιγραφή (rich · HTML)
               <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"></textarea>
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="photoDesc"> 🔒</label>
@@ -332,15 +369,23 @@
           <h3>Ἀφήγησις</h3>
           <div class="field-row">
             <label>Page audio (mp3)
-              <input type="text" id="ce-narration" data-field="narration" placeholder="/audio/narration_pN.mp3">
+              <input type="text" id="ce-narration" data-field="narration" readonly placeholder="(κενό)">
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="narration"> 🔒</label>
           </div>
+          <div class="upload-row">
+            <input type="file" id="ce-narration-upload" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="narration">
+            <span class="upload-hint">MP3 · μέγιστο 20 MB</span>
+          </div>
           <div class="field-row">
             <label>Photo audio (mp3)
-              <input type="text" id="ce-photo-audio" data-field="photoAudio" placeholder="/audio/photo_x.mp3">
+              <input type="text" id="ce-photo-audio" data-field="photoAudio" readonly placeholder="(κενό)">
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="photoAudio"> 🔒</label>
+          </div>
+          <div class="upload-row">
+            <input type="file" id="ce-photo-audio-upload" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="photo_audio">
+            <span class="upload-hint">MP3 · μέγιστο 20 MB</span>
           </div>
           <div class="audio-preview" id="ce-audio-preview"></div>
         </div>
@@ -459,11 +504,8 @@ const DEFAULT_ANIMATIONS = {
 // =====================================================================
 //   STATE
 // =====================================================================
-const STORAGE_KEY  = 'church.animations';
-const LOCKS_KEY    = 'church.animations.locks';
-const AUTH_KEY     = 'church.cms.auth';
-const ADMIN_USER   = 'admin';
-const ADMIN_PASS   = 'admin';
+const PB_URL    = 'https://yms.galerra.art';
+const TOKEN_KEY = 'church.cms.token';
 
 const EASE_NAMES = ['linear','easeInQuad','easeOutQuad','easeInOutQuad',
   'easeInCubic','easeOutCubic','easeInOutCubic',
@@ -473,43 +515,168 @@ const EASE_NAMES = ['linear','easeInQuad','easeOutQuad','easeInOutQuad',
 const KNOWN_BINDINGS = [];
 
 const State = {
-  animations: deepClone(DEFAULT_ANIMATIONS),
-  content:    {},              // pageId → { field → value }   (per-page text/photo/audio overrides)
-  contentLocks: {},            // pageId → { field → bool }    (per-field lock flags)
-  locks: {},                   // key: 'animName:trackIdx' → bool (animation track locks)
+  // Live data hydrated from PocketBase on login.
+  animations:    deepClone(DEFAULT_ANIMATIONS),
+  content:       {},           // pageId → { field → value, _recordId, _collectionId }
+  contentLocks:  {},           // pageId → { field → bool }
+  locks:         {},           // 'animName:trackIdx' → bool (per-animation-track locks)
+
+  // PB state
+  token:         null,
+  pendingFiles:  {},           // recordId → { fieldName → File }
+  dirtyPages:    new Set(),    // recordIds with pending text-field changes
+  dirtyAnims:    new Set(),    // recordIds with pending animation changes
+  animRecordId:  {},           // animName → recordId (for PATCH)
+
+  // UI state
   selected:       { anim: null, trackIdx: -1, prop: null, kfIdx: -1 },
-  selectedPageId: null,        // currently-edited page id (content tab)
+  selectedPageId: null,
   activeTab:      'content',
-  history: [],                 // undo stack — each entry { animations, content }
-  redoStack: [],
-  dirty: false,
-  playing: false,
-  playStart: 0,
-  playTime: 0,
-  _editingField: null,         // throttle history pushes per field-edit session
+  history:        [],
+  redoStack:      [],
+  dirty:          false,
+  playing:        false,
+  playStart:      0,
+  playTime:       0,
+  _editingField:  null,
 };
 
 // =====================================================================
 //   PERSISTENCE
 // =====================================================================
-const CONTENT_KEY       = 'church.content';
-const CONTENT_LOCKS_KEY = 'church.content.locks';
-
-function load() {
-  try { const raw = localStorage.getItem(STORAGE_KEY);       if (raw) State.animations    = JSON.parse(raw); } catch (e) {}
-  try { const raw = localStorage.getItem(LOCKS_KEY);         if (raw) State.locks         = JSON.parse(raw); } catch (e) {}
-  try { const raw = localStorage.getItem(CONTENT_KEY);       if (raw) State.content       = JSON.parse(raw); } catch (e) {}
-  try { const raw = localStorage.getItem(CONTENT_LOCKS_KEY); if (raw) State.contentLocks  = JSON.parse(raw); } catch (e) {}
+// =====================================================================
+//   PERSISTENCE — talks directly to PocketBase via fetch (no SDK in the
+//   inline module: Astro doesn't process is:inline imports).
+// =====================================================================
+function authHeader(extra) {
+  const h = { Authorization: State.token };
+  if (extra) Object.assign(h, extra);
+  return h;
 }
-function save() {
-  localStorage.setItem(STORAGE_KEY,        JSON.stringify(State.animations));
-  localStorage.setItem(LOCKS_KEY,          JSON.stringify(State.locks));
-  localStorage.setItem(CONTENT_KEY,        JSON.stringify(State.content));
-  localStorage.setItem(CONTENT_LOCKS_KEY,  JSON.stringify(State.contentLocks));
+
+// Map a PB record → the flat shape the form binds to.
+function _recordToContent(rec) {
+  const fileUrl = (f) => f ? `${PB_URL}/api/files/${rec.collectionId}/${rec.id}/${f}` : '';
+  return {
+    _recordId:    rec.id,
+    _collId:      rec.collectionId,
+    eyebrow:      rec.eyebrow      || '',
+    title:        rec.title        || '',
+    date:         rec.date         || '',
+    lead:         rec.lead         || '',
+    body:         rec.body         || '',
+    photoSrc:     fileUrl(rec.photo),
+    photoTitle:   rec.photo_title  || '',
+    photoCap:     rec.photo_cap    || '',
+    photoDesc:    rec.photo_desc   || '',
+    photoItalic:  rec.photo_italic || '',
+    narration:    fileUrl(rec.narration),
+    photoAudio:   fileUrl(rec.photo_audio),
+  };
+}
+
+async function load() {
+  try {
+    const [pagesRes, animsRes] = await Promise.all([
+      fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=20`,    { headers: authHeader() }),
+      fetch(`${PB_URL}/api/collections/church_animations/records?perPage=50`,         { headers: authHeader() }),
+    ]);
+    const pages = (await pagesRes.json()).items || [];
+    const anims = (await animsRes.json()).items || [];
+
+    State.content      = {};
+    State.contentLocks = {};
+    for (const rec of pages) {
+      const id = 'p' + rec.order;
+      State.content[id]      = _recordToContent(rec);
+      const locks = Array.isArray(rec.locked_fields) ? rec.locked_fields : [];
+      State.contentLocks[id] = Object.fromEntries(locks.map(f => [f, true]));
+    }
+
+    State.animations    = {};
+    State.animRecordId  = {};
+    for (const rec of anims) {
+      State.animations[rec.anim_name] = {
+        duration: rec.duration,
+        loop:     !!rec.loop,
+        tracks:   rec.tracks || [],
+      };
+      State.animRecordId[rec.anim_name] = rec.id;
+    }
+    if (!Object.keys(State.animations).length) {
+      State.animations = deepClone(DEFAULT_ANIMATIONS);
+    }
+    toast(`Φορτώθηκαν ${pages.length} σελίδες · ${anims.length} animations`);
+  } catch (e) {
+    console.error('[CMS] load failed', e);
+    toast('✕ ἀδυναμία φορτώματος ἀπὸ PB', 'error');
+  }
+}
+
+// Map UI field name → PB column name.
+const _FIELD_TO_PB = {
+  eyebrow: 'eyebrow', title: 'title', date: 'date',
+  lead: 'lead', body: 'body',
+  photoTitle: 'photo_title', photoCap: 'photo_cap',
+  photoDesc: 'photo_desc',   photoItalic: 'photo_italic',
+};
+
+async function _savePage(pageId) {
+  const data = State.content[pageId]; if (!data || !data._recordId) return false;
+  const locks = Object.keys(State.contentLocks[pageId] || {}).filter(f => State.contentLocks[pageId][f]);
+  const files = State.pendingFiles[data._recordId] || {};
+  const hasFile = Object.keys(files).length > 0;
+
+  let body, headers;
+  if (hasFile) {
+    body = new FormData();
+    for (const ui in _FIELD_TO_PB) body.append(_FIELD_TO_PB[ui], data[ui] ?? '');
+    body.append('locked_fields', JSON.stringify(locks));
+    for (const f in files) body.append(f, files[f]);
+    headers = authHeader();          // browser sets Content-Type with boundary
+  } else {
+    const payload = { locked_fields: locks };
+    for (const ui in _FIELD_TO_PB) payload[_FIELD_TO_PB[ui]] = data[ui] ?? '';
+    body    = JSON.stringify(payload);
+    headers = authHeader({ 'Content-Type': 'application/json' });
+  }
+
+  const res = await fetch(`${PB_URL}/api/collections/church_pages/records/${data._recordId}`, {
+    method: 'PATCH', headers, body,
+  });
+  if (!res.ok) { console.error('save page failed', await res.text()); return false; }
+  // Refresh the local copy with the canonical record (file fields get new server-side names).
+  const fresh = await res.json();
+  State.content[pageId] = _recordToContent(fresh);
+  delete State.pendingFiles[data._recordId];
+  return true;
+}
+
+async function _saveAnim(name) {
+  const recId = State.animRecordId[name]; if (!recId) return false;
+  const a = State.animations[name];
+  const res = await fetch(`${PB_URL}/api/collections/church_animations/records/${recId}`, {
+    method: 'PATCH',
+    headers: authHeader({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ duration: a.duration, loop: !!a.loop, tracks: a.tracks }),
+  });
+  return res.ok;
+}
+
+async function save() {
+  if (!State.token) { toast('μη συνδεδεμένος', 'error'); return; }
+  let pageCount = 0, animCount = 0;
+  for (const pid of State.dirtyPages)  { if (await _savePage(pid)) pageCount++; }
+  for (const name of State.dirtyAnims) { if (await _saveAnim(name)) animCount++; }
+  State.dirtyPages.clear();
+  State.dirtyAnims.clear();
   State.dirty = false;
-  toast('Ἀποθηκεύθηκε ✓');
   refreshSaveBtn();
-  if (typeof renderPagesList === 'function') renderPagesList();   // refresh edited-dots
+  toast(`Ἀποθηκεύθηκαν · ${pageCount} σελίδες · ${animCount} animations ✓`);
+  if (typeof renderPagesList === 'function') renderPagesList();
+  // Refresh the live book preview iframe if it's open
+  const iframe = document.getElementById('book-preview-iframe');
+  if (iframe) { iframe.src = iframe.src; }
 }
 function exportJson() {
   const payload = {
@@ -527,14 +694,7 @@ function exportJson() {
   toast('Ἐξήχθη church-cms.json');
 }
 function resetDefaults() {
-  if (!confirm('Ἐπαναφορὰ ὅλων (animations + κειμένων) στὶς προεπιλογὲς;')) return;
-  pushHistory();
-  State.animations   = deepClone(DEFAULT_ANIMATIONS);
-  State.content      = {};
-  State.contentLocks = {};
-  markDirty();
-  renderAll();
-  toast('Ἐπαναφορὰ προεπιλογῶν');
+  toast('Reset δὲν εἶναι διαθέσιμο μὲ PocketBase backend — χρησιμοποίησε τὸ /_/ admin UI', 'error');
 }
 
 // =====================================================================
@@ -584,12 +744,34 @@ function refreshSaveBtn() {
   btn.textContent = State.dirty ? '💾 save *' : '💾 saved';
   btn.classList.toggle('primary', State.dirty);
 }
-function markDirty() { State.dirty = true; refreshSaveBtn(); }
+function markDirty() {
+  State.dirty = true;
+  // Track which record(s) need PATCH on next save
+  if (State.activeTab === 'content' && State.selectedPageId) {
+    State.dirtyPages.add(State.selectedPageId);
+  }
+  if (State.activeTab === 'animations' && State.selected.anim) {
+    State.dirtyAnims.add(State.selected.anim);
+  }
+  refreshSaveBtn();
+}
 
 // =====================================================================
 //   AUTH
 // =====================================================================
-function isAuthed() { return localStorage.getItem(AUTH_KEY) === '1'; }
+function isAuthed() {
+  const t = localStorage.getItem(TOKEN_KEY);
+  if (!t) return false;
+  try {
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    if (payload.exp && payload.exp > Date.now() / 1000) {
+      State.token = t;
+      return true;
+    }
+  } catch (_) {}
+  localStorage.removeItem(TOKEN_KEY);
+  return false;
+}
 function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
@@ -599,19 +781,37 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 }
-function login(user, pass) {
-  if (user === ADMIN_USER && pass === ADMIN_PASS) {
-    localStorage.setItem(AUTH_KEY, '1');
+async function login(email, pass) {
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '⌛ σύνδεση…';
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ identity: email, password: pass }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      errEl.textContent = '✕ ' + (res.status === 400 ? 'λάθος στοιχεῖα' : ('σφάλμα ' + res.status));
+      console.warn('[auth] failed:', body);
+      setTimeout(() => errEl.textContent = '', 3500);
+      return;
+    }
+    const data = await res.json();
+    localStorage.setItem(TOKEN_KEY, data.token);
+    State.token = data.token;
+    errEl.textContent = '';
     showApp();
-    init();
-  } else {
-    document.getElementById('login-error').textContent = '✕ λάθος στοιχεῖα';
-    setTimeout(() => document.getElementById('login-error').textContent = '', 2500);
+    await init();
+  } catch (e) {
+    errEl.textContent = '✕ δίκτυο: ' + e.message;
+    setTimeout(() => errEl.textContent = '', 3500);
   }
 }
 function logout() {
   if (State.dirty && !confirm('Ἔχεις μη-ἀποθηκευμένες ἀλλαγές. Σίγουρα νὰ φύγεις;')) return;
-  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  State.token = null;
   showLogin();
 }
 
@@ -1028,9 +1228,28 @@ document.getElementById('reset-btn').addEventListener('click', resetDefaults);
 document.getElementById('undo-btn').addEventListener('click', undo);
 document.getElementById('redo-btn').addEventListener('click', redo);
 document.getElementById('logout-btn').addEventListener('click', logout);
-document.getElementById('preview-btn').addEventListener('click', () => {
-  if (State.dirty) save();
-  window.open('book.html', '_blank');
+document.getElementById('preview-btn').addEventListener('click', async () => {
+  if (State.dirty) await save();
+  window.open('/book', '_blank');
+});
+// Toggle the inline preview pane next to the content form
+document.getElementById('preview-toggle').addEventListener('click', () => {
+  const view = document.getElementById('view-content');
+  const panel = document.getElementById('book-preview-panel');
+  const on = !view.classList.contains('with-preview');
+  view.classList.toggle('with-preview', on);
+  panel.classList.toggle('hidden', !on);
+  document.getElementById('preview-toggle').classList.toggle('primary', on);
+  // Lazy-load: only set src on first open to avoid eager network
+  if (on) {
+    const iframe = document.getElementById('book-preview-iframe');
+    if (!iframe.dataset.loaded) { iframe.src = '/book'; iframe.dataset.loaded = '1'; }
+  }
+});
+// Manual refresh button inside the preview pane
+document.getElementById('bp-refresh').addEventListener('click', () => {
+  const iframe = document.getElementById('book-preview-iframe');
+  iframe.src = iframe.src;   // force reload
 });
 
 // =====================================================================
@@ -1198,6 +1417,28 @@ function wireContentFields() {
       });
     });
   }
+  // File inputs — photo / narration / photo_audio
+  document.querySelectorAll('[data-upload]').forEach(input => {
+    input.addEventListener('change', () => {
+      const pbField = input.dataset.upload;
+      const file    = input.files && input.files[0];
+      if (!file || !State.selectedPageId) return;
+      const recordId = State.content[State.selectedPageId]._recordId;
+      if (!recordId) { toast('λείπει record id', 'error'); return; }
+      if (!State.pendingFiles[recordId]) State.pendingFiles[recordId] = {};
+      State.pendingFiles[recordId][pbField] = file;
+      // Show client-side preview immediately
+      const objectUrl = URL.createObjectURL(file);
+      const uiField   = pbField === 'photo' ? 'photoSrc' : pbField === 'narration' ? 'narration' : 'photoAudio';
+      State.content[State.selectedPageId][uiField] = objectUrl;
+      // Visual feedback on the upload-row container
+      input.closest('.upload-row').classList.add('pending');
+      if (pbField === 'photo') updatePhotoPreview();
+      else                     updateAudioPreview();
+      markDirty();
+      renderPagesList();
+    });
+  });
 }
 
 // =====================================================================
@@ -1223,12 +1464,12 @@ renderAll = function () {
   renderContentForm();
 };
 
-function init() {
-  load();
+async function init() {
+  wireContentFields();          // wire BEFORE load so the input listeners exist for the first render
+  await load();
   const first = Object.keys(State.animations)[0];
   if (first) State.selected.anim = first;
   if (PAGES_DEFAULT[0]) State.selectedPageId = PAGES_DEFAULT[0].id;
-  wireContentFields();
   refreshSaveBtn();
   refreshUndoBtns();
   setActiveTab('content');

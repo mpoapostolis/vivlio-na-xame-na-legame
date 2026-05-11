@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "astro": "^4.16.18",
+    "pocketbase": "^0.26.9",
     "three": "^0.172.0"
   },
   "devDependencies": {

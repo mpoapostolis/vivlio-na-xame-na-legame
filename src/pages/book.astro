@@ -1030,10 +1030,11 @@ scene.add(bookGroup);
 
 const pages = [];
 
-// Apply per-page content overrides from the CMS (localStorage 'church.content')
-// onto each PAGES entry's pre-built DOM and photo metadata, BEFORE the page is
-// rasterised to a canvas texture. Each pageId maps to a (bookIndex, side):
-//   p0 → PAGES[0].front, p1 → PAGES[0].back, p2 → PAGES[1].front, …
+// Apply per-page content overrides from the PocketBase CMS onto each PAGES entry's
+// pre-built DOM and photo metadata, BEFORE the page is rasterised to a canvas
+// texture. PB record's (book_index, side) maps to PAGES[bookIndex][side].
+const PB_URL = 'https://yms.galerra.art';
+
 function _applyContentOverrides(side, ov) {
   if (!ov) return;
   const dom = side.dom; if (!dom) return;
@@ -1043,43 +1044,52 @@ function _applyContentOverrides(side, ov) {
     if (h) h.innerHTML = String(ov.title).replace(/\n/g, '<br>');
   }
   if (ov.date)    { const el = dom.querySelector('.date'); if (el) el.textContent = ov.date; }
-  if (ov.lead)    { const el = dom.querySelector('p.lead'); if (el) el.textContent = ov.lead; }
-  if (ov.body)    {
-    // Replace text of the FIRST non-lead, non-photo paragraph
+  // lead / body / photo_desc come from PB 'editor' fields → HTML. Set innerHTML so
+  // formatting (bold, italic, links) survives the override.
+  if (ov.lead) {
+    const el = dom.querySelector('p.lead');
+    if (el) el.innerHTML = ov.lead;
+  }
+  if (ov.body) {
     const ps = dom.querySelectorAll('p');
-    for (const p of ps) { if (!p.classList.contains('lead')) { p.textContent = ov.body; break; } }
+    for (const p of ps) { if (!p.classList.contains('lead')) { p.innerHTML = ov.body; break; } }
   }
   const photo0 = side.photos && side.photos[0];
   if (photo0) {
-    if (ov.photoSrc)    { const img = dom.querySelector('.photo img'); if (img) img.src = ov.photoSrc; photo0.src = ov.photoSrc; }
-    if (ov.photoCap)    { const c = dom.querySelector('.photo .cap'); if (c) c.textContent = ov.photoCap; photo0.cap = ov.photoCap; }
-    if (ov.photoTitle)  { photo0.title  = ov.photoTitle; }
-    if (ov.photoDesc)   { photo0.desc   = ov.photoDesc; }
-    if (ov.photoItalic) { photo0.italic = ov.photoItalic; }
-    if (ov.photoAudio)  { photo0.audio  = ov.photoAudio; }
+    const photoUrl = ov.photo ? `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.photo}` : null;
+    if (photoUrl) { const img = dom.querySelector('.photo img'); if (img) img.src = photoUrl; photo0.src = photoUrl; }
+    if (ov.photo_cap)    { const c = dom.querySelector('.photo .cap'); if (c) c.textContent = ov.photo_cap; photo0.cap = ov.photo_cap; }
+    if (ov.photo_title)  { photo0.title  = ov.photo_title; }
+    if (ov.photo_desc)   { photo0.desc   = ov.photo_desc; }
+    if (ov.photo_italic) { photo0.italic = ov.photo_italic; }
+    if (ov.photo_audio)  { photo0.audio  = `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.photo_audio}`; }
   }
+  if (ov.narration)      { side._narrationUrl = `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.narration}`; }
 }
-function _loadAndApplyContentOverrides() {
-  let overrides = null;
+
+async function _loadAndApplyContentOverrides() {
+  let records = null;
   try {
-    const raw = localStorage.getItem('church.content');
-    if (raw) overrides = JSON.parse(raw);
-  } catch (e) {}
-  if (!overrides) return;
-  for (const pageId in overrides) {
-    const m = pageId.match(/^p(\d+)$/);
-    if (!m) continue;
-    const lin = parseInt(m[1]);
-    const bi  = Math.floor(lin / 2);
-    const side = lin % 2 === 0 ? 'front' : 'back';
-    if (!PAGES[bi] || !PAGES[bi][side]) continue;
-    _applyContentOverrides(PAGES[bi][side], overrides[pageId]);
+    const res = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=20`);
+    if (!res.ok) throw new Error('PB status ' + res.status);
+    const json = await res.json();
+    records = json.items || [];
+  } catch (e) {
+    console.info('[content] PB unreachable — using inline defaults');
+    return;
   }
-  console.info('[content] applied CMS overrides for', Object.keys(overrides).length, 'page(s)');
+  if (!records || !records.length) return;
+  for (const rec of records) {
+    const bi   = rec.book_index;
+    const side = rec.side;
+    if (!PAGES[bi] || !PAGES[bi][side]) continue;
+    _applyContentOverrides(PAGES[bi][side], rec);
+  }
+  console.info('[content] applied PB overrides for', records.length, 'page(s)');
 }
 
 async function buildBook() {
-  _loadAndApplyContentOverrides();
+  await _loadAndApplyContentOverrides();
   const total = PAGES.length;
   const progress = document.getElementById('progress');
 
@@ -1202,17 +1212,13 @@ function toggleNarration() {
     playPageNarration(targetPage);
   }
 }
-// Resolve per-sheet page narration: CMS override wins over the default mp3.
-function _resolveContentOverride() {
-  try { const raw = localStorage.getItem('church.content'); return raw ? JSON.parse(raw) : null; }
-  catch (e) { return null; }
-}
+// Per-sheet page narration: PB override (stored on PAGES[i].front._narrationUrl
+// during applyContentOverrides) wins over the default mp3.
 function playPageNarration(idx) {
   if (idx < 0 || idx >= PAGES.length) return;
-  const ov = _resolveContentOverride();
-  const frontOv = ov && ov['p' + (idx * 2)];
-  const backOv  = ov && ov['p' + (idx * 2 + 1)];
-  const file = (frontOv && frontOv.narration) || (backOv && backOv.narration) || ('/audio/narration_p' + idx + '.mp3');
+  const frontUrl = PAGES[idx].front && PAGES[idx].front._narrationUrl;
+  const backUrl  = PAGES[idx].back  && PAGES[idx].back._narrationUrl;
+  const file = frontUrl || backUrl || ('/audio/narration_p' + idx + '.mp3');
   playNarration(file);
 }
 // photoOrSrc can be a {src, audio?} photo object OR a plain src string.
@@ -1391,15 +1397,26 @@ const _DEFAULT_ANIMATIONS = {
   },
 };
 let ANIMATIONS = _DEFAULT_ANIMATIONS;
-try {
-  const raw = localStorage.getItem('church.animations');
-  if (raw) {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') ANIMATIONS = parsed;
-    console.info('[keyframe] loaded CMS overrides from localStorage');
-  }
-} catch (e) { /* fall back to defaults silently */ }
 const keyframePlayer = new KeyframePlayer(ANIMATIONS);
+// Async fetch PB animations and swap into the player. Defaults stay live until
+// the network reply lands, so the modal never blocks on a slow PB.
+(async () => {
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/church_animations/records?perPage=50`);
+    if (!res.ok) return;
+    const json = await res.json();
+    const map = {};
+    for (const rec of (json.items || [])) {
+      if (!rec.anim_name || !Array.isArray(rec.tracks)) continue;
+      map[rec.anim_name] = { duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks };
+    }
+    if (Object.keys(map).length) {
+      ANIMATIONS = map;
+      keyframePlayer.animations = map;
+      console.info('[keyframe] loaded', Object.keys(map).length, 'PB animations');
+    }
+  } catch (e) { /* keep defaults */ }
+})();
 
 // =====================================================================
 //   PHOTO MODAL — HTML overlay, animation-driven
