@@ -124,16 +124,18 @@ export const ANIMATIONS: Record<string, AnimationDef> = {
       },
     ],
   },
+  // bookOpenSwoosh — DISABLED. The old `rotation.y` keyframe was overwriting the
+  // bookGroup's base orientation (rotation.y = -PI/2) with absolute values, leaving
+  // the book edge-on to the camera. Kept only as scale to avoid that bug if revived.
   bookOpenSwoosh: {
-    duration: 1.2,
+    duration: 0.6,
     tracks: [
       {
         target: 'bookGroup',
         properties: {
-          'scale.x': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
-          'scale.y': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
-          'scale.z': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
-          'rotation.y': [{ t: 0.0, value: -0.35, ease: 'easeOutCubic' }, { t: 1.0, value: 0 }],
+          'scale.x': [{ t: 0.0, value: 0.92, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.y': [{ t: 0.0, value: 0.92, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.z': [{ t: 0.0, value: 0.92, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
         },
       },
     ],

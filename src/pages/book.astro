@@ -245,6 +245,51 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
   #hud .brand { display: none; }
   /* Push the badge a bit so it doesn't collide with the audio button */
   .badge { top: 26px !important; }
+
+  /* ===================== MOBILE / TABLET ===================== */
+  @media (max-width: 760px) {
+    /* Compact top bar: pagecount tucks below badge */
+    .badge       { top: 14px !important; font-size: 8px !important; letter-spacing: 0.35em !important; padding: 5px 10px !important; }
+    .pagecount   { top: 14px !important; right: 14px !important; font-size: 10px !important; letter-spacing: 0.2em !important; }
+    .audio-btn   { top: 46px !important; right: 14px !important; padding: 6px 12px 6px 9px !important; font-size: 8.5px !important; letter-spacing: 0.22em !important; }
+    .audio-label { display: none !important; }                                /* icon only on mobile */
+
+    /* Bottom nav: full-width, larger touch targets */
+    .nav { bottom: 18px !important; padding: 4px !important; gap: 2px !important; }
+    .nav button   { padding: 12px 14px !important; font-size: 10px !important; letter-spacing: 0.16em !important; }
+    .nav .strip   { padding: 0 4px !important; gap: 4px !important; }
+    .nav .dot     { width: 5px !important; height: 5px !important; }
+    .nav .dot.active { width: 16px !important; }
+
+    /* Hint: hidden on phones — irrelevant to touch users (no kbd, no drag affordance) */
+    .hint { display: none !important; }
+
+    /* Debug timeline overlay: shorter + scrolly */
+    #timeline-debug { left: 8px !important; right: 8px !important; bottom: 80px !important; padding: 10px 12px !important; }
+    #timeline-debug .tl-header { flex-wrap: wrap !important; gap: 8px !important; }
+    #timeline-debug .tl-tracks { max-height: 140px !important; }
+
+    /* Photo modal: SINGLE column, image on top, text below */
+    #modal .panel {
+      width: 96vw !important;
+      max-height: 92vh !important;
+      grid-template-columns: 1fr !important;
+      grid-template-rows: auto 1fr;
+    }
+    #modal .photo-side { padding: 14px !important; }
+    #modal .photo-side img { max-height: 44vh !important; }
+    #modal .info-side  { padding: 22px 22px 26px !important; overflow-y: auto; }
+    #modal .info-side h2 { font-size: 24px !important; margin-bottom: 12px !important; }
+    #modal .info-side p  { font-size: 14px !important; line-height: 1.55 !important; }
+    /* Larger close button — easy thumb target */
+    #modal .close-btn { width: 44px !important; height: 44px !important; font-size: 26px !important; top: 10px !important; right: 10px !important; }
+  }
+
+  @media (max-width: 420px) {
+    .badge { font-size: 7px !important; padding: 4px 8px !important; }
+    .pagecount { font-size: 9px !important; }
+    #modal .photo-side img { max-height: 38vh !important; }
+  }
 </style>
 
 <div id="loading">
@@ -1475,153 +1520,58 @@ function renderInfoCanvas(photo) {
   return c;
 }
 
-// State shell — the keyframe player drives the meshes; this just holds refs + dynamic targets
-const photoView = {
-  active: false, closing: false,
-  photoMesh: null, infoMesh: null, dim: null,
-  startPos: new THREE.Vector3(),
-  photoTarget: new THREE.Vector3(),
-  infoTarget:  new THREE.Vector3(),
-  activeClip: null,
+// Photo modal — now uses the HTML #modal element instead of 3D world meshes.
+// Why: the camera-relative 3D lift-off was unusable on mobile / Quest browsers
+// (huge plane in front of the camera, hard to size, hard to dismiss).
+// The HTML modal is responsive, accessible, and trivially fast on every device.
+const photoView = { active: false, closing: false };
+const _mdl = {
+  root:     document.getElementById('modal'),
+  img:      document.getElementById('modal-img'),
+  eyebrow:  document.getElementById('modal-eyebrow'),
+  title:    document.getElementById('modal-title'),
+  desc:     document.getElementById('modal-desc'),
+  italic:   document.getElementById('modal-italic'),
+  closeBtn: document.getElementById('modal-close'),
 };
 
 function cleanupPhotoView() {
-  if (photoView.activeClip) { keyframePlayer.stop(photoView.activeClip); photoView.activeClip = null; }
-  for (const k of ['photoMesh','infoMesh','dim']) {
-    const m = photoView[k];
-    if (m) {
-      scene.remove(m);
-      m.geometry.dispose();
-      if (m.material.map) m.material.map.dispose();
-      m.material.dispose();
-      photoView[k] = null;
-    }
-  }
-  photoView.active = false; photoView.closing = false;
+  photoView.active = false;
+  photoView.closing = false;
 }
 
-// Compute photo dimensions that fit nicely in the viewport at viewing distance.
-// Caps width so the info panel has room on the right.
-function _photoFitDims(aspect) {
-  const dist = 2.2;
-  const vH   = 2 * dist * Math.tan((camera.fov * Math.PI / 180) / 2);
-  const vW   = vH * camera.aspect;
-  const maxH = vH * 0.78;
-  const maxW = vW * 0.55;          // photo gets ~half, info panel takes the other half
-  if (aspect > maxW / maxH) {
-    const w = maxW; return { w, h: w / aspect };
-  } else {
-    const h = maxH; return { w: h * aspect, h };
-  }
-}
-
-async function openModal(photo, hitPoint) {
+async function openModal(photo /*, hitPoint */) {
   if (photoView.active && !photoView.closing) return;
   cleanupPhotoView();
 
-  // Load photo at full res
-  const tex = await new Promise((res) => {
-    new THREE.TextureLoader().load(photo.src,
-      t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; res(t); },
-      undefined, () => res(null));
-  });
-  if (!tex) return;
+  _mdl.img.src    = photo.src;
+  _mdl.img.alt    = photo.title || photo.cap || '';
+  _mdl.eyebrow.textContent = 'φωτογραφία · ἀπὸ τὸ ἀρχεῖον';
+  _mdl.title.textContent   = photo.title || photo.cap || '';
+  _mdl.desc.textContent    = photo.desc  || '';
+  _mdl.italic.textContent  = photo.italic || '';
+  _mdl.italic.style.display = photo.italic ? '' : 'none';
 
-  const aspect = tex.image.width / tex.image.height;
-  const { w: photoW, h: photoH } = _photoFitDims(aspect);
-  // Photo plane — printed plate with subtle backing
-  const photoMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(photoW, photoH),
-    new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.46, metalness: 0, envMapIntensity: 0.7 })
-  );
-  photoMesh.position.copy(hitPoint);
-  photoMesh.lookAt(camera.position);
-  photoMesh.scale.setScalar(0.3);
-  photoMesh.castShadow = true;
-  scene.add(photoMesh);
-
-  // Info plane — secondary, smaller, off to the side
-  const infoCanvas = renderInfoCanvas(photo);
-  const infoTex = new THREE.CanvasTexture(infoCanvas);
-  infoTex.colorSpace = THREE.SRGBColorSpace; infoTex.anisotropy = 16;
-  const infoAspect = infoCanvas.width / infoCanvas.height;
-  const infoH = Math.min(photoH * 0.95, 1.6), infoW = infoH * infoAspect;
-  const infoMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(infoW, infoH),
-    new THREE.MeshBasicMaterial({ map: infoTex, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
-  );
-  infoMesh.position.copy(hitPoint);
-  infoMesh.lookAt(camera.position);
-  infoMesh.scale.setScalar(0.05);
-  scene.add(infoMesh);
-
-  // Dim plane
-  const dim = new THREE.Mesh(
-    new THREE.PlaneGeometry(40, 30),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false })
-  );
-  scene.add(dim);
-
-  photoView.photoMesh = photoMesh;
-  photoView.infoMesh  = infoMesh;
-  photoView.dim       = dim;
-  photoView.startPos.copy(hitPoint);
-  photoView.active    = true;
-  photoView.closing   = false;
-
-  // Kick off the lift-off animation through the keyframe player.
-  // Bindings are functions so they re-evaluate every frame as the camera moves.
-  photoView.activeClip = keyframePlayer.play('photoLiftOff', {
-    targets: { photoMesh, infoMesh, dim },
-    bindings: {
-      startPos:    () => photoView.startPos,
-      photoTarget: () => photoView.photoTarget,
-      infoTarget:  () => photoView.infoTarget,
-    },
-    // After the lift-off settles, auto-play the photo's narration if one exists.
-    onComplete: () => { playPhotoNarration(photo.src); },
-  });
+  _mdl.root.classList.add('open');
+  _mdl.root.setAttribute('aria-hidden', 'false');
+  photoView.active = true;
+  photoView.closing = false;
   playPop();
+  // Auto-play narration once the fade-in completes
+  setTimeout(() => playPhotoNarration(photo.src), 350);
 }
 
 function closeModal() {
   if (!photoView.active || photoView.closing) return;
   photoView.closing = true;
-  stopNarration();  // stop any photo narration that was playing
-  if (photoView.activeClip) keyframePlayer.stop(photoView.activeClip);
-  photoView.activeClip = keyframePlayer.play('photoLiftClose', {
-    targets: { photoMesh: photoView.photoMesh, infoMesh: photoView.infoMesh, dim: photoView.dim },
-    bindings: {
-      startPos:    () => photoView.startPos,
-      photoTarget: () => photoView.photoTarget,
-      infoTarget:  () => photoView.infoTarget,
-    },
-    onComplete: () => cleanupPhotoView(),
-  });
+  stopNarration();
+  _mdl.root.classList.remove('open');
+  _mdl.root.setAttribute('aria-hidden', 'true');
+  setTimeout(cleanupPhotoView, 500);  // matches CSS opacity transition
 }
 
-// Refresh dynamic bindings — call BEFORE keyframePlayer.update so the lerp samples fresh targets.
-function refreshPhotoViewBindings() {
-  if (!photoView.active) return;
-  const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
-  const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
-  const camRight = new THREE.Vector3().crossVectors(camDir, camera.up).normalize();
-  const center = camPos.clone().addScaledVector(camDir, 2.2);
-  photoView.photoTarget.copy(center).addScaledVector(camRight, -0.55);
-  photoView.infoTarget .copy(center).addScaledVector(camRight,  0.85);
-}
-// Apply orientation constraints — call AFTER keyframePlayer.update so the player's writes don't overwrite the lookAt.
-function applyPhotoViewConstraints() {
-  if (!photoView.active) return;
-  if (photoView.photoMesh) photoView.photoMesh.lookAt(camera.position);
-  if (photoView.infoMesh)  photoView.infoMesh .lookAt(camera.position);
-  if (photoView.dim) {
-    const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
-    const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
-    photoView.dim.position.copy(camPos).addScaledVector(camDir, 2.6);
-    photoView.dim.lookAt(camera.position);
-  }
-}
+if (_mdl.closeBtn) _mdl.closeBtn.addEventListener('click', closeModal);
+if (_mdl.root)     _mdl.root.addEventListener('click', e => { if (e.target === _mdl.root) closeModal(); });
 
 // =====================================================================
 //   PICKING — raycaster on page meshes; UV → photo bbox lookup
@@ -1775,9 +1725,7 @@ function animate() {
     p.update(dt, delayedPage, isBookClosed);
   }
 
-  refreshPhotoViewBindings();   // fresh camera-relative targets before player samples them
-  keyframePlayer.update(dt);    // JSON-driven animations (photo lift-off etc.)
-  applyPhotoViewConstraints();  // lookAt camera + dim position (post-keyframe constraints)
+  keyframePlayer.update(dt);    // JSON-driven animations (page nudge, etc.)
 
   renderer.render(scene, camera);
 }
@@ -1792,8 +1740,7 @@ function animate() {
   await buildBook();
   updateUI();
   setTimeout(() => document.getElementById('loading').classList.add('hidden'), 200);
-  // Welcome flourish — book scales up and rotates into place
-  setTimeout(() => keyframePlayer.play('bookOpenSwoosh', { targets: { bookGroup } }), 280);
+  // No startup animation — book appears already in its final pose.
 })();
 </script>
 </ImmersiveLayout>
