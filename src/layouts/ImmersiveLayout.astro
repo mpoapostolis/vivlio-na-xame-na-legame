@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν',
+  description = 'Τρισδιάστατο ἐκπαιδευτικὸ βιβλίο γιὰ τὸν Καθεδρικὸ Ναὸ τοῦ Πρωτοκλήτου τῶν Πατρῶν.',
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content={description} />
+  <meta name="theme-color" content="#0c0604" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <title>{title}</title>
+</head>
+<body class="immersive">
+  <slot />
+
+  <a href="/" class="exit-immersive" aria-label="ἐπιστροφὴ στὴν ἀρχή">
+    <span class="x">×</span>
+    <span class="lbl">ἔξοδος</span>
+  </a>
+</body>
+</html>
+
+<style is:global>
+  body.immersive {
+    overflow: hidden;
+    height: 100vh;
+  }
+  body.immersive::after { background: none; }
+
+  .exit-immersive {
+    position: fixed;
+    top: 22px; left: 22px;
+    z-index: 30;
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px 9px 12px;
+    background: rgba(20,12,6,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(217,180,120,0.3);
+    border-radius: var(--radius-pill);
+    color: var(--gold-mid);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+  .exit-immersive:hover {
+    background: rgba(217,180,120,0.15);
+    color: var(--gold-bright);
+    transform: translateX(-2px);
+  }
+  .exit-immersive .x {
+    font-size: 18px;
+    line-height: 1;
+    width: 14px;
+    text-align: center;
+  }
+</style>

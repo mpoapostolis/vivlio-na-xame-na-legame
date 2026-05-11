@@ -1,0 +1,295 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CHRONICLE, STATS } from '../data/chronicle';
+---
+
+<BaseLayout
+  title="Χρονικόν · Ἅγιος Ἀνδρέας"
+  description="Τὰ γεγονότα τῆς ἀνεγέρσεως τοῦ Ναοῦ τοῦ Ἁγίου Ἀνδρέου Πατρῶν, κατὰ σειρὰν χρόνου."
+>
+  <section class="section">
+    <div class="container">
+      <div class="eyebrow">τὸ χρονικὸν τοῦ ναοῦ</div>
+      <h1>Τὸ χρονικὸν τῆς <em>ἀνεγέρσεως</em></h1>
+      <hr class="rule" />
+      <p class="lead">
+        Ἀπὸ τὸν διεθνῆ διαγωνισμὸ τοῦ 1902 ἕως τὶς ἀνακαινίσεις τοῦ 21ου αἰῶνος.
+        Κλικ σὲ μιὰ καταχώρηση γιὰ ἀφήγησιν.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <div class="stats-strip">
+        {STATS.map(s => (
+          <div class="stat">
+            <div class="stat-label">{s.label}</div>
+            <div class="stat-value">{s.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <div class="timeline">
+        {CHRONICLE.map((event, idx) => (
+          <article class={`tl-entry cat-${event.category}`} data-narration={event.narration ?? ''} data-idx={idx}>
+            <div class="tl-year">
+              <span class="year">{event.year}</span>
+              {event.date && <span class="date">{event.date}</span>}
+            </div>
+
+            <div class="tl-bullet" aria-hidden="true">
+              <div class="dot"></div>
+              <div class="line"></div>
+            </div>
+
+            <div class="tl-body">
+              <h2>{event.title}</h2>
+              {event.body.map(p => <p>{p}</p>)}
+              {event.highlight && (
+                <blockquote class="highlight">{event.highlight}</blockquote>
+              )}
+              {event.photo && (
+                <figure class="tl-figure">
+                  <img src={event.photo} alt={event.title} loading="lazy" />
+                  {event.photoCaption && <figcaption>{event.photoCaption}</figcaption>}
+                </figure>
+              )}
+
+              {event.narration && (
+                <button
+                  class="play-btn"
+                  data-src={event.narration}
+                  aria-label="παίξε τὴν ἀφήγησιν"
+                >
+                  <span class="icon">▶</span>
+                  <span class="lbl">ἀφήγησις</span>
+                </button>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  h1 em { font-style: italic; color: var(--gold-pale); }
+
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: rgba(217,180,120,0.15);
+    border: 1px solid rgba(217,180,120,0.15);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+  }
+  .stat {
+    padding: 18px 16px;
+    background: rgba(20,12,6,0.6);
+    display: flex; flex-direction: column; gap: 5px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    font-weight: 600;
+  }
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 26px;
+    color: var(--gold-bright);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timeline {
+    max-width: 880px;
+    margin: 32px auto 0;
+    position: relative;
+  }
+  .tl-entry {
+    display: grid;
+    grid-template-columns: 120px 32px 1fr;
+    gap: 18px;
+    padding: 18px 0 26px;
+    transition: opacity 0.3s;
+  }
+  .tl-entry:last-child .tl-bullet .line { display: none; }
+  .tl-entry.playing {
+    background: linear-gradient(90deg, rgba(217,180,120,0.07) 0%, transparent 60%);
+    border-radius: var(--radius-m);
+  }
+
+  .tl-year {
+    text-align: right;
+    padding-top: 8px;
+    line-height: 1;
+  }
+  .tl-year .year {
+    display: block;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 32px;
+    color: var(--gold-bright);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .tl-year .date {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .tl-bullet {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .tl-bullet .dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: var(--gold-soft);
+    border: 2px solid var(--bg-near);
+    box-shadow: 0 0 0 1px rgba(217,180,120,0.3), 0 0 14px rgba(217,180,120,0.25);
+    margin-top: 14px;
+    z-index: 2;
+    transition: all 0.3s;
+  }
+  .tl-entry.playing .tl-bullet .dot {
+    background: var(--gold-bright);
+    box-shadow: 0 0 0 1px var(--gold-bright), 0 0 20px rgba(255,220,150,0.7);
+    transform: scale(1.25);
+  }
+  .tl-bullet .line {
+    flex: 1;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(217,180,120,0.4) 0%, rgba(217,180,120,0.08) 100%);
+    margin-top: 4px;
+  }
+
+  .tl-body h2 {
+    font-size: 28px;
+    margin-bottom: 14px;
+    color: var(--gold-bright);
+  }
+  .tl-body p {
+    color: var(--gold-soft);
+    line-height: 1.75;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .tl-body .highlight {
+    border-left: 3px solid var(--gold-deep);
+    padding: 8px 18px;
+    margin: 16px 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--gold-mid);
+    background: rgba(154,103,48,0.07);
+    border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  }
+  .tl-figure {
+    margin: 20px 0;
+    overflow: hidden;
+    border-radius: var(--radius-m);
+    border: 1px solid rgba(217,180,120,0.2);
+    background: #000;
+  }
+  .tl-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tl-figure:hover img { transform: scale(1.03); }
+  .tl-figure figcaption {
+    padding: 12px 18px;
+    background: rgba(8,4,2,0.85);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    font-weight: 600;
+  }
+
+  .play-btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 8px 16px 8px 12px;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.3);
+    border-radius: var(--radius-pill);
+    color: var(--gold-mid);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.3s;
+  }
+  .play-btn:hover {
+    background: rgba(217,180,120,0.13);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.55);
+  }
+  .play-btn.active {
+    background: rgba(154,103,48,0.5);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.7);
+  }
+  .play-btn .icon {
+    width: 14px; height: 14px; line-height: 14px; text-align: center; font-size: 11px;
+  }
+
+  @media (max-width: 720px) {
+    .tl-entry {
+      grid-template-columns: 60px 24px 1fr;
+      gap: 12px;
+    }
+    .tl-year .year { font-size: 21px; }
+    .tl-year .date { font-size: 8px; letter-spacing: 0.22em; }
+    .tl-body h2 { font-size: 22px; }
+    .tl-bullet .dot { width: 10px; height: 10px; }
+  }
+</style>
+
+<script>
+  import { narration } from '../lib/narrations.js';
+
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.play-btn');
+  const entries = document.querySelectorAll<HTMLElement>('.tl-entry');
+
+  narration.subscribe((state) => {
+    buttons.forEach(btn => {
+      const playing = state.playing && state.src === btn.dataset.src;
+      btn.classList.toggle('active', playing);
+      const icon = btn.querySelector('.icon');
+      if (icon) icon.textContent = playing ? '⏸' : '▶';
+    });
+    entries.forEach(entry => {
+      const playing = state.playing && state.src === entry.dataset.narration;
+      entry.classList.toggle('playing', playing);
+    });
+  });
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = btn.dataset.src;
+      if (src) narration.toggle(src);
+    });
+  });
+</script>

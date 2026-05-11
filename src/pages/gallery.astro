@@ -1,0 +1,452 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { PHOTOS, PHOTO_CATEGORIES } from '../data/photos';
+
+const categories = Object.values(PHOTO_CATEGORIES);
+---
+
+<BaseLayout
+  title="Συλλογή φωτογραφιῶν · Ἅγιος Ἀνδρέας"
+  description="Πέντε θεματικὲς κατηγορίες ἀπὸ τὸ φωτογραφικὸ ἀρχεῖο τοῦ Ναοῦ."
+>
+  <section class="section">
+    <div class="container">
+      <div class="eyebrow">τὸ ἀρχεῖο</div>
+      <h1>Ἡ <em>Συλλογή</em></h1>
+      <hr class="rule" />
+      <p class="lead">
+        Πέντε θεματικὲς κατηγορίες — ἀπὸ τὰ ἀρχιτεκτονικὰ σχέδια τοῦ 1902 ἕως τὴν ἐνθρόνιση τοῦ Μητροπολίτου Χρυσοστόμου τὸ 2005.
+        Κλικ σὲ φωτογραφία γιὰ μεγέθυνσιν καὶ ἀφήγησιν.
+      </p>
+
+      <!-- Category filter chips -->
+      <div class="cat-chips">
+        <button class="chip active" data-cat="all">
+          <span class="chip-greek">ὅλες</span>
+          <span class="chip-count">{PHOTOS.length}</span>
+        </button>
+        {categories.map(cat => {
+          const count = PHOTOS.filter(p => p.category === cat.id).length;
+          return (
+            <button class="chip" data-cat={cat.id}>
+              <span class="chip-greek">{cat.label}</span>
+              <span class="chip-year">{cat.year}</span>
+              <span class="chip-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <div class="gallery-grid" id="gallery-grid">
+        {PHOTOS.map((photo, idx) => (
+          <button
+            class={`tile cat-${photo.category}`}
+            data-cat={photo.category}
+            data-idx={idx}
+            aria-label={photo.title}
+          >
+            <div class="tile-img">
+              <img src={photo.src} alt={photo.title} loading="lazy" />
+              <div class="tile-overlay">
+                <span class="tile-cat">{PHOTO_CATEGORIES[photo.category].label}</span>
+                {photo.year && <span class="tile-year">{photo.year}</span>}
+              </div>
+            </div>
+            <div class="tile-meta">
+              <h3>{photo.title}</h3>
+              <p>{photo.caption}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox modal -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-close" id="lb-close" aria-label="κλείσιμο">×</button>
+    <button class="lb-prev" id="lb-prev" aria-label="προηγούμενη">‹</button>
+    <button class="lb-next" id="lb-next" aria-label="ἑπόμενη">›</button>
+
+    <div class="lb-stage">
+      <div class="lb-image-wrap">
+        <img id="lb-img" src="" alt="" />
+      </div>
+      <div class="lb-info">
+        <div class="lb-eyebrow">
+          <span id="lb-cat-label">—</span>
+          <span class="dot">·</span>
+          <span id="lb-cat-year">—</span>
+        </div>
+        <h2 id="lb-title">—</h2>
+        <hr class="rule" />
+        <p id="lb-desc">—</p>
+        <p class="italic" id="lb-italic"></p>
+
+        <button class="play-btn" id="lb-play" data-src="">
+          <span class="icon">▶</span>
+          <span class="lbl">ἀφήγησις</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  h1 em { font-style: italic; color: var(--gold-pale); }
+
+  .cat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: clamp(28px, 4vw, 40px);
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 10px 14px 10px 16px;
+    background: rgba(20,12,6,0.55);
+    border: 1px solid rgba(217,180,120,0.22);
+    border-radius: var(--radius-pill);
+    color: var(--gold-mid);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .chip:hover {
+    background: rgba(217,180,120,0.12);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.5);
+  }
+  .chip.active {
+    background: linear-gradient(180deg, var(--gold-deep) 0%, var(--gold-darkest) 100%);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.6);
+    box-shadow: 0 6px 16px -4px rgba(255,170,80,0.25);
+  }
+  .chip-greek {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-style: italic;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+  .chip-year { font-size: 9px; opacity: 0.6; font-variant-numeric: tabular-nums; }
+  .chip-count {
+    font-weight: 600;
+    background: rgba(0,0,0,0.32);
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: clamp(14px, 1.8vw, 22px);
+  }
+  .tile {
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font-family: inherit;
+    transition: opacity 0.3s, transform 0.35s;
+  }
+  .tile.hidden { display: none; }
+
+  .tile-img {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    border: 1px solid rgba(217,180,120,0.18);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tile-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: contrast(1.05) saturate(0.95);
+  }
+  .tile:hover .tile-img {
+    border-color: rgba(217,180,120,0.5);
+    box-shadow: 0 20px 50px -16px rgba(0,0,0,0.7),
+                0 0 0 1px rgba(217,180,120,0.18);
+    transform: translateY(-3px);
+  }
+  .tile:hover .tile-img img { transform: scale(1.08); }
+
+  .tile-overlay {
+    position: absolute;
+    top: 12px; left: 12px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px;
+    background: rgba(8,4,2,0.85);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(217,180,120,0.25);
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--gold-mid);
+  }
+  .tile-overlay .tile-year { color: var(--gold-pale); font-variant-numeric: tabular-nums; }
+
+  .tile-meta {
+    padding: 14px 4px 4px;
+  }
+  .tile-meta h3 {
+    font-size: 19px;
+    color: var(--gold-bright);
+    margin-bottom: 4px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .tile-meta p {
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin: 0;
+    font-weight: 600;
+  }
+
+  /* === LIGHTBOX === */
+  .lightbox {
+    position: fixed; inset: 0;
+    z-index: 50;
+    background: rgba(2,1,0,0.92);
+    backdrop-filter: blur(14px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .lightbox.open { display: flex; }
+
+  .lb-close, .lb-prev, .lb-next {
+    position: fixed;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(20,12,6,0.85);
+    border: 1px solid rgba(217,180,120,0.35);
+    color: var(--gold-mid);
+    font-size: 24px;
+    line-height: 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 2;
+  }
+  .lb-close:hover, .lb-prev:hover, .lb-next:hover {
+    background: rgba(217,180,120,0.18);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.65);
+  }
+  .lb-close { top: 22px; right: 22px; font-size: 28px; }
+  .lb-prev { left: 22px; top: 50%; transform: translateY(-50%); }
+  .lb-next { right: 22px; top: 50%; transform: translateY(-50%); }
+
+  .lb-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 0;
+    max-width: 1080px;
+    width: 100%;
+    max-height: 86vh;
+    background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-near) 100%);
+    border: 1px solid rgba(217,180,120,0.4);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    box-shadow: 0 40px 100px -20px rgba(0,0,0,0.9), 0 0 100px rgba(255,170,80,0.05);
+  }
+  .lb-image-wrap {
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    min-height: 360px;
+  }
+  .lb-image-wrap img {
+    max-width: 100%; max-height: 75vh;
+    display: block;
+    border: 1px solid rgba(217,180,120,0.2);
+    box-shadow: 0 12px 40px -8px rgba(0,0,0,0.8);
+  }
+  .lb-info {
+    padding: clamp(28px, 4vw, 48px) clamp(28px, 4vw, 44px);
+    display: flex; flex-direction: column; justify-content: center;
+    overflow-y: auto;
+  }
+  .lb-eyebrow {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .lb-eyebrow .dot { opacity: 0.5; }
+  .lb-info h2 {
+    font-size: clamp(26px, 3.4vw, 36px);
+    color: var(--gold-bright);
+    line-height: 1.05;
+    margin-bottom: 14px;
+  }
+  .lb-info p { font-size: 15px; line-height: 1.7; color: var(--gold-soft); }
+  .lb-info p.italic { font-style: italic; color: var(--gold-mid); margin-top: 6px; }
+
+  .play-btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 9px 18px 9px 14px;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.4);
+    border-radius: var(--radius-pill);
+    color: var(--gold-mid);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 24px;
+    align-self: flex-start;
+    transition: all 0.3s;
+  }
+  .play-btn:hover {
+    background: rgba(217,180,120,0.15);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.7);
+  }
+  .play-btn.active {
+    background: rgba(154,103,48,0.6);
+    color: var(--gold-bright);
+    border-color: rgba(217,180,120,0.7);
+  }
+  .play-btn .icon { width: 14px; text-align: center; }
+
+  @media (max-width: 720px) {
+    .lb-stage { grid-template-columns: 1fr; max-height: 92vh; }
+    .lb-image-wrap { min-height: 220px; padding: 14px; }
+    .lb-image-wrap img { max-height: 50vh; }
+    .lb-info { padding: 22px; }
+  }
+</style>
+
+<script>
+  import { narration } from '../lib/narrations.js';
+  import { PHOTOS, PHOTO_CATEGORIES } from '../data/photos';
+
+  const grid = document.getElementById('gallery-grid')!;
+  const tiles = Array.from(grid.querySelectorAll<HTMLButtonElement>('.tile'));
+  const chips = document.querySelectorAll<HTMLButtonElement>('.chip');
+  const lightbox = document.getElementById('lightbox')!;
+  const lbImg = document.getElementById('lb-img') as HTMLImageElement;
+  const lbCatLabel = document.getElementById('lb-cat-label')!;
+  const lbCatYear = document.getElementById('lb-cat-year')!;
+  const lbTitle = document.getElementById('lb-title')!;
+  const lbDesc = document.getElementById('lb-desc')!;
+  const lbItalic = document.getElementById('lb-italic')!;
+  const lbPlay = document.getElementById('lb-play') as HTMLButtonElement;
+  const lbClose = document.getElementById('lb-close')!;
+  const lbPrev = document.getElementById('lb-prev')!;
+  const lbNext = document.getElementById('lb-next')!;
+
+  let currentIdx = -1;
+  let activeCat: string = 'all';
+
+  function applyFilter() {
+    tiles.forEach(t => {
+      const matches = activeCat === 'all' || t.dataset.cat === activeCat;
+      t.classList.toggle('hidden', !matches);
+    });
+  }
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      activeCat = chip.dataset.cat || 'all';
+      chips.forEach(c => c.classList.toggle('active', c === chip));
+      applyFilter();
+    });
+  });
+
+  function openAt(idx: number) {
+    const photo = PHOTOS[idx];
+    if (!photo) return;
+    currentIdx = idx;
+    const cat = PHOTO_CATEGORIES[photo.category as keyof typeof PHOTO_CATEGORIES];
+    lbImg.src = photo.src;
+    lbImg.alt = photo.title;
+    lbCatLabel.textContent = cat?.label ?? '—';
+    lbCatYear.textContent = photo.year ?? cat?.year ?? '—';
+    lbTitle.textContent = photo.title;
+    lbDesc.textContent = photo.description;
+    lbItalic.textContent = photo.italic ?? '';
+    lbItalic.style.display = photo.italic ? '' : 'none';
+    lbPlay.dataset.src = photo.narration ?? '';
+    lbPlay.style.display = photo.narration ? 'inline-flex' : 'none';
+    lightbox.classList.add('open');
+    lightbox.setAttribute('aria-hidden', 'false');
+    // auto-play narration
+    if (photo.narration) narration.play(photo.narration);
+  }
+
+  function close() {
+    lightbox.classList.remove('open');
+    lightbox.setAttribute('aria-hidden', 'true');
+    narration.stop();
+    currentIdx = -1;
+  }
+
+  function step(dir: 1 | -1) {
+    if (currentIdx < 0) return;
+    const visible = tiles
+      .map((t, i) => ({ i, hidden: t.classList.contains('hidden') }))
+      .filter(x => !x.hidden)
+      .map(x => x.i);
+    const curIdxInVisible = visible.indexOf(currentIdx);
+    if (curIdxInVisible < 0) return;
+    const nextIdxInVisible = (curIdxInVisible + dir + visible.length) % visible.length;
+    openAt(visible[nextIdxInVisible]);
+  }
+
+  tiles.forEach((tile, idx) => {
+    tile.addEventListener('click', () => openAt(idx));
+  });
+  lbClose.addEventListener('click', close);
+  lbPrev.addEventListener('click', () => step(-1));
+  lbNext.addEventListener('click', () => step(1));
+  lightbox.addEventListener('click', e => {
+    if (e.target === lightbox) close();
+  });
+  document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape')    close();
+    if (e.key === 'ArrowLeft')  step(-1);
+    if (e.key === 'ArrowRight') step(1);
+  });
+
+  lbPlay.addEventListener('click', () => {
+    const src = lbPlay.dataset.src;
+    if (src) narration.toggle(src);
+  });
+
+  narration.subscribe((state) => {
+    const playing = state.playing && state.src === lbPlay.dataset.src;
+    lbPlay.classList.toggle('active', playing);
+    const icon = lbPlay.querySelector('.icon');
+    if (icon) icon.textContent = playing ? '⏸' : '▶';
+  });
+</script>

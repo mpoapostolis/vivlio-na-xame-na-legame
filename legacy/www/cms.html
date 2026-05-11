@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMS · Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#0c0604;color:#d9b478;font-family:'Inter',-apple-system,sans-serif;font-size:13px;overflow:hidden}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit}
+  .hidden{display:none !important}
+
+  /* === LOGIN SCREEN === */
+  #login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,#1a0e07 0%,#020100 80%);z-index:100}
+  #login-form{width:380px;max-width:90vw;padding:48px 40px;background:rgba(20,12,6,0.85);backdrop-filter:blur(20px);
+    border:1px solid rgba(217,180,120,0.3);border-radius:6px;box-shadow:0 30px 80px -10px rgba(0,0,0,0.85);text-align:center}
+  #login-form h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-style:italic;font-weight:500;color:#efddb0;margin-bottom:6px}
+  #login-form .sub{font-size:9px;letter-spacing:0.45em;text-transform:uppercase;opacity:0.55;margin-bottom:34px;color:#9a6730}
+  #login-form input{width:100%;padding:12px 16px;margin-bottom:14px;background:rgba(8,4,2,0.6);
+    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:13px;letter-spacing:0.05em}
+  #login-form input:focus{outline:none;border-color:rgba(217,180,120,0.6);background:rgba(8,4,2,0.85)}
+  #login-form button{width:100%;padding:13px;background:linear-gradient(180deg,#9a6730 0%,#6e4920 100%);
+    border:1px solid rgba(217,180,120,0.5);border-radius:3px;color:#efddb0;font-size:11px;letter-spacing:0.35em;
+    text-transform:uppercase;font-weight:600;transition:all 0.3s}
+  #login-form button:hover{background:linear-gradient(180deg,#b07838 0%,#7e5424 100%);box-shadow:0 6px 20px -4px rgba(255,170,80,0.3)}
+  #login-form .hint{margin-top:18px;font-size:10px;letter-spacing:0.25em;opacity:0.4;text-transform:uppercase}
+  #login-error{color:#c44;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin-top:10px;min-height:14px}
+
+  /* === APP LAYOUT === */
+  #app{display:grid;grid-template-rows:54px 1fr;height:100vh}
+
+  header{display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid rgba(217,180,120,0.18);
+    background:rgba(8,4,2,0.7);backdrop-filter:blur(10px)}
+  header h1{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:500;font-size:20px;color:#efddb0;flex:1;letter-spacing:0.01em}
+  header h1 .tag{font-family:'Inter',sans-serif;font-style:normal;font-size:9px;letter-spacing:0.4em;
+    color:#9a6730;text-transform:uppercase;margin-left:14px;font-weight:600;vertical-align:middle}
+  .toolbtn{padding:7px 14px;background:transparent;border:1px solid rgba(217,180,120,0.25);border-radius:3px;
+    color:#d9b478;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;transition:all 0.2s}
+  .toolbtn:hover{background:rgba(217,180,120,0.12);color:#efddb0;border-color:rgba(217,180,120,0.5)}
+  .toolbtn:disabled{opacity:0.3;cursor:not-allowed}
+  .toolbtn.primary{background:rgba(154,103,48,0.4);border-color:rgba(217,180,120,0.5);color:#efddb0}
+  .toolbtn.primary:hover{background:rgba(154,103,48,0.6)}
+  .toolbtn.danger:hover{background:rgba(180,60,60,0.2);border-color:#c44;color:#fff}
+
+  main{display:grid;grid-template-columns:240px 1fr 320px;height:calc(100vh - 54px);overflow:hidden}
+
+  /* === SIDEBAR === */
+  aside{border-right:1px solid rgba(217,180,120,0.15);overflow-y:auto;background:rgba(6,3,1,0.4)}
+  aside h2{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;font-weight:700;
+    padding:18px 18px 10px;border-bottom:1px solid rgba(217,180,120,0.12)}
+  .anim-item{padding:12px 18px;border-bottom:1px solid rgba(217,180,120,0.06);cursor:pointer;
+    display:flex;align-items:center;gap:8px;transition:background 0.2s}
+  .anim-item:hover{background:rgba(217,180,120,0.06)}
+  .anim-item.active{background:rgba(154,103,48,0.18);border-left:2px solid #efddb0;padding-left:16px}
+  .anim-item .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:#efddb0;flex:1}
+  .anim-item .meta{font-size:9px;letter-spacing:0.18em;opacity:0.5;text-transform:uppercase}
+  .anim-item .loop-badge{font-size:8px;padding:2px 6px;background:rgba(154,103,48,0.4);border-radius:2px;letter-spacing:0.15em}
+
+  /* === EDITOR === */
+  #editor{display:flex;flex-direction:column;overflow:hidden}
+  #anim-meta{padding:18px 24px;border-bottom:1px solid rgba(217,180,120,0.12);background:rgba(8,4,2,0.4);
+    display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  #anim-meta h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:26px;color:#efddb0;flex:1;min-width:200px}
+  .field{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#c9a96a}
+  .field input[type=number],.field input[type=text],.field select{padding:6px 10px;background:rgba(8,4,2,0.6);
+    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:12px;letter-spacing:0.05em;width:90px}
+  .field input[type=number]:focus,.field input[type=text]:focus,.field select:focus{outline:none;border-color:rgba(217,180,120,0.55)}
+  .field input[type=text]{width:170px}
+  .field input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#9a6730}
+
+  #ruler{height:28px;background:rgba(8,4,2,0.4);border-bottom:1px solid rgba(217,180,120,0.12);position:relative;font-size:9px;letter-spacing:0.1em;color:#9a6730}
+  #ruler .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(217,180,120,0.18)}
+  #ruler .tick-label{position:absolute;top:7px;transform:translateX(-50%);font-variant-numeric:tabular-nums}
+  #ruler .playhead-line{position:absolute;top:0;bottom:-9999px;width:2px;background:#efddb0;
+    box-shadow:0 0 6px rgba(255,220,150,0.7);pointer-events:none;z-index:10;border-radius:1px}
+
+  #tracks-scroll{flex:1;overflow-y:auto;background:rgba(6,3,1,0.2)}
+  .track-row{display:grid;grid-template-columns:200px 1fr 30px;align-items:center;
+    border-bottom:1px solid rgba(217,180,120,0.06);min-height:38px;transition:background 0.18s}
+  .track-row:hover{background:rgba(217,180,120,0.03)}
+  .track-row.locked{opacity:0.45}
+  .track-row.locked .track-bar{cursor:not-allowed}
+  .track-label{padding:0 12px;font-size:10px;letter-spacing:0.06em;color:#c9a96a;display:flex;align-items:center;gap:8px}
+  .track-label .target{font-weight:600;color:#efddb0}
+  .track-label .prop{opacity:0.7;font-style:italic;font-family:'Cormorant Garamond',serif;font-size:13px}
+  .lock-btn{background:transparent;border:none;color:#c9a96a;cursor:pointer;font-size:13px;padding:4px;
+    border-radius:2px;transition:all 0.2s;opacity:0.4}
+  .lock-btn:hover{opacity:1;background:rgba(217,180,120,0.12)}
+  .lock-btn.locked{opacity:1;color:#9a6730}
+  .track-bar{position:relative;height:30px;cursor:crosshair;background:rgba(217,180,120,0.04)}
+  .track-bar::before{content:'';position:absolute;top:50%;left:8px;right:8px;height:1px;
+    background:rgba(217,180,120,0.18);transform:translateY(-50%)}
+  .kf{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;
+    background:#c9a96a;border:1.5px solid #efddb0;cursor:grab;transition:transform 0.15s,box-shadow 0.15s;z-index:2}
+  .kf:hover{transform:translate(-50%,-50%) scale(1.3);box-shadow:0 0 10px rgba(255,220,150,0.7)}
+  .kf.active{background:#efddb0;border-color:#fff;box-shadow:0 0 12px rgba(255,220,150,0.95);transform:translate(-50%,-50%) scale(1.4)}
+  .kf.dragging{cursor:grabbing;transform:translate(-50%,-50%) scale(1.5)}
+  .kf-add-btn{padding:4px 6px;background:transparent;border:1px dashed rgba(217,180,120,0.3);color:#9a6730;
+    font-size:14px;border-radius:2px;transition:all 0.2s}
+  .kf-add-btn:hover{background:rgba(217,180,120,0.08);color:#efddb0;border-color:rgba(217,180,120,0.6)}
+
+  #playback-bar{display:flex;align-items:center;gap:14px;padding:12px 24px;border-top:1px solid rgba(217,180,120,0.12);
+    background:rgba(8,4,2,0.5)}
+  #playback-bar .time-readout{font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:0.1em;color:#c9a96a;font-weight:500}
+  #playback-bar .time-readout em{color:#efddb0;font-style:normal}
+  .scrub-bar{flex:1;height:6px;background:rgba(217,180,120,0.08);border-radius:3px;position:relative;cursor:pointer}
+  .scrub-bar .scrub-fill{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,#9a6730,#efddb0);
+    border-radius:3px;width:0%;transition:width 0.05s linear}
+
+  /* === INSPECTOR === */
+  #inspector{border-left:1px solid rgba(217,180,120,0.15);background:rgba(6,3,1,0.5);overflow-y:auto;padding:18px}
+  #inspector h3{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;font-weight:700;
+    padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.15);margin-bottom:14px}
+  #inspector .empty{text-align:center;padding:40px 10px;font-style:italic;font-family:'Cormorant Garamond',serif;
+    font-size:14px;opacity:0.45;line-height:1.5}
+  #inspector .ins-row{margin-bottom:14px}
+  #inspector label{display:block;font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:#9a6730;
+    margin-bottom:5px;font-weight:600}
+  #inspector input,#inspector select,#inspector textarea{width:100%;padding:8px 10px;background:rgba(8,4,2,0.7);
+    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:12px;letter-spacing:0.05em}
+  #inspector input:focus,#inspector select:focus,#inspector textarea:focus{outline:none;border-color:rgba(217,180,120,0.55)}
+  #inspector textarea{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px;resize:vertical;min-height:36px}
+  #inspector .target-prop{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:#efddb0;margin-bottom:14px}
+  #inspector .target-prop .target{font-weight:600}
+  #inspector .target-prop .prop{opacity:0.75}
+  #inspector .bindings{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+  .binding-chip{font-size:9px;padding:3px 7px;background:rgba(217,180,120,0.1);border:1px solid rgba(217,180,120,0.25);
+    border-radius:2px;color:#c9a96a;cursor:pointer;letter-spacing:0.05em;transition:all 0.18s}
+  .binding-chip:hover{background:rgba(217,180,120,0.25);color:#efddb0}
+
+  /* === TOAST === */
+  #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+    padding:11px 22px;background:rgba(20,12,6,0.95);border:1px solid rgba(217,180,120,0.4);border-radius:3px;
+    color:#efddb0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;
+    opacity:0;pointer-events:none;transition:all 0.3s;z-index:50;
+    box-shadow:0 14px 40px -8px rgba(0,0,0,0.7)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.error{border-color:#c44;color:#fcc}
+
+  /* === SCROLLBARS === */
+  *::-webkit-scrollbar{width:8px;height:8px}
+  *::-webkit-scrollbar-thumb{background:rgba(217,180,120,0.18);border-radius:4px}
+  *::-webkit-scrollbar-thumb:hover{background:rgba(217,180,120,0.35)}
+  *::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- LOGIN SCREEN                                                  -->
+<!-- ============================================================ -->
+<div id="login-screen">
+  <form id="login-form">
+    <h1>Ἅγιος Ἀνδρέας</h1>
+    <div class="sub">CMS · διαχείρισις</div>
+    <input type="text" id="login-user" placeholder="χρήστης" autocomplete="username" autofocus>
+    <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
+    <button type="submit">Εἴσοδος</button>
+    <div id="login-error"></div>
+    <div class="hint">προεπιλογή · admin / admin</div>
+  </form>
+</div>
+
+<!-- ============================================================ -->
+<!-- MAIN APP                                                      -->
+<!-- ============================================================ -->
+<div id="app" class="hidden">
+  <header>
+    <h1>Ἅγιος Ἀνδρέας <span class="tag">CMS · animations</span></h1>
+    <button class="toolbtn" id="undo-btn" title="Ctrl/Cmd + Z" disabled>↶ undo</button>
+    <button class="toolbtn" id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled>↷ redo</button>
+    <button class="toolbtn" id="reset-btn" title="Επαναφορὰ προεπιλογῶν">↺ reset</button>
+    <button class="toolbtn primary" id="save-btn" title="Cmd + S">💾 save</button>
+    <button class="toolbtn" id="export-btn">📁 export json</button>
+    <button class="toolbtn" id="preview-btn">👁 preview book</button>
+    <button class="toolbtn danger" id="logout-btn">↪ logout</button>
+  </header>
+
+  <main>
+    <!-- ANIMATION LIST SIDEBAR -->
+    <aside>
+      <h2>Animations</h2>
+      <div id="anim-list"></div>
+    </aside>
+
+    <!-- TIMELINE EDITOR -->
+    <section id="editor">
+      <div id="anim-meta">
+        <h2 id="anim-name">— ἐπίλεξε animation —</h2>
+        <label class="field">duration <input type="number" id="anim-duration" step="0.05" min="0.05" value="0.75" disabled> sec</label>
+        <label class="field">loop <input type="checkbox" id="anim-loop" disabled></label>
+      </div>
+
+      <div id="ruler"></div>
+      <div id="tracks-scroll">
+        <div id="tracks-area"></div>
+      </div>
+
+      <div id="playback-bar">
+        <button class="toolbtn" id="play-btn">▶ play</button>
+        <button class="toolbtn" id="stop-btn" disabled>⏹ stop</button>
+        <div class="time-readout"><em id="cur-time">0.00</em>s · <span id="dur-readout">0.00</span>s</div>
+        <div class="scrub-bar" id="scrub-bar"><div class="scrub-fill" id="scrub-fill"></div></div>
+      </div>
+    </section>
+
+    <!-- INSPECTOR -->
+    <div id="inspector">
+      <h3>Inspector</h3>
+      <div id="inspector-body">
+        <div class="empty">πάτα keyframe γιὰ νὰ τὸν ἐπεξεργαστεῖς<br><br>πάτα στο μπάρ κενοῦ track γιὰ νέο</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// =====================================================================
+//   DEFAULT ANIMATIONS — kept in sync with book.html. CMS edits override.
+// =====================================================================
+const DEFAULT_ANIMATIONS = {
+  photoLiftOff: {
+    duration: 0.75,
+    tracks: [
+      { target: 'photoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$startPos',    ease: 'easeOutBack' },
+            { t: 1.0, value: '$photoTarget' },
+          ],
+          scale: [
+            { t: 0.0, value: 0.30, ease: 'easeOutBack' },
+            { t: 1.0, value: 1.00 },
+          ],
+        }
+      },
+      { target: 'infoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$startPos' },
+            { t: 0.2, value: '$startPos',   ease: 'easeOutCubic' },
+            { t: 1.0, value: '$infoTarget' },
+          ],
+          scale: [
+            { t: 0.0, value: 0.05 },
+            { t: 0.2, value: 0.05, ease: 'easeOutCubic' },
+            { t: 1.0, value: 1.00 },
+          ],
+          opacity: [
+            { t: 0.0, value: 0.0 },
+            { t: 0.2, value: 0.0, ease: 'easeOutCubic' },
+            { t: 1.0, value: 1.0 },
+          ],
+        }
+      },
+      { target: 'dim',
+        properties: {
+          opacity: [
+            { t: 0.0,   value: 0.0,  ease: 'linear' },
+            { t: 0.625, value: 0.78 },
+            { t: 1.0,   value: 0.78 },
+          ],
+        }
+      },
+    ],
+  },
+  photoLiftClose: {
+    duration: 0.5,
+    tracks: [
+      { target: 'photoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$photoTarget', ease: 'easeInCubic' },
+            { t: 1.0, value: '$startPos' },
+          ],
+          scale: [
+            { t: 0.0, value: 1.00, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.30 },
+          ],
+        }
+      },
+      { target: 'infoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$infoTarget', ease: 'easeInCubic' },
+            { t: 1.0, value: '$startPos' },
+          ],
+          scale: [
+            { t: 0.0, value: 1.00, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.05 },
+          ],
+          opacity: [
+            { t: 0.0, value: 1.0, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.0 },
+          ],
+        }
+      },
+      { target: 'dim',
+        properties: {
+          opacity: [
+            { t: 0.0, value: 0.78, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.0 },
+          ],
+        }
+      },
+    ],
+  },
+  bookOpenSwoosh: {
+    duration: 1.2,
+    tracks: [
+      { target: 'bookGroup',
+        properties: {
+          'scale.x': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.y': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.z': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'rotation.y': [{ t: 0.0, value: -0.35, ease: 'easeOutCubic' }, { t: 1.0, value: 0 }],
+        }
+      },
+    ],
+  },
+  pageNudge: {
+    duration: 0.45,
+    tracks: [
+      { target: 'bookGroup',
+        properties: {
+          'rotation.z': [
+            { t: 0.0,  value: 0,      ease: 'easeOutQuad' },
+            { t: 0.25, value: 0.06,   ease: 'easeInOutQuad' },
+            { t: 0.6,  value: -0.04,  ease: 'easeInOutQuad' },
+            { t: 1.0,  value: 0 },
+          ],
+        }
+      },
+    ],
+  },
+};
+
+// =====================================================================
+//   STATE
+// =====================================================================
+const STORAGE_KEY  = 'church.animations';
+const LOCKS_KEY    = 'church.animations.locks';
+const AUTH_KEY     = 'church.cms.auth';
+const ADMIN_USER   = 'admin';
+const ADMIN_PASS   = 'admin';
+
+const EASE_NAMES = ['linear','easeInQuad','easeOutQuad','easeInOutQuad',
+  'easeInCubic','easeOutCubic','easeInOutCubic',
+  'easeInQuart','easeOutQuart','easeOutBack','easeOutElastic','easeOutBounce'];
+const KNOWN_BINDINGS = ['$startPos','$photoTarget','$infoTarget'];
+
+const State = {
+  animations: deepClone(DEFAULT_ANIMATIONS),
+  locks: {},                   // key: 'animName:trackIdx' → boolean
+  selected: { anim: null, trackIdx: -1, prop: null, kfIdx: -1 },
+  history: [],                 // undo stack of snapshots
+  redoStack: [],
+  dirty: false,
+  // playback simulation
+  playing: false,
+  playStart: 0,
+  playTime: 0,
+};
+
+// =====================================================================
+//   PERSISTENCE
+// =====================================================================
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) State.animations = JSON.parse(raw);
+  } catch (e) { console.warn('[CMS] failed to load animations', e); }
+  try {
+    const rawLocks = localStorage.getItem(LOCKS_KEY);
+    if (rawLocks) State.locks = JSON.parse(rawLocks);
+  } catch (e) { /* ignore */ }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(State.animations));
+  localStorage.setItem(LOCKS_KEY,   JSON.stringify(State.locks));
+  State.dirty = false;
+  toast('Ἀποθηκεύθηκε ✓');
+  refreshSaveBtn();
+}
+function exportJson() {
+  const blob = new Blob([JSON.stringify(State.animations, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'animations.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Ἐξήχθη animations.json');
+}
+function resetDefaults() {
+  if (!confirm('Ἐπαναφορὰ ὅλων τῶν animations στὶς προεπιλογὲς;')) return;
+  pushHistory();
+  State.animations = deepClone(DEFAULT_ANIMATIONS);
+  markDirty();
+  renderAll();
+  toast('Ἐπαναφορὰ προεπιλογῶν');
+}
+
+// =====================================================================
+//   UNDO / REDO via JSON snapshots
+// =====================================================================
+function deepClone(v) { return JSON.parse(JSON.stringify(v)); }
+function pushHistory() {
+  State.history.push(deepClone(State.animations));
+  if (State.history.length > 60) State.history.shift();
+  State.redoStack.length = 0;
+  refreshUndoBtns();
+}
+function undo() {
+  if (!State.history.length) return;
+  State.redoStack.push(deepClone(State.animations));
+  State.animations = State.history.pop();
+  selectClear();
+  markDirty();
+  renderAll();
+  refreshUndoBtns();
+  toast('Undo');
+}
+function redo() {
+  if (!State.redoStack.length) return;
+  State.history.push(deepClone(State.animations));
+  State.animations = State.redoStack.pop();
+  selectClear();
+  markDirty();
+  renderAll();
+  refreshUndoBtns();
+  toast('Redo');
+}
+function refreshUndoBtns() {
+  document.getElementById('undo-btn').disabled = State.history.length === 0;
+  document.getElementById('redo-btn').disabled = State.redoStack.length === 0;
+}
+function refreshSaveBtn() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent = State.dirty ? '💾 save *' : '💾 saved';
+  btn.classList.toggle('primary', State.dirty);
+}
+function markDirty() { State.dirty = true; refreshSaveBtn(); }
+
+// =====================================================================
+//   AUTH
+// =====================================================================
+function isAuthed() { return localStorage.getItem(AUTH_KEY) === '1'; }
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  setTimeout(() => document.getElementById('login-user').focus(), 50);
+}
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+}
+function login(user, pass) {
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    localStorage.setItem(AUTH_KEY, '1');
+    showApp();
+    init();
+  } else {
+    document.getElementById('login-error').textContent = '✕ λάθος στοιχεῖα';
+    setTimeout(() => document.getElementById('login-error').textContent = '', 2500);
+  }
+}
+function logout() {
+  if (State.dirty && !confirm('Ἔχεις μη-ἀποθηκευμένες ἀλλαγές. Σίγουρα νὰ φύγεις;')) return;
+  localStorage.removeItem(AUTH_KEY);
+  showLogin();
+}
+
+document.getElementById('login-form').addEventListener('submit', e => {
+  e.preventDefault();
+  login(document.getElementById('login-user').value.trim(),
+        document.getElementById('login-pass').value);
+});
+
+// =====================================================================
+//   RENDERING — sidebar + timeline + inspector
+// =====================================================================
+function renderAll() {
+  renderSidebar();
+  renderEditor();
+}
+function renderSidebar() {
+  const list = document.getElementById('anim-list');
+  list.innerHTML = '';
+  for (const name of Object.keys(State.animations)) {
+    const a = State.animations[name];
+    const div = document.createElement('div');
+    div.className = 'anim-item' + (State.selected.anim === name ? ' active' : '');
+    const trackCount = a.tracks.length;
+    let kfCount = 0;
+    for (const tr of a.tracks) for (const p in tr.properties) kfCount += tr.properties[p].length;
+    const loopBadge = a.loop ? '<span class="loop-badge">↻</span>' : '';
+    div.innerHTML = `
+      <div class="name">${name} ${loopBadge}</div>
+      <div class="meta">${a.duration}s · ${trackCount}T · ${kfCount}K</div>
+    `;
+    div.addEventListener('click', () => { selectAnim(name); });
+    list.appendChild(div);
+  }
+}
+
+function selectAnim(name) {
+  State.selected = { anim: name, trackIdx: -1, prop: null, kfIdx: -1 };
+  renderAll();
+}
+function selectClear() {
+  State.selected.trackIdx = -1;
+  State.selected.prop = null;
+  State.selected.kfIdx = -1;
+}
+function selectKeyframe(trackIdx, prop, kfIdx) {
+  State.selected.trackIdx = trackIdx;
+  State.selected.prop = prop;
+  State.selected.kfIdx = kfIdx;
+  renderEditor();
+}
+
+function renderEditor() {
+  const animName = State.selected.anim;
+  const meta = document.getElementById('anim-meta');
+  const nameEl = document.getElementById('anim-name');
+  const durInput = document.getElementById('anim-duration');
+  const loopInput = document.getElementById('anim-loop');
+  const tracksArea = document.getElementById('tracks-area');
+  const ruler = document.getElementById('ruler');
+
+  if (!animName || !State.animations[animName]) {
+    nameEl.textContent = '— ἐπίλεξε animation —';
+    durInput.disabled = true; loopInput.disabled = true;
+    tracksArea.innerHTML = '';
+    ruler.innerHTML = '';
+    document.getElementById('inspector-body').innerHTML = '<div class="empty">ἐπίλεξε animation ἀπὸ τὴν λίστα</div>';
+    document.getElementById('dur-readout').textContent = '0.00';
+    return;
+  }
+  const anim = State.animations[animName];
+  nameEl.textContent = animName;
+  durInput.disabled = false; durInput.value = anim.duration;
+  loopInput.disabled = false; loopInput.checked = !!anim.loop;
+  document.getElementById('dur-readout').textContent = anim.duration.toFixed(2);
+
+  // Ruler
+  ruler.innerHTML = '';
+  const NUM_TICKS = 11;
+  for (let i = 0; i < NUM_TICKS; i++) {
+    const left = (i / (NUM_TICKS - 1)) * 100;
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.left = left + '%';
+    ruler.appendChild(tick);
+    const lbl = document.createElement('div');
+    lbl.className = 'tick-label';
+    lbl.style.left = left + '%';
+    lbl.textContent = (anim.duration * (i / (NUM_TICKS - 1))).toFixed(2) + 's';
+    ruler.appendChild(lbl);
+  }
+  // Playhead
+  const ph = document.createElement('div');
+  ph.className = 'playhead-line';
+  ph.id = 'playhead-line';
+  ruler.appendChild(ph);
+
+  // Tracks
+  tracksArea.innerHTML = '';
+  anim.tracks.forEach((track, trackIdx) => {
+    Object.keys(track.properties).forEach(prop => {
+      const lockKey = animName + ':' + trackIdx + ':' + prop;
+      const locked = !!State.locks[lockKey];
+      const row = document.createElement('div');
+      row.className = 'track-row' + (locked ? ' locked' : '');
+      const lockIcon = locked ? '🔒' : '🔓';
+
+      row.innerHTML = `
+        <div class="track-label">
+          <button class="lock-btn ${locked ? 'locked' : ''}" data-lockkey="${lockKey}" title="Lock track">${lockIcon}</button>
+          <span class="target">${track.target}</span><span class="prop">·  ${prop}</span>
+        </div>
+        <div class="track-bar" data-track="${trackIdx}" data-prop="${prop}"></div>
+        <button class="kf-add-btn" data-track="${trackIdx}" data-prop="${prop}" title="ἐπίσπευση keyframe (κλίκ στὸ μπάρ)">+</button>
+      `;
+      const bar = row.querySelector('.track-bar');
+      track.properties[prop].forEach((kf, kfIdx) => {
+        const dot = document.createElement('div');
+        dot.className = 'kf';
+        if (State.selected.trackIdx === trackIdx && State.selected.prop === prop && State.selected.kfIdx === kfIdx) {
+          dot.classList.add('active');
+        }
+        dot.style.left = (kf.t * 100) + '%';
+        dot.dataset.track = trackIdx;
+        dot.dataset.prop  = prop;
+        dot.dataset.kf    = kfIdx;
+        bar.appendChild(dot);
+      });
+      tracksArea.appendChild(row);
+    });
+  });
+
+  wireTracks();
+  renderInspector();
+}
+
+function wireTracks() {
+  // Lock toggles
+  for (const btn of document.querySelectorAll('.lock-btn')) {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.lockkey;
+      State.locks[key] = !State.locks[key];
+      localStorage.setItem(LOCKS_KEY, JSON.stringify(State.locks));
+      renderEditor();
+    });
+  }
+  // Click on empty bar → add keyframe
+  for (const bar of document.querySelectorAll('.track-bar')) {
+    bar.addEventListener('click', e => {
+      if (e.target !== bar) return;  // only when clicking the bar background, not a kf dot
+      const lockKey = State.selected.anim + ':' + bar.dataset.track + ':' + bar.dataset.prop;
+      if (State.locks[lockKey]) { toast('🔒 track κλειδωμένο', 'error'); return; }
+      const rect = bar.getBoundingClientRect();
+      const t = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      addKeyframe(parseInt(bar.dataset.track), bar.dataset.prop, t);
+    });
+  }
+  // KF dots → click + drag
+  for (const dot of document.querySelectorAll('.kf')) {
+    dot.addEventListener('click', e => {
+      e.stopPropagation();
+      selectKeyframe(parseInt(dot.dataset.track), dot.dataset.prop, parseInt(dot.dataset.kf));
+    });
+    let dragging = false, startX = 0, startT = 0, bar = null, kf = null;
+    dot.addEventListener('pointerdown', e => {
+      const lockKey = State.selected.anim + ':' + dot.dataset.track + ':' + dot.dataset.prop;
+      if (State.locks[lockKey]) return;
+      dragging = true;
+      startX = e.clientX;
+      bar = dot.parentElement;
+      kf = State.animations[State.selected.anim].tracks[parseInt(dot.dataset.track)].properties[dot.dataset.prop][parseInt(dot.dataset.kf)];
+      startT = kf.t;
+      dot.classList.add('dragging');
+      dot.setPointerCapture(e.pointerId);
+      pushHistory();
+    });
+    dot.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const rect = bar.getBoundingClientRect();
+      const dx = (e.clientX - startX) / rect.width;
+      const newT = Math.max(0, Math.min(1, startT + dx));
+      kf.t = newT;
+      dot.style.left = (newT * 100) + '%';
+      // live update inspector if this is the selected kf
+      if (State.selected.kfIdx === parseInt(dot.dataset.kf) &&
+          State.selected.trackIdx === parseInt(dot.dataset.track) &&
+          State.selected.prop === dot.dataset.prop) {
+        const tInput = document.getElementById('ins-time');
+        if (tInput) tInput.value = newT.toFixed(3);
+      }
+      markDirty();
+    });
+    dot.addEventListener('pointerup', e => {
+      if (!dragging) return;
+      dragging = false;
+      dot.classList.remove('dragging');
+      // Re-sort keyframes by t (drag may reorder)
+      const kfs = State.animations[State.selected.anim].tracks[parseInt(dot.dataset.track)].properties[dot.dataset.prop];
+      kfs.sort((a, b) => a.t - b.t);
+      renderEditor();
+    });
+  }
+  // + buttons → add keyframe at end
+  for (const btn of document.querySelectorAll('.kf-add-btn')) {
+    btn.addEventListener('click', e => {
+      const lockKey = State.selected.anim + ':' + btn.dataset.track + ':' + btn.dataset.prop;
+      if (State.locks[lockKey]) { toast('🔒 track κλειδωμένο', 'error'); return; }
+      addKeyframe(parseInt(btn.dataset.track), btn.dataset.prop, 0.5);
+    });
+  }
+}
+
+function addKeyframe(trackIdx, prop, t) {
+  const animName = State.selected.anim;
+  const kfs = State.animations[animName].tracks[trackIdx].properties[prop];
+  // Interpolate value between neighbors (or copy nearest if at edge)
+  let value = 0;
+  if (kfs.length === 0) value = 0;
+  else {
+    let before = null, after = null;
+    for (const kf of kfs) {
+      if (kf.t <= t) before = kf;
+      if (kf.t >= t && !after) after = kf;
+    }
+    if (before && after && before !== after) {
+      // Numeric lerp where possible; otherwise copy
+      if (typeof before.value === 'number' && typeof after.value === 'number') {
+        const localT = (t - before.t) / (after.t - before.t);
+        value = before.value + (after.value - before.value) * localT;
+        value = +value.toFixed(4);
+      } else value = JSON.parse(JSON.stringify(before.value));
+    } else if (before) value = JSON.parse(JSON.stringify(before.value));
+    else if (after)  value = JSON.parse(JSON.stringify(after.value));
+  }
+  pushHistory();
+  kfs.push({ t, value, ease: 'linear' });
+  kfs.sort((a, b) => a.t - b.t);
+  markDirty();
+  selectKeyframe(trackIdx, prop, kfs.findIndex(k => k.t === t && k.value === value));
+  renderEditor();
+}
+
+function deleteSelectedKeyframe() {
+  const { anim, trackIdx, prop, kfIdx } = State.selected;
+  if (!anim || trackIdx < 0 || !prop || kfIdx < 0) return;
+  const kfs = State.animations[anim].tracks[trackIdx].properties[prop];
+  if (kfs.length <= 1) { toast('χρειάζεται 1+ keyframe', 'error'); return; }
+  pushHistory();
+  kfs.splice(kfIdx, 1);
+  markDirty();
+  selectClear();
+  renderEditor();
+}
+
+// =====================================================================
+//   INSPECTOR
+// =====================================================================
+function renderInspector() {
+  const body = document.getElementById('inspector-body');
+  const { anim, trackIdx, prop, kfIdx } = State.selected;
+  if (!anim || trackIdx < 0 || !prop || kfIdx < 0) {
+    body.innerHTML = '<div class="empty">πάτα keyframe γιὰ νὰ τὸν ἐπεξεργαστεῖς<br><br>πάτα στὸ μπάρ γιὰ νὰ προσθέσεις νέο</div>';
+    return;
+  }
+  const track = State.animations[anim].tracks[trackIdx];
+  const kf = track.properties[prop][kfIdx];
+
+  body.innerHTML = `
+    <div class="target-prop">
+      <span class="target">${track.target}</span>  ·  <span class="prop">${prop}</span>  ·  kf #${kfIdx}
+    </div>
+    <div class="ins-row">
+      <label>χρόνος (0.0 – 1.0 normalized)</label>
+      <input type="number" id="ins-time" step="0.01" min="0" max="1" value="${kf.t}">
+    </div>
+    <div class="ins-row">
+      <label>τιμή (JSON)</label>
+      <textarea id="ins-value" rows="2">${JSON.stringify(kf.value)}</textarea>
+      <div class="bindings">${KNOWN_BINDINGS.map(b =>
+        `<span class="binding-chip" data-binding="${b}">${b}</span>`).join('')}</div>
+    </div>
+    <div class="ins-row">
+      <label>easing</label>
+      <select id="ins-ease">
+        ${EASE_NAMES.map(name =>
+          `<option value="${name}" ${(kf.ease || 'linear') === name ? 'selected' : ''}>${name}</option>`).join('')}
+      </select>
+    </div>
+    <button class="toolbtn danger" id="ins-delete" style="width:100%;margin-top:8px">🗑 διαγραφή keyframe</button>
+  `;
+
+  document.getElementById('ins-time').addEventListener('change', e => {
+    pushHistory();
+    kf.t = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+    track.properties[prop].sort((a, b) => a.t - b.t);
+    markDirty();
+    renderEditor();
+  });
+  document.getElementById('ins-value').addEventListener('change', e => {
+    try {
+      const parsed = JSON.parse(e.target.value);
+      pushHistory();
+      kf.value = parsed;
+      markDirty();
+      renderEditor();
+    } catch (err) {
+      toast('Μη-ἔγκυρο JSON', 'error');
+      e.target.value = JSON.stringify(kf.value);
+    }
+  });
+  document.getElementById('ins-ease').addEventListener('change', e => {
+    pushHistory();
+    kf.ease = e.target.value;
+    markDirty();
+  });
+  document.getElementById('ins-delete').addEventListener('click', deleteSelectedKeyframe);
+
+  for (const chip of body.querySelectorAll('.binding-chip')) {
+    chip.addEventListener('click', () => {
+      const v = chip.dataset.binding;
+      pushHistory();
+      kf.value = v;
+      document.getElementById('ins-value').value = JSON.stringify(v);
+      markDirty();
+    });
+  }
+}
+
+// =====================================================================
+//   META FIELDS — duration / loop
+// =====================================================================
+document.getElementById('anim-duration').addEventListener('change', e => {
+  const v = parseFloat(e.target.value);
+  if (isNaN(v) || v <= 0) return;
+  pushHistory();
+  State.animations[State.selected.anim].duration = v;
+  markDirty();
+  renderAll();
+});
+document.getElementById('anim-loop').addEventListener('change', e => {
+  pushHistory();
+  State.animations[State.selected.anim].loop = e.target.checked;
+  markDirty();
+  renderSidebar();
+});
+
+// =====================================================================
+//   PLAYBACK SIMULATION (in-CMS preview of timeline only)
+// =====================================================================
+let _playRaf = null;
+function startPlayback() {
+  if (!State.selected.anim) return;
+  State.playing = true;
+  State.playStart = performance.now();
+  document.getElementById('play-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = false;
+  tickPlayback();
+}
+function stopPlayback() {
+  State.playing = false;
+  if (_playRaf) cancelAnimationFrame(_playRaf);
+  document.getElementById('play-btn').disabled = false;
+  document.getElementById('stop-btn').disabled = true;
+  setPlayhead(0);
+}
+function tickPlayback() {
+  if (!State.playing) return;
+  const anim = State.animations[State.selected.anim];
+  const elapsed = (performance.now() - State.playStart) / 1000;
+  let t = elapsed;
+  if (anim.loop) t = t % anim.duration;
+  else if (t >= anim.duration) { t = anim.duration; State.playing = false; }
+  setPlayhead(t / anim.duration);
+  document.getElementById('cur-time').textContent = t.toFixed(2);
+  if (State.playing) _playRaf = requestAnimationFrame(tickPlayback);
+  else stopPlayback();
+}
+function setPlayhead(t01) {
+  const ph = document.getElementById('playhead-line');
+  if (ph) ph.style.left = (t01 * 100) + '%';
+  document.getElementById('scrub-fill').style.width = (t01 * 100) + '%';
+}
+document.getElementById('play-btn').addEventListener('click', startPlayback);
+document.getElementById('stop-btn').addEventListener('click', stopPlayback);
+document.getElementById('scrub-bar').addEventListener('click', e => {
+  if (!State.selected.anim) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const t01 = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  setPlayhead(t01);
+  const dur = State.animations[State.selected.anim].duration;
+  document.getElementById('cur-time').textContent = (t01 * dur).toFixed(2);
+});
+
+// =====================================================================
+//   TOAST
+// =====================================================================
+let _toastTimer = null;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', type === 'error');
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// =====================================================================
+//   TOOLBAR ACTIONS
+// =====================================================================
+document.getElementById('save-btn').addEventListener('click', save);
+document.getElementById('export-btn').addEventListener('click', exportJson);
+document.getElementById('reset-btn').addEventListener('click', resetDefaults);
+document.getElementById('undo-btn').addEventListener('click', undo);
+document.getElementById('redo-btn').addEventListener('click', redo);
+document.getElementById('logout-btn').addEventListener('click', logout);
+document.getElementById('preview-btn').addEventListener('click', () => {
+  if (State.dirty) save();
+  window.open('book.html', '_blank');
+});
+
+// =====================================================================
+//   KEYBOARD SHORTCUTS
+// =====================================================================
+window.addEventListener('keydown', e => {
+  if (!isAuthed()) return;
+  // Ignore when typing into inputs
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const cmd = e.metaKey || e.ctrlKey;
+  if (cmd && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (cmd && (e.key === 'Z' || (e.key === 'z' && e.shiftKey)))   { e.preventDefault(); redo(); }
+  else if (cmd && e.key === 'y')             { e.preventDefault(); redo(); }
+  else if (cmd && e.key === 's')             { e.preventDefault(); save(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelectedKeyframe(); }
+  else if (e.key === ' ')                    { e.preventDefault(); State.playing ? stopPlayback() : startPlayback(); }
+});
+
+// Warn before close if dirty
+window.addEventListener('beforeunload', e => {
+  if (State.dirty) { e.preventDefault(); e.returnValue = ''; return ''; }
+});
+
+// =====================================================================
+//   INIT
+// =====================================================================
+function init() {
+  load();
+  // Pre-select first animation
+  const first = Object.keys(State.animations)[0];
+  if (first) State.selected.anim = first;
+  refreshSaveBtn();
+  refreshUndoBtns();
+  renderAll();
+}
+
+if (isAuthed()) { showApp(); init(); }
+else            { showLogin(); }
+</script>
+</body>
+</html>

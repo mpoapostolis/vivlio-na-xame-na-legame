@@ -1,0 +1,226 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Περὶ τοῦ ἔργου · Ἅγιος Ἀνδρέας">
+  <section class="section">
+    <div class="container">
+      <div class="eyebrow">περὶ τοῦ ἔργου</div>
+      <h1>Ἐκπαιδευτικὴ <em>τρισδιάστατη</em> ἐφαρμογή</h1>
+      <hr class="rule" />
+      <p class="lead">
+        Ἕνα διαδραστικὸ τρισδιάστατο βιβλίο μὲ τὴν ἱστορία τοῦ Καθεδρικοῦ Ναοῦ τοῦ Πρωτοκλήτου Ἀποστόλου Ἀνδρέου τῶν Πατρῶν,
+        ἀπὸ τὸν διεθνῆ διαγωνισμὸ τοῦ 1902 ἕως τὶς ἀνακαινίσεις τοῦ 21ου αἰῶνος.
+      </p>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Πηγὲς</h3>
+          <p>Ἐκπαιδευτικὸ ὑλικὸ τοῦ Ἱεροῦ Ναοῦ Ἁγίου Ἀνδρέου Πατρῶν · ἀρχειακὲς φωτογραφίες ἀπὸ τὴν τελετὴ θεμελιώσεως τοῦ 1908, τὰ ἐγκαίνια τοῦ 1974, τὴν ἐνθρόνισιν τοῦ Μητροπολίτου Χρυσοστόμου τὸ 2005.</p>
+          <p class="meta">Ι.Ν. Ἁγίου Ἀνδρέου · Πάτραι</p>
+        </div>
+
+        <div class="card">
+          <h3>Τεχνολογίες</h3>
+          <ul>
+            <li><b>Astro</b> · static-site framework μὲ πολλαπλὲς pages</li>
+            <li><b>three.js r172</b> · 3D rendering, WebGPU + WebGL2 fallback</li>
+            <li><b>WebXR</b> · Oculus Quest VR support</li>
+            <li><b>Capacitor</b> · Android APK packaging</li>
+            <li><b>macOS Melina TTS</b> · Greek narration generation</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Πολυτονικὸν</h3>
+          <p>Ὅλα τὰ κείμενα διατηροῦνται στὸ πολυτονικὸν σύστημα, NFC-normalized. Γιὰ τὴν ἀφήγησιν, μετατρέπονται σὲ μονοτονικὸ ἐσωτερικὰ διὰ τὴν ὁμαλὴν ἀνάγνωσιν τῆς φωνῆς Melina.</p>
+          <p>Γραμματοσειρές: <em>Cormorant Garamond</em> διὰ τοὺς τίτλους, <b>Inter</b> διὰ τὸ σῶμα τοῦ κειμένου.</p>
+        </div>
+
+        <div class="card">
+          <h3>Παραδοτέα</h3>
+          <ul>
+            <li>Web (Astro static build)</li>
+            <li>Android <code>.apk</code> μέσῳ Capacitor</li>
+            <li>WebXR session γιὰ Oculus Quest / Quest 2 / Quest 3</li>
+            <li>Πλήρης ἀφήγησις σὲ ἑλληνικὰ TTS mp3</li>
+          </ul>
+        </div>
+      </div>
+
+      <hr class="rule" style="margin: 64px auto" />
+
+      <div class="features">
+        <h2 class="serif italic">Πλήρεις δυνατότητες</h2>
+        <p class="lead">Τὸ ἔργο περιλαμβάνει ἕξι (6) διακριτὰ τμήματα:</p>
+
+        <ol class="feature-list">
+          <li>
+            <span class="num">α´</span>
+            <div>
+              <b>Τὸ Βιβλίον</b> — τρισδιάστατο βιβλίο μὲ φυσικὸ γύρισμα σελίδων (αριστερόστροφο),
+              σκληρὸ skinned mesh, 31 ὀστὰ ἀνὰ σελίδα, PBR materials, iridescence, sheen.
+              Κλικ σὲ φωτογραφία γιὰ μεγέθυνσιν μὲ keyframe animation.
+            </div>
+          </li>
+          <li>
+            <span class="num">β´</span>
+            <div>
+              <b>Τὸ Χρονικὸν</b> — γραμμικὴ ἀνάγνωσις τῶν γεγονότων μὲ χρονογραμμή, mobile-friendly.
+              Ἐναλλακτικὴ προσέγγισις γιὰ ὅσους προτιμοῦν παραδοσιακὸ κείμενο.
+            </div>
+          </li>
+          <li>
+            <span class="num">γ´</span>
+            <div>
+              <b>Ἡ Συλλογή</b> — φωτογραφικὸ ἀρχεῖο σὲ πέντε θεματικὲς κατηγορίες,
+              μὲ διαδραστικὴ ἐπισκόπησιν καὶ αὐτόματη ἀφήγησιν.
+            </div>
+          </li>
+          <li>
+            <span class="num">δ´</span>
+            <div>
+              <b>Γνώρισέ τον</b> — δώδεκα ἐρωτήσεις μὲ πολλαπλὲς ἀπαντήσεις,
+              σὲ τέσσερις κατηγορίες (χρονολογίες, πρόσωπα, ἀρχιτεκτονική, ἱστορία).
+            </div>
+          </li>
+          <li>
+            <span class="num">ε´</span>
+            <div>
+              <b>Ἀφηγήσεις</b> — δεκαοκτὼ (18) ἑλληνικὲς ἀφηγήσεις, αὐτόματα παραγόμενες
+              μὲ τὴ φωνὴ Melina, διαθέσιμες ἀνὰ σελίδα καὶ ἀνὰ φωτογραφία.
+            </div>
+          </li>
+          <li>
+            <span class="num">ϛ´</span>
+            <div>
+              <b>WebXR / VR</b> — εἰσέρχεσθε στὴ σκηνὴ μὲ Oculus Quest. Τὸ βιβλίο
+              τοποθετεῖται στὸ ὕψος τοῦ θεατῆ, κάθε σελίδα φέρει τὶς φωτογραφίες
+              τοῦ ἀρχείου σὲ φυσικὸν μέγεθος.
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <hr class="rule" style="margin: 64px auto" />
+
+      <div class="credits">
+        <div class="creds-row">
+          <span class="creds-lbl">σχεδίασις & ἀνάπτυξις</span>
+          <span class="creds-val">Three.js · Astro · WebGPU</span>
+        </div>
+        <div class="creds-row">
+          <span class="creds-lbl">πηγὲς ὑλικοῦ</span>
+          <span class="creds-val">Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν</span>
+        </div>
+        <div class="creds-row">
+          <span class="creds-lbl">γραμματοσειρὲς</span>
+          <span class="creds-val">Cormorant Garamond · Inter</span>
+        </div>
+        <div class="creds-row">
+          <span class="creds-lbl">τεκμηρίωσις</span>
+          <span class="creds-val"><code>BUILD.md</code> στὴ ρίζα τοῦ ἔργου</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  h1 em { font-style: italic; color: var(--gold-pale); }
+  .grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin-top: clamp(36px, 5vw, 56px);
+  }
+  .card {
+    padding: clamp(22px, 3vw, 32px);
+    background: rgba(20,12,6,0.5);
+    border: 1px solid rgba(217,180,120,0.18);
+    border-radius: var(--radius-m);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card:hover {
+    background: rgba(20,12,6,0.7);
+    border-color: rgba(217,180,120,0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px -12px rgba(0,0,0,0.5);
+  }
+  .card h3 {
+    color: var(--gold-bright);
+    font-size: 22px;
+    margin-bottom: 14px;
+  }
+  .card ul { list-style: none; padding: 0; }
+  .card ul li {
+    padding: 7px 0;
+    padding-left: 18px;
+    position: relative;
+    border-bottom: 1px dotted rgba(217,180,120,0.18);
+    color: var(--gold-soft);
+  }
+  .card ul li:last-child { border-bottom: none; }
+  .card ul li::before {
+    content: '·';
+    position: absolute;
+    left: 4px; top: 6px;
+    color: var(--gold-mid);
+    font-size: 20px;
+    line-height: 1;
+  }
+  .card ul li b { color: var(--gold-bright); }
+  .card code { background: rgba(0,0,0,0.4); padding: 1px 6px; border-radius: 2px; font-family: 'SF Mono', monospace; font-size: 11px; color: var(--gold-pale); }
+  .card .meta {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-top: 16px;
+  }
+
+  .features h2 { margin-bottom: 16px; }
+  .feature-list {
+    list-style: none;
+    counter-reset: feat;
+    margin-top: 32px;
+    display: flex; flex-direction: column;
+    gap: 24px;
+  }
+  .feature-list li {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 18px;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(217,180,120,0.10);
+  }
+  .feature-list .num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 36px;
+    color: var(--gold-deep);
+    line-height: 1;
+  }
+  .feature-list b { color: var(--gold-bright); font-weight: 500; font-family: var(--serif); font-style: italic; font-size: 18px; }
+
+  .credits { display: grid; gap: 12px; }
+  .creds-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px dotted rgba(217,180,120,0.18);
+  }
+  .creds-lbl {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    font-weight: 600;
+  }
+  .creds-val {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--gold-mid);
+  }
+  .creds-val code { background: rgba(0,0,0,0.4); padding: 2px 7px; border-radius: 2px; font-family: 'SF Mono', monospace; font-size: 12px; color: var(--gold-pale); font-style: normal; }
+</style>

@@ -1,0 +1,33 @@
+{
+  "name": "agios-andreas-3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν · educational 3D web app (Astro + three.js + WebXR + Capacitor APK)",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 3000 --host",
+    "build": "astro build",
+    "preview": "astro preview --port 3000",
+    "astro": "astro",
+    "narrations": "python3 tools/generate_narrations.py",
+    "android:add": "npm run build && npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npm run build && npx cap open android",
+    "android:build:debug": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/splash-screen": "^6.0.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

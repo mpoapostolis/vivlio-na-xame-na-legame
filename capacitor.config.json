@@ -1,0 +1,23 @@
+{
+  "appId": "gr.patras.agiosandreas",
+  "appName": "Ἅγιος Ἀνδρέας",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "buildOptions": {
+      "releaseType": "APK"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#0c0604",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
+}

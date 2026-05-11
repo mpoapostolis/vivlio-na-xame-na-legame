@@ -49,6 +49,22 @@
     background:rgba(20,12,6,0.6);backdrop-filter:blur(10px);color:#d9b478}
   .pagecount{position:fixed;top:28px;right:32px;font-size:11px;letter-spacing:0.3em;opacity:0.6;font-family:'Inter',sans-serif}
   .pagecount em{font-style:italic;color:#efddb0;padding:0 6px;font-family:'Cormorant Garamond',serif}
+
+  .audio-btn{position:fixed;top:64px;right:32px;display:flex;align-items:center;gap:9px;padding:8px 16px 8px 12px;
+    background:rgba(20,12,6,0.7);backdrop-filter:blur(10px) saturate(140%);
+    border:1px solid rgba(217,180,120,0.3);border-radius:999px;
+    color:#d9b478;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.28em;text-transform:uppercase;
+    cursor:pointer;transition:all 0.32s;z-index:11}
+  .audio-btn:hover{background:rgba(217,180,120,0.13);color:#efddb0;border-color:rgba(217,180,120,0.5)}
+  .audio-btn.playing{background:rgba(154,103,48,0.55);color:#fff;border-color:rgba(217,180,120,0.7);box-shadow:0 0 18px -2px rgba(255,180,80,0.3)}
+  .audio-btn.playing .audio-icon{animation:audio-pulse 1.6s ease-in-out infinite}
+  .audio-icon{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;font-size:11px}
+  .audio-label{font-weight:500}
+  .audio-progress{position:absolute;left:0;right:0;bottom:-1px;height:1px;background:rgba(217,180,120,0.6);
+    transform:scaleX(0);transform-origin:left;transition:transform 0.18s linear}
+  .audio-btn.playing .audio-progress{background:#efddb0}
+  @keyframes audio-pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+  .audio-btn:disabled{opacity:0.35;cursor:not-allowed}
   .nav{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;
     background:rgba(20,12,6,0.7);backdrop-filter:blur(14px) saturate(140%);
     border:1px solid rgba(217,180,120,0.25);border-radius:999px;padding:6px;box-shadow:0 18px 40px -12px rgba(0,0,0,0.7)}
@@ -184,6 +200,38 @@
   .cover-divider{width:140px;height:2px;background:#c9a96a;margin:30px 0;opacity:0.85}
   .cover-subtitle{font-style:italic;font-size:26px;color:#d9b478;line-height:1.4;margin-bottom:34px}
   .cover-meta{font-size:13px;letter-spacing:0.45em;text-transform:uppercase;color:#a08c64;font-family:'Inter',sans-serif}
+
+  /* === KEYFRAME DEBUG TIMELINE (toggle with T) === */
+  #timeline-debug{position:fixed;left:32px;right:32px;bottom:96px;max-width:760px;margin:0 auto;
+    background:rgba(8,4,2,0.88);backdrop-filter:blur(12px) saturate(140%);
+    border:1px solid rgba(217,180,120,0.32);border-radius:6px;
+    box-shadow:0 18px 50px -10px rgba(0,0,0,0.7);
+    font-family:'Inter',sans-serif;color:#d9b478;font-size:10px;padding:14px 18px;
+    z-index:15;transition:opacity 0.35s,transform 0.35s;pointer-events:auto}
+  #timeline-debug.hidden{opacity:0;transform:translateY(20px);pointer-events:none}
+  .tl-header{display:flex;align-items:center;gap:14px;padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.18)}
+  .tl-title{letter-spacing:0.32em;text-transform:uppercase;color:#9a6730;font-weight:600;font-size:9px}
+  .tl-anim{font-style:italic;color:#efddb0;flex:1;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:0.01em}
+  .tl-time{font-variant-numeric:tabular-nums;color:#c9a96a;font-weight:500;font-size:10px;letter-spacing:0.05em}
+  .tl-btn{background:transparent;border:1px solid rgba(217,180,120,0.3);color:#d9b478;padding:4px 10px;border-radius:3px;
+    font-family:inherit;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:all 0.2s}
+  .tl-btn:hover{background:rgba(217,180,120,0.14);color:#efddb0}
+  .tl-btn:disabled{opacity:0.3;cursor:not-allowed}
+  .tl-tracks{padding:10px 0 4px;display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto}
+  .tl-tracks::-webkit-scrollbar{width:6px}
+  .tl-tracks::-webkit-scrollbar-thumb{background:rgba(217,180,120,0.2);border-radius:3px}
+  .tl-track{display:flex;align-items:center;gap:14px;padding:2px 0}
+  .tl-track-label{width:170px;flex-shrink:0;opacity:0.65;font-size:9px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;color:#c9a96a}
+  .tl-track-label .prop{color:#efddb0;opacity:0.85}
+  .tl-track-bar{flex:1;height:10px;background:rgba(217,180,120,0.08);border-radius:2px;position:relative}
+  .tl-track-bar::before{content:'';position:absolute;inset:4px 0;border-top:1px dashed rgba(217,180,120,0.18)}
+  .tl-kf{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;
+    background:#c9a96a;box-shadow:0 0 4px rgba(255,200,100,0.4);transition:none}
+  .tl-kf.active{background:#efddb0;box-shadow:0 0 8px rgba(255,220,150,0.85);transform:translate(-50%,-50%) scale(1.25)}
+  .tl-playhead{position:absolute;top:-3px;bottom:-3px;width:2px;background:#efddb0;
+    box-shadow:0 0 6px rgba(255,220,150,0.9);pointer-events:none;border-radius:1px}
+  .tl-empty{padding:20px 0;text-align:center;opacity:0.4;font-style:italic;font-family:'Cormorant Garamond',serif;font-size:13px}
+  .tl-hint{text-align:center;padding-top:8px;font-size:8px;letter-spacing:0.32em;opacity:0.4;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -200,6 +248,11 @@
   <div class="brand"><span>three.js · webxr · ἐκπαιδευτικὴ ἐφαρμογή</span><b>Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν</b></div>
   <div class="badge">three.js · webxr</div>
   <div class="pagecount"><span id="cur">ἐξώφυλλο</span><em>/</em><span id="tot">—</span></div>
+  <button id="audio-btn" class="audio-btn" aria-label="ἀφήγησις τῆς σελίδος">
+    <span class="audio-icon" id="audio-icon">▶</span>
+    <span class="audio-label">ἀφήγησις</span>
+    <span class="audio-progress" id="audio-progress"></span>
+  </button>
   <div class="nav">
     <button id="prev">← προηγούμενη</button>
     <div class="strip" id="strip"></div>
@@ -207,11 +260,25 @@
   </div>
   <div class="hint">
     <kbd>←</kbd> <kbd>→</kbd> γύρισμα · <kbd>click</kbd> εἰκόνα = προβολή<br>
-    <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση
+    <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση · <kbd>T</kbd> timeline
   </div>
 </div>
 
 <div id="vignette"></div>
+
+<div id="timeline-debug" class="hidden">
+  <div class="tl-header">
+    <span class="tl-title">Keyframe Timeline</span>
+    <span class="tl-anim" id="tl-anim">— ἀδρανές —</span>
+    <span class="tl-time" id="tl-time">0.00 / 0.00</span>
+    <button class="tl-btn" id="tl-replay" disabled>↺ replay</button>
+    <button class="tl-btn" id="tl-toggle">×</button>
+  </div>
+  <div class="tl-tracks" id="tl-tracks">
+    <div class="tl-empty">πάτα μιὰ φωτογραφία γιὰ νὰ δεῖς τοὺς keyframes</div>
+  </div>
+  <div class="tl-hint">πάτα <b>T</b> γιὰ νὰ κρύψεις · κάθε ●  εἶναι keyframe · ἡ κάθετη γραμμὴ εἶναι ὁ playhead</div>
+</div>
 
 <div id="modal">
   <div class="panel">
@@ -1049,7 +1116,14 @@ async function buildBook() {
 let targetPage = 0, delayedPage = 0, pageStepTimer = 0;
 function goToPage(n) {
   closeModal();
-  targetPage = THREE.MathUtils.clamp(n, 0, PAGES.length);
+  const clamped = THREE.MathUtils.clamp(n, 0, PAGES.length);
+  // If user tried to navigate past the boundary, give a tactile nudge via keyframes.
+  if (n !== clamped && typeof keyframePlayer !== 'undefined') {
+    keyframePlayer.play('pageNudge', { targets: { bookGroup } });
+  }
+  // Stop any active narration on page change so they don't overlap.
+  if (clamped !== targetPage && typeof stopNarration === 'function') stopNarration();
+  targetPage = clamped;
   updateUI();
 }
 function stepDelayedPage(dt) {
@@ -1095,6 +1169,74 @@ function playPop() {
 }
 
 // =====================================================================
+//   NARRATION (recorded mp3) — per-page and per-photo
+// =====================================================================
+const NARRATION_BASE = 'assets/audio/';
+const PHOTO_NARRATION_MAP = {
+  'assets/themelios.jpg':         'photo_themelios.mp3',
+  'assets/church_page-0013.jpg':  'photo_robert_drawing.mp3',
+  'assets/church_page-0015.jpg':  'photo_modified.mp3',
+  'assets/church_page-0001.jpg':  'photo_foundation.mp3',
+  'assets/church_page-0003.jpg':  'photo_works.mp3',
+  'assets/church_page-0016.jpg':  'photo_dome.mp3',
+  'assets/church_page-0005.jpg':  'photo_inauguration.mp3',
+  'assets/church_page-0006.jpg':  'photo_interior.mp3',
+  'assets/church_page-0021.jpg':  'photo_cross.mp3',
+  'assets/church_page-0002.jpg':  'photo_enthronement.mp3',
+};
+let _narrationAudio = null;
+let _narrationProgressTimer = null;
+
+function _updateAudioBtn() {
+  const btn = document.getElementById('audio-btn');
+  const icon = document.getElementById('audio-icon');
+  const prog = document.getElementById('audio-progress');
+  if (!btn) return;
+  const playing = _narrationAudio && !_narrationAudio.paused && !_narrationAudio.ended;
+  btn.classList.toggle('playing', !!playing);
+  icon.textContent = playing ? '⏸' : '▶';
+  if (playing && _narrationAudio.duration) {
+    prog.style.transform = 'scaleX(' + (_narrationAudio.currentTime / _narrationAudio.duration) + ')';
+  } else {
+    prog.style.transform = 'scaleX(0)';
+  }
+}
+function playNarration(filename) {
+  stopNarration();
+  if (!filename) return;
+  _narrationAudio = new Audio(NARRATION_BASE + filename);
+  _narrationAudio.addEventListener('ended', () => { _updateAudioBtn(); });
+  _narrationAudio.addEventListener('pause', _updateAudioBtn);
+  _narrationAudio.addEventListener('play',  _updateAudioBtn);
+  const p = _narrationAudio.play();
+  if (p && p.catch) p.catch(err => { console.warn('[narration] play blocked:', err); });
+  if (_narrationProgressTimer) clearInterval(_narrationProgressTimer);
+  _narrationProgressTimer = setInterval(_updateAudioBtn, 200);
+}
+function stopNarration() {
+  if (_narrationAudio) { _narrationAudio.pause(); _narrationAudio.currentTime = 0; _narrationAudio = null; }
+  if (_narrationProgressTimer) { clearInterval(_narrationProgressTimer); _narrationProgressTimer = null; }
+  _updateAudioBtn();
+}
+function toggleNarration() {
+  if (_narrationAudio) {
+    if (_narrationAudio.paused) _narrationAudio.play(); else _narrationAudio.pause();
+    _updateAudioBtn();
+  } else {
+    playPageNarration(targetPage);
+  }
+}
+function playPageNarration(idx) {
+  if (idx < 0 || idx >= PAGES.length) return;
+  playNarration('narration_p' + idx + '.mp3');
+}
+function playPhotoNarration(photoSrc) {
+  const file = PHOTO_NARRATION_MAP[photoSrc];
+  if (file) playNarration(file);
+}
+document.getElementById('audio-btn').addEventListener('click', () => { ensureAudio(); toggleNarration(); });
+
+// =====================================================================
 //   UI
 // =====================================================================
 const numerals = ['ἐξώφυλλο','α´','β´','γ´','δ´','ε´','ϛ´','ζ´','τέλος'];
@@ -1118,7 +1260,339 @@ document.getElementById('next').addEventListener('click', () => { ensureAudio();
 window.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' || e.key === ' ') { ensureAudio(); goToPage(targetPage + 1); }
   if (e.key === 'ArrowLeft')                    { ensureAudio(); goToPage(targetPage - 1); }
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); stopNarration(); }
+});
+
+// =====================================================================
+//   KEYFRAME RUNTIME — JSON-driven animation player
+//   (foundation for the upcoming CMS animation editor)
+// =====================================================================
+const EASE = {
+  linear:         t => t,
+  easeInQuad:     t => t*t,
+  easeOutQuad:    t => 1 - (1-t)*(1-t),
+  easeInOutQuad:  t => t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2,
+  easeInCubic:    t => t*t*t,
+  easeOutCubic:   t => 1 - Math.pow(1-t, 3),
+  easeInOutCubic: t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
+  easeInQuart:    t => t*t*t*t,
+  easeOutQuart:   t => 1 - Math.pow(1-t, 4),
+  easeOutBack:    t => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); },
+  easeOutElastic: t => { if (t===0||t===1) return t; const c4=(2*Math.PI)/3; return Math.pow(2,-10*t)*Math.sin((t*10-0.75)*c4)+1; },
+  easeOutBounce:  t => { const n=7.5625, d=2.75;
+    if (t<1/d) return n*t*t;
+    if (t<2/d){ t-=1.5/d; return n*t*t+0.75; }
+    if (t<2.5/d){ t-=2.25/d; return n*t*t+0.9375; }
+    t-=2.625/d; return n*t*t+0.984375; },
+};
+
+function _isVec3Array(v) { return Array.isArray(v) && v.length === 3 && typeof v[0]==='number'; }
+function _resolveBinding(v, bindings) {
+  if (typeof v !== 'string' || !v.startsWith('$')) return v;
+  const key = v.slice(1);
+  if (!(key in bindings)) { console.warn('[Keyframe] missing binding $'+key); return 0; }
+  const b = bindings[key];
+  return typeof b === 'function' ? b() : b;
+}
+function _lerp(a, b, t) {
+  if (typeof a === 'number' && typeof b === 'number') return a + (b - a) * t;
+  if (a && a.isVector3 && b && b.isVector3) return new THREE.Vector3().lerpVectors(a, b, t);
+  if (_isVec3Array(a) && _isVec3Array(b)) return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+  return t < 0.5 ? a : b;
+}
+function _sampleTrack(keyframes, t01, bindings) {
+  if (!keyframes.length) return null;
+  if (t01 <= keyframes[0].t) return _resolveBinding(keyframes[0].value, bindings);
+  const last = keyframes[keyframes.length-1];
+  if (t01 >= last.t) return _resolveBinding(last.value, bindings);
+  for (let i=0; i<keyframes.length-1; i++) {
+    const a = keyframes[i], b = keyframes[i+1];
+    if (t01 >= a.t && t01 <= b.t) {
+      const localT = (t01 - a.t) / Math.max(b.t - a.t, 1e-6);
+      const ease = EASE[a.ease || 'linear'] || EASE.linear;
+      return _lerp(_resolveBinding(a.value, bindings), _resolveBinding(b.value, bindings), ease(localT));
+    }
+  }
+  return _resolveBinding(last.value, bindings);
+}
+function _applyProperty(target, prop, value) {
+  if (!target) return;
+  if (prop === 'position') {
+    if (value && value.isVector3) target.position.copy(value);
+    else if (_isVec3Array(value)) target.position.set(value[0], value[1], value[2]);
+  } else if (prop === 'scale') {
+    if (typeof value === 'number') target.scale.setScalar(value);
+    else if (_isVec3Array(value)) target.scale.set(value[0], value[1], value[2]);
+  } else if (prop === 'rotation') {
+    if (_isVec3Array(value)) target.rotation.set(value[0], value[1], value[2]);
+  } else if (prop === 'opacity') {
+    if (target.material) target.material.opacity = value;
+  } else {
+    // dotted path e.g. 'material.metalness'
+    const parts = prop.split('.'); let obj = target;
+    for (let i=0; i<parts.length-1; i++) { obj = obj[parts[i]]; if (!obj) return; }
+    obj[parts[parts.length-1]] = value;
+  }
+}
+
+class KeyframePlayer {
+  constructor(animations) {
+    this.animations = animations;
+    this.activeClips = [];
+    this.onPlayCb = null;
+    this.onTickCb = null;
+  }
+  play(name, opts = {}) {
+    const anim = this.animations[name];
+    if (!anim) { console.warn('[Keyframe] unknown animation: '+name); return null; }
+    const clip = {
+      name, anim, time: 0, duration: anim.duration,
+      loop: opts.loop !== undefined ? opts.loop : !!anim.loop,
+      targets: opts.targets || {}, bindings: opts.bindings || {},
+      onComplete: opts.onComplete || null, done: false,
+    };
+    this.activeClips.push(clip);
+    if (this.onPlayCb) this.onPlayCb(clip);
+    return clip;
+  }
+  stop(clip) { const i = this.activeClips.indexOf(clip); if (i>=0) this.activeClips.splice(i,1); }
+  stopAll() { this.activeClips.length = 0; }
+  update(dt) {
+    for (let i = this.activeClips.length - 1; i >= 0; i--) {
+      const clip = this.activeClips[i];
+      clip.time += dt;
+      // Looping animations wrap around; one-shot clips clamp at duration
+      if (clip.loop && clip.duration > 0) {
+        clip.time = clip.time % clip.duration;
+      } else if (clip.time > clip.duration) {
+        clip.time = clip.duration;
+      }
+      const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
+      for (const track of clip.anim.tracks) {
+        const target = clip.targets[track.target]; if (!target) continue;
+        for (const prop in track.properties) {
+          const v = _sampleTrack(track.properties[prop], t01, clip.bindings);
+          if (v !== null) _applyProperty(target, prop, v);
+        }
+      }
+      if (!clip.loop && clip.time >= clip.duration && !clip.done) {
+        clip.done = true;
+        if (clip.onComplete) clip.onComplete();
+        this.activeClips.splice(i, 1);
+      }
+    }
+    if (this.onTickCb) this.onTickCb(this.activeClips);
+  }
+}
+
+// =====================================================================
+//   ANIMATIONS — JSON schema. Default below; CMS overrides via localStorage.
+//   $-prefixed values are bindings resolved at runtime per clip
+// =====================================================================
+const _DEFAULT_ANIMATIONS = {
+  photoLiftOff: {
+    duration: 0.75,
+    tracks: [
+      { target: 'photoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$startPos',    ease: 'easeOutBack' },
+            { t: 1.0, value: '$photoTarget' },
+          ],
+          scale: [
+            { t: 0.0, value: 0.30, ease: 'easeOutBack' },
+            { t: 1.0, value: 1.00 },
+          ],
+        }
+      },
+      { target: 'infoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$startPos' },
+            { t: 0.2, value: '$startPos',   ease: 'easeOutCubic' },
+            { t: 1.0, value: '$infoTarget' },
+          ],
+          scale: [
+            { t: 0.0, value: 0.05 },
+            { t: 0.2, value: 0.05, ease: 'easeOutCubic' },
+            { t: 1.0, value: 1.00 },
+          ],
+          opacity: [
+            { t: 0.0, value: 0.0 },
+            { t: 0.2, value: 0.0, ease: 'easeOutCubic' },
+            { t: 1.0, value: 1.0 },
+          ],
+        }
+      },
+      { target: 'dim',
+        properties: {
+          opacity: [
+            { t: 0.0,   value: 0.0,  ease: 'linear' },
+            { t: 0.625, value: 0.78 },
+            { t: 1.0,   value: 0.78 },
+          ],
+        }
+      },
+    ],
+  },
+  photoLiftClose: {
+    duration: 0.5,
+    tracks: [
+      { target: 'photoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$photoTarget', ease: 'easeInCubic' },
+            { t: 1.0, value: '$startPos' },
+          ],
+          scale: [
+            { t: 0.0, value: 1.00, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.30 },
+          ],
+        }
+      },
+      { target: 'infoMesh',
+        properties: {
+          position: [
+            { t: 0.0, value: '$infoTarget', ease: 'easeInCubic' },
+            { t: 1.0, value: '$startPos' },
+          ],
+          scale: [
+            { t: 0.0, value: 1.00, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.05 },
+          ],
+          opacity: [
+            { t: 0.0, value: 1.0, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.0 },
+          ],
+        }
+      },
+      { target: 'dim',
+        properties: {
+          opacity: [
+            { t: 0.0, value: 0.78, ease: 'easeInCubic' },
+            { t: 1.0, value: 0.0 },
+          ],
+        }
+      },
+    ],
+  },
+  bookOpenSwoosh: {
+    duration: 1.2,
+    tracks: [
+      { target: 'bookGroup',
+        properties: {
+          'scale.x': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.y': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'scale.z': [{ t: 0.0, value: 0.85, ease: 'easeOutBack' }, { t: 1.0, value: 1.0 }],
+          'rotation.y': [{ t: 0.0, value: -0.35, ease: 'easeOutCubic' }, { t: 1.0, value: 0 }],
+        }
+      },
+    ],
+  },
+  pageNudge: {
+    duration: 0.45,
+    tracks: [
+      { target: 'bookGroup',
+        properties: {
+          'rotation.z': [
+            { t: 0.0,  value: 0,      ease: 'easeOutQuad' },
+            { t: 0.25, value: 0.06,   ease: 'easeInOutQuad' },
+            { t: 0.6,  value: -0.04,  ease: 'easeInOutQuad' },
+            { t: 1.0,  value: 0 },
+          ],
+        }
+      },
+    ],
+  },
+};
+// Resolve final animations: prefer the CMS-edited copy in localStorage, fall back to defaults.
+let ANIMATIONS = _DEFAULT_ANIMATIONS;
+try {
+  const _saved = localStorage.getItem('church.animations');
+  if (_saved) {
+    const _parsed = JSON.parse(_saved);
+    if (_parsed && typeof _parsed === 'object') ANIMATIONS = _parsed;
+    console.info('[Animations] loaded CMS overrides from localStorage');
+  }
+} catch (e) { console.warn('[Animations] failed to load CMS overrides, using defaults:', e); }
+
+const keyframePlayer = new KeyframePlayer(ANIMATIONS);
+
+// =====================================================================
+//   DEBUG TIMELINE OVERLAY — visualises whatever the player is running
+// =====================================================================
+const tlEls = {
+  panel:   document.getElementById('timeline-debug'),
+  anim:    document.getElementById('tl-anim'),
+  time:    document.getElementById('tl-time'),
+  tracks:  document.getElementById('tl-tracks'),
+  replay:  document.getElementById('tl-replay'),
+  toggle:  document.getElementById('tl-toggle'),
+};
+let _lastClipMeta = null;  // { name, targets, bindings } — used by replay button
+
+function buildTimelineRows(clip) {
+  tlEls.tracks.innerHTML = '';
+  for (const track of clip.anim.tracks) {
+    for (const prop in track.properties) {
+      const keyframes = track.properties[prop];
+      const row = document.createElement('div');
+      row.className = 'tl-track';
+      const dots = keyframes.map((kf, i) => {
+        const left = (kf.t * 100).toFixed(2);
+        return `<div class="tl-kf" data-t="${kf.t}" style="left:${left}%" title="t=${kf.t.toFixed(2)} · ${kf.ease||'linear'}"></div>`;
+      }).join('');
+      row.innerHTML = `
+        <div class="tl-track-label">${track.target} <span class="prop">· ${prop}</span></div>
+        <div class="tl-track-bar">${dots}<div class="tl-playhead" style="left:0%"></div></div>
+      `;
+      tlEls.tracks.appendChild(row);
+    }
+  }
+  tlEls.anim.textContent = clip.name;
+  tlEls.replay.disabled = false;
+}
+function updateTimelineUI() {
+  if (!keyframePlayer.activeClips.length) return;
+  const clip = keyframePlayer.activeClips[0];
+  const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
+  const pct = (t01 * 100).toFixed(2) + '%';
+  for (const ph of tlEls.tracks.querySelectorAll('.tl-playhead')) ph.style.left = pct;
+  // highlight the keyframe currently in range
+  for (const bar of tlEls.tracks.querySelectorAll('.tl-track-bar')) {
+    const dots = bar.querySelectorAll('.tl-kf');
+    dots.forEach(d => d.classList.remove('active'));
+    let activeIdx = 0;
+    dots.forEach((d, i) => { if (parseFloat(d.dataset.t) <= t01) activeIdx = i; });
+    if (dots[activeIdx]) dots[activeIdx].classList.add('active');
+  }
+  tlEls.time.textContent = clip.time.toFixed(2) + ' / ' + clip.duration.toFixed(2);
+}
+function clearTimelineWhenIdle() {
+  if (keyframePlayer.activeClips.length === 0) {
+    tlEls.time.textContent = '0.00 / 0.00';
+    // leave the last anim's rows visible so user can inspect
+  }
+}
+
+keyframePlayer.onPlayCb = (clip) => {
+  _lastClipMeta = { name: clip.name, targets: clip.targets, bindings: clip.bindings };
+  buildTimelineRows(clip);
+};
+keyframePlayer.onTickCb = () => {
+  if (!tlEls.panel.classList.contains('hidden')) { updateTimelineUI(); clearTimelineWhenIdle(); }
+};
+
+tlEls.toggle.addEventListener('click', () => tlEls.panel.classList.add('hidden'));
+tlEls.replay.addEventListener('click', () => {
+  if (!_lastClipMeta) return;
+  // play again with the same targets+bindings; skip onComplete to avoid retriggering cleanup
+  keyframePlayer.play(_lastClipMeta.name, { targets: _lastClipMeta.targets, bindings: _lastClipMeta.bindings });
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 't' || e.key === 'T') {
+    if (!e.metaKey && !e.ctrlKey && !e.altKey) tlEls.panel.classList.toggle('hidden');
+  }
 });
 
 // =====================================================================
@@ -1192,14 +1666,18 @@ function renderInfoCanvas(photo) {
   return c;
 }
 
+// State shell — the keyframe player drives the meshes; this just holds refs + dynamic targets
 const photoView = {
   active: false, closing: false,
   photoMesh: null, infoMesh: null, dim: null,
   startPos: new THREE.Vector3(),
-  t: 0, duration: 0.75,
+  photoTarget: new THREE.Vector3(),
+  infoTarget:  new THREE.Vector3(),
+  activeClip: null,
 };
 
 function cleanupPhotoView() {
+  if (photoView.activeClip) { keyframePlayer.stop(photoView.activeClip); photoView.activeClip = null; }
   for (const k of ['photoMesh','infoMesh','dim']) {
     const m = photoView[k];
     if (m) {
@@ -1211,6 +1689,21 @@ function cleanupPhotoView() {
     }
   }
   photoView.active = false; photoView.closing = false;
+}
+
+// Compute photo dimensions that fit nicely in the viewport at viewing distance.
+// Caps width so the info panel has room on the right.
+function _photoFitDims(aspect) {
+  const dist = 2.2;
+  const vH   = 2 * dist * Math.tan((camera.fov * Math.PI / 180) / 2);
+  const vW   = vH * camera.aspect;
+  const maxH = vH * 0.78;
+  const maxW = vW * 0.55;          // photo gets ~half, info panel takes the other half
+  if (aspect > maxW / maxH) {
+    const w = maxW; return { w, h: w / aspect };
+  } else {
+    const h = maxH; return { w: h * aspect, h };
+  }
 }
 
 async function openModal(photo, hitPoint) {
@@ -1226,7 +1719,7 @@ async function openModal(photo, hitPoint) {
   if (!tex) return;
 
   const aspect = tex.image.width / tex.image.height;
-  const photoH = 2.4, photoW = photoH * aspect;  // BIG magnification — photo dominates view
+  const { w: photoW, h: photoH } = _photoFitDims(aspect);
   // Photo plane — printed plate with subtle backing
   const photoMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(photoW, photoH),
@@ -1243,10 +1736,10 @@ async function openModal(photo, hitPoint) {
   const infoTex = new THREE.CanvasTexture(infoCanvas);
   infoTex.colorSpace = THREE.SRGBColorSpace; infoTex.anisotropy = 16;
   const infoAspect = infoCanvas.width / infoCanvas.height;
-  const infoH = 1.6, infoW = infoH * infoAspect;
+  const infoH = Math.min(photoH * 0.95, 1.6), infoW = infoH * infoAspect;
   const infoMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(infoW, infoH),
-    new THREE.MeshBasicMaterial({ map: infoTex, transparent: true, side: THREE.DoubleSide, depthWrite: false })
+    new THREE.MeshBasicMaterial({ map: infoTex, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
   );
   infoMesh.position.copy(hitPoint);
   infoMesh.lookAt(camera.position);
@@ -1260,11 +1753,24 @@ async function openModal(photo, hitPoint) {
   );
   scene.add(dim);
 
-  Object.assign(photoView, {
-    active: true, closing: false,
-    photoMesh, infoMesh, dim,
-    startPos: hitPoint.clone(),
-    t: 0,
+  photoView.photoMesh = photoMesh;
+  photoView.infoMesh  = infoMesh;
+  photoView.dim       = dim;
+  photoView.startPos.copy(hitPoint);
+  photoView.active    = true;
+  photoView.closing   = false;
+
+  // Kick off the lift-off animation through the keyframe player.
+  // Bindings are functions so they re-evaluate every frame as the camera moves.
+  photoView.activeClip = keyframePlayer.play('photoLiftOff', {
+    targets: { photoMesh, infoMesh, dim },
+    bindings: {
+      startPos:    () => photoView.startPos,
+      photoTarget: () => photoView.photoTarget,
+      infoTarget:  () => photoView.infoTarget,
+    },
+    // After the lift-off settles, auto-play the photo's narration if one exists.
+    onComplete: () => { playPhotoNarration(photo.src); },
   });
   playPop();
 }
@@ -1272,59 +1778,39 @@ async function openModal(photo, hitPoint) {
 function closeModal() {
   if (!photoView.active || photoView.closing) return;
   photoView.closing = true;
-  photoView.t = 0;
+  stopNarration();  // stop any photo narration that was playing
+  if (photoView.activeClip) keyframePlayer.stop(photoView.activeClip);
+  photoView.activeClip = keyframePlayer.play('photoLiftClose', {
+    targets: { photoMesh: photoView.photoMesh, infoMesh: photoView.infoMesh, dim: photoView.dim },
+    bindings: {
+      startPos:    () => photoView.startPos,
+      photoTarget: () => photoView.photoTarget,
+      infoTarget:  () => photoView.infoTarget,
+    },
+    onComplete: () => cleanupPhotoView(),
+  });
 }
 
-function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t-1, 3) + c1 * Math.pow(t-1, 2); }
-function easeOutElastic(t) {
-  if (t === 0 || t === 1) return t;
-  const c4 = (2 * Math.PI) / 3;
-  return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-}
-function easeInCubic(t) { return t * t * t; }
-function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-function updateModal(dt) {
+// Refresh dynamic bindings — call BEFORE keyframePlayer.update so the lerp samples fresh targets.
+function refreshPhotoViewBindings() {
   if (!photoView.active) return;
-  photoView.t = Math.min(photoView.t + dt / photoView.duration, 1);
-  const t = photoView.t;
-
-  // World axes from camera
   const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
   const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
   const camRight = new THREE.Vector3().crossVectors(camDir, camera.up).normalize();
-  const camUp    = new THREE.Vector3().crossVectors(camRight, camDir).normalize();
-
-  // Targets — photo dominates centre, info is a smaller side panel
-  const center = camPos.clone().add(camDir.clone().multiplyScalar(2.2));
-  const photoTarget = center.clone().add(camRight.clone().multiplyScalar(-0.7));
-  const infoTarget  = center.clone().add(camRight.clone().multiplyScalar(1.5));
-  const dimPos      = camPos.clone().add(camDir.clone().multiplyScalar(2.6));
-
-  photoView.dim.position.copy(dimPos);
-  photoView.dim.lookAt(camera.position);
-
-  if (!photoView.closing) {
-    const e = Math.min(easeOutBack(t), 1);
-    // Photo: BIG magnify — scales 0.3 → 1.0 of its native (already-large) size
-    photoView.photoMesh.position.lerpVectors(photoView.startPos, photoTarget, e);
-    photoView.photoMesh.lookAt(camera.position);
-    photoView.photoMesh.scale.setScalar(THREE.MathUtils.lerp(0.3, 1.0, e));
-    // Info: small side panel
-    photoView.infoMesh.position.lerpVectors(photoView.startPos, infoTarget, e);
-    photoView.infoMesh.lookAt(camera.position);
-    photoView.infoMesh.scale.setScalar(THREE.MathUtils.lerp(0.05, 0.95, e));
-    photoView.dim.material.opacity = THREE.MathUtils.lerp(0, 0.78, Math.min(t * 1.6, 1));
-  } else {
-    const e = easeInCubic(t);
-    photoView.photoMesh.position.lerpVectors(photoTarget, photoView.startPos, e);
-    photoView.photoMesh.lookAt(camera.position);
-    photoView.photoMesh.scale.setScalar(THREE.MathUtils.lerp(1.0, 0.3, e));
-    photoView.infoMesh.position.lerpVectors(infoTarget, photoView.startPos, e);
-    photoView.infoMesh.lookAt(camera.position);
-    photoView.infoMesh.scale.setScalar(THREE.MathUtils.lerp(0.95, 0.05, e));
-    photoView.dim.material.opacity = THREE.MathUtils.lerp(0.78, 0, e);
-    if (t >= 1) cleanupPhotoView();
+  const center = camPos.clone().addScaledVector(camDir, 2.2);
+  photoView.photoTarget.copy(center).addScaledVector(camRight, -0.55);
+  photoView.infoTarget .copy(center).addScaledVector(camRight,  0.85);
+}
+// Apply orientation constraints — call AFTER keyframePlayer.update so the player's writes don't overwrite the lookAt.
+function applyPhotoViewConstraints() {
+  if (!photoView.active) return;
+  if (photoView.photoMesh) photoView.photoMesh.lookAt(camera.position);
+  if (photoView.infoMesh)  photoView.infoMesh .lookAt(camera.position);
+  if (photoView.dim) {
+    const camPos = new THREE.Vector3(); camera.getWorldPosition(camPos);
+    const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+    photoView.dim.position.copy(camPos).addScaledVector(camDir, 2.6);
+    photoView.dim.lookAt(camera.position);
   }
 }
 
@@ -1480,7 +1966,9 @@ function animate() {
     p.update(dt, delayedPage, isBookClosed);
   }
 
-  updateModal(dt);
+  refreshPhotoViewBindings();   // fresh camera-relative targets before player samples them
+  keyframePlayer.update(dt);    // JSON-driven animations (photo lift-off etc.)
+  applyPhotoViewConstraints();  // lookAt camera + dim position (post-keyframe constraints)
 
   renderer.render(scene, camera);
 }
@@ -1495,6 +1983,8 @@ function animate() {
   await buildBook();
   updateUI();
   setTimeout(() => document.getElementById('loading').classList.add('hidden'), 200);
+  // Welcome flourish — book scales up and rotates into place
+  setTimeout(() => keyframePlayer.play('bookOpenSwoosh', { targets: { bookGroup } }), 280);
 })();
 </script>
 </body>

@@ -1,0 +1,76 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-row">
+    <div class="footer-brand">
+      <span class="orn">❦</span>
+      <div>
+        <div class="title">Ἱερὸς Ναὸς Ἀποστόλου Ἀνδρέου</div>
+        <div class="sub">Καθεδρικὸς τῶν Πατρῶν · πολιοῦχος</div>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      <a href="/about" class="meta-link">περὶ τοῦ ἔργου</a>
+      <span class="dot">·</span>
+      <span class="tech">three.js · webxr · astro</span>
+      <span class="dot">·</span>
+      <span class="year">— mmxx{['vi','vii','viii','ix','x'][Math.max(0, year - 2026)] ?? 'vi'} —</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    z-index: 4;
+    border-top: 1px solid rgba(217,180,120,0.12);
+    padding: clamp(32px, 4vw, 56px) 0;
+    background: linear-gradient(0deg, rgba(8,4,2,0.7) 0%, transparent 100%);
+  }
+  .footer-row {
+    display: flex; align-items: center; gap: 24px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .footer-brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .footer-brand .orn {
+    font-size: 28px;
+    color: var(--gold-pale);
+    line-height: 1;
+  }
+  .footer-brand .title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--gold-bright);
+    letter-spacing: 0.01em;
+  }
+  .footer-brand .sub {
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+    margin-top: 3px;
+  }
+  .footer-meta {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  .meta-link { color: var(--gold-mid); }
+  .meta-link:hover { color: var(--gold-bright); }
+  .footer-meta .dot { opacity: 0.4; }
+  .footer-meta .year { color: var(--gold-soft); font-style: italic; font-family: var(--serif); letter-spacing: 0.05em; }
+
+  @media (max-width: 720px) {
+    .footer-row { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .footer-meta { font-size: 8px; gap: 8px; }
+  }
+</style>
