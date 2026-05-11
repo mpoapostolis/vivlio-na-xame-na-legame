@@ -1,13 +1,12 @@
 ---
 import ImmersiveLayout from '../layouts/ImmersiveLayout.astro';
-import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
+import { PHOTO_NARRATIONS } from '../data/animations';
 ---
 
 <ImmersiveLayout
   title="Τὸ Βιβλίον · Ἅγιος Ἀνδρέας Πατρῶν"
   description="Τρισδιάστατο διαδραστικὸ βιβλίο μὲ τὴν ἱστορία τοῦ Καθεδρικοῦ Ναοῦ."
 >
-<script type="application/json" id="animations-data" set:html={JSON.stringify(ANIMATIONS)}></script>
 <script type="application/json" id="photo-narrations-data" set:html={JSON.stringify(PHOTO_NARRATIONS)}></script>
 
 <style is:global>
@@ -205,38 +204,6 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
   .cover-subtitle{font-style:italic;font-size:26px;color:#d9b478;line-height:1.4;margin-bottom:34px}
   .cover-meta{font-size:13px;letter-spacing:0.45em;text-transform:uppercase;color:#a08c64;font-family:'Inter',sans-serif}
 
-  /* === KEYFRAME DEBUG TIMELINE (toggle with T) === */
-  #timeline-debug{position:fixed;left:32px;right:32px;bottom:96px;max-width:760px;margin:0 auto;
-    background:rgba(8,4,2,0.88);backdrop-filter:blur(12px) saturate(140%);
-    border:1px solid rgba(217,180,120,0.32);border-radius:6px;
-    box-shadow:0 18px 50px -10px rgba(0,0,0,0.7);
-    font-family:'Inter',sans-serif;color:#d9b478;font-size:10px;padding:14px 18px;
-    z-index:15;transition:opacity 0.35s,transform 0.35s;pointer-events:auto}
-  #timeline-debug.hidden{opacity:0;transform:translateY(20px);pointer-events:none}
-  .tl-header{display:flex;align-items:center;gap:14px;padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.18)}
-  .tl-title{letter-spacing:0.32em;text-transform:uppercase;color:#9a6730;font-weight:600;font-size:9px}
-  .tl-anim{font-style:italic;color:#efddb0;flex:1;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:0.01em}
-  .tl-time{font-variant-numeric:tabular-nums;color:#c9a96a;font-weight:500;font-size:10px;letter-spacing:0.05em}
-  .tl-btn{background:transparent;border:1px solid rgba(217,180,120,0.3);color:#d9b478;padding:4px 10px;border-radius:3px;
-    font-family:inherit;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:all 0.2s}
-  .tl-btn:hover{background:rgba(217,180,120,0.14);color:#efddb0}
-  .tl-btn:disabled{opacity:0.3;cursor:not-allowed}
-  .tl-tracks{padding:10px 0 4px;display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto}
-  .tl-tracks::-webkit-scrollbar{width:6px}
-  .tl-tracks::-webkit-scrollbar-thumb{background:rgba(217,180,120,0.2);border-radius:3px}
-  .tl-track{display:flex;align-items:center;gap:14px;padding:2px 0}
-  .tl-track-label{width:170px;flex-shrink:0;opacity:0.65;font-size:9px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;color:#c9a96a}
-  .tl-track-label .prop{color:#efddb0;opacity:0.85}
-  .tl-track-bar{flex:1;height:10px;background:rgba(217,180,120,0.08);border-radius:2px;position:relative}
-  .tl-track-bar::before{content:'';position:absolute;inset:4px 0;border-top:1px dashed rgba(217,180,120,0.18)}
-  .tl-kf{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;
-    background:#c9a96a;box-shadow:0 0 4px rgba(255,200,100,0.4);transition:none}
-  .tl-kf.active{background:#efddb0;box-shadow:0 0 8px rgba(255,220,150,0.85);transform:translate(-50%,-50%) scale(1.25)}
-  .tl-playhead{position:absolute;top:-3px;bottom:-3px;width:2px;background:#efddb0;
-    box-shadow:0 0 6px rgba(255,220,150,0.9);pointer-events:none;border-radius:1px}
-  .tl-empty{padding:20px 0;text-align:center;opacity:0.4;font-style:italic;font-family:'Cormorant Garamond',serif;font-size:13px}
-  .tl-hint{text-align:center;padding-top:8px;font-size:8px;letter-spacing:0.32em;opacity:0.4;text-transform:uppercase}
-
   /* Hide the immersive-layout's default exit button while the loading screen is up */
   #loading:not(.hidden) ~ .exit-immersive { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
 
@@ -244,12 +211,10 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
      ImmersiveLayout exit button at top-left. */
   #hud .brand { display: none; }
   /* Push the badge a bit so it doesn't collide with the audio button */
-  .badge { top: 26px !important; }
 
   /* ===================== MOBILE / TABLET ===================== */
   @media (max-width: 760px) {
     /* Compact top bar: pagecount tucks below badge */
-    .badge       { top: 14px !important; font-size: 8px !important; letter-spacing: 0.35em !important; padding: 5px 10px !important; }
     .pagecount   { top: 14px !important; right: 14px !important; font-size: 10px !important; letter-spacing: 0.2em !important; }
     .audio-btn   { top: 46px !important; right: 14px !important; padding: 6px 12px 6px 9px !important; font-size: 8.5px !important; letter-spacing: 0.22em !important; }
     .audio-label { display: none !important; }                                /* icon only on mobile */
@@ -263,11 +228,6 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
 
     /* Hint: hidden on phones — irrelevant to touch users (no kbd, no drag affordance) */
     .hint { display: none !important; }
-
-    /* Debug timeline overlay: shorter + scrolly */
-    #timeline-debug { left: 8px !important; right: 8px !important; bottom: 80px !important; padding: 10px 12px !important; }
-    #timeline-debug .tl-header { flex-wrap: wrap !important; gap: 8px !important; }
-    #timeline-debug .tl-tracks { max-height: 140px !important; }
 
     /* Photo modal: SINGLE column, image on top, text below */
     #modal .panel {
@@ -286,7 +246,6 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
   }
 
   @media (max-width: 420px) {
-    .badge { font-size: 7px !important; padding: 4px 8px !important; }
     .pagecount { font-size: 9px !important; }
     #modal .photo-side img { max-height: 38vh !important; }
   }
@@ -302,7 +261,6 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
 
 <div id="hud">
   <div class="brand"><span>three.js · webxr · ἐκπαιδευτικὴ ἐφαρμογή</span><b>Ι.Ν. Ἁγίου Ἀνδρέου Πατρῶν</b></div>
-  <div class="badge">three.js · webxr</div>
   <div class="pagecount"><span id="cur">ἐξώφυλλο</span><em>/</em><span id="tot">—</span></div>
   <button id="audio-btn" class="audio-btn" aria-label="ἀφήγησις τῆς σελίδος">
     <span class="audio-icon" id="audio-icon">▶</span>
@@ -316,25 +274,11 @@ import { ANIMATIONS, PHOTO_NARRATIONS } from '../data/animations';
   </div>
   <div class="hint">
     <kbd>←</kbd> <kbd>→</kbd> γύρισμα · <kbd>click</kbd> εἰκόνα = προβολή<br>
-    <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση · <kbd>T</kbd> timeline
+    <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση
   </div>
 </div>
 
 <div id="vignette"></div>
-
-<div id="timeline-debug" class="hidden">
-  <div class="tl-header">
-    <span class="tl-title">Keyframe Timeline</span>
-    <span class="tl-anim" id="tl-anim">— ἀδρανές —</span>
-    <span class="tl-time" id="tl-time">0.00 / 0.00</span>
-    <button class="tl-btn" id="tl-replay" disabled>↺ replay</button>
-    <button class="tl-btn" id="tl-toggle">×</button>
-  </div>
-  <div class="tl-tracks" id="tl-tracks">
-    <div class="tl-empty">πάτα μιὰ φωτογραφία γιὰ νὰ δεῖς τοὺς keyframes</div>
-  </div>
-  <div class="tl-hint">πάτα <b>T</b> γιὰ νὰ κρύψεις · κάθε ●  εἶναι keyframe · ἡ κάθετη γραμμὴ εἶναι ὁ playhead</div>
-</div>
 
 <div id="modal">
   <div class="panel">
@@ -804,7 +748,6 @@ renderer.domElement.style.inset = '0';
 renderer.domElement.style.zIndex = '3';
 document.body.insertBefore(renderer.domElement, document.body.firstChild);
 
-document.querySelector('.badge').textContent = HAS_WEBGPU ? 'three.js · webgpu · webxr' : 'three.js · webgl2 · webxr';
 console.log(`%c[engine] ${HAS_WEBGPU ? 'WebGPU' : 'WebGL2'}`, 'color:#d9b478;font-weight:bold');
 
 // PMREM environment — initialized later in bootstrap (WebGPU needs renderer.init() first)
@@ -1108,10 +1051,6 @@ let targetPage = 0, delayedPage = 0, pageStepTimer = 0;
 function goToPage(n) {
   closeModal();
   const clamped = THREE.MathUtils.clamp(n, 0, PAGES.length);
-  // If user tried to navigate past the boundary, give a tactile nudge via keyframes.
-  if (n !== clamped && typeof keyframePlayer !== 'undefined') {
-    keyframePlayer.play('pageNudge', { targets: { bookGroup } });
-  }
   // Stop any active narration on page change so they don't overlap.
   if (clamped !== targetPage && typeof stopNarration === 'function') stopNarration();
   targetPage = clamped;
@@ -1245,295 +1184,20 @@ window.addEventListener('keydown', e => {
 });
 
 // =====================================================================
-//   KEYFRAME RUNTIME — JSON-driven animation player
-//   (foundation for the upcoming CMS animation editor)
-// =====================================================================
-const EASE = {
-  linear:         t => t,
-  easeInQuad:     t => t*t,
-  easeOutQuad:    t => 1 - (1-t)*(1-t),
-  easeInOutQuad:  t => t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2,
-  easeInCubic:    t => t*t*t,
-  easeOutCubic:   t => 1 - Math.pow(1-t, 3),
-  easeInOutCubic: t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
-  easeInQuart:    t => t*t*t*t,
-  easeOutQuart:   t => 1 - Math.pow(1-t, 4),
-  easeOutBack:    t => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); },
-  easeOutElastic: t => { if (t===0||t===1) return t; const c4=(2*Math.PI)/3; return Math.pow(2,-10*t)*Math.sin((t*10-0.75)*c4)+1; },
-  easeOutBounce:  t => { const n=7.5625, d=2.75;
-    if (t<1/d) return n*t*t;
-    if (t<2/d){ t-=1.5/d; return n*t*t+0.75; }
-    if (t<2.5/d){ t-=2.25/d; return n*t*t+0.9375; }
-    t-=2.625/d; return n*t*t+0.984375; },
-};
-
-function _isVec3Array(v) { return Array.isArray(v) && v.length === 3 && typeof v[0]==='number'; }
-function _resolveBinding(v, bindings) {
-  if (typeof v !== 'string' || !v.startsWith('$')) return v;
-  const key = v.slice(1);
-  if (!(key in bindings)) { console.warn('[Keyframe] missing binding $'+key); return 0; }
-  const b = bindings[key];
-  return typeof b === 'function' ? b() : b;
-}
-function _lerp(a, b, t) {
-  if (typeof a === 'number' && typeof b === 'number') return a + (b - a) * t;
-  if (a && a.isVector3 && b && b.isVector3) return new THREE.Vector3().lerpVectors(a, b, t);
-  if (_isVec3Array(a) && _isVec3Array(b)) return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
-  return t < 0.5 ? a : b;
-}
-function _sampleTrack(keyframes, t01, bindings) {
-  if (!keyframes.length) return null;
-  if (t01 <= keyframes[0].t) return _resolveBinding(keyframes[0].value, bindings);
-  const last = keyframes[keyframes.length-1];
-  if (t01 >= last.t) return _resolveBinding(last.value, bindings);
-  for (let i=0; i<keyframes.length-1; i++) {
-    const a = keyframes[i], b = keyframes[i+1];
-    if (t01 >= a.t && t01 <= b.t) {
-      const localT = (t01 - a.t) / Math.max(b.t - a.t, 1e-6);
-      const ease = EASE[a.ease || 'linear'] || EASE.linear;
-      return _lerp(_resolveBinding(a.value, bindings), _resolveBinding(b.value, bindings), ease(localT));
-    }
-  }
-  return _resolveBinding(last.value, bindings);
-}
-function _applyProperty(target, prop, value) {
-  if (!target) return;
-  if (prop === 'position') {
-    if (value && value.isVector3) target.position.copy(value);
-    else if (_isVec3Array(value)) target.position.set(value[0], value[1], value[2]);
-  } else if (prop === 'scale') {
-    if (typeof value === 'number') target.scale.setScalar(value);
-    else if (_isVec3Array(value)) target.scale.set(value[0], value[1], value[2]);
-  } else if (prop === 'rotation') {
-    if (_isVec3Array(value)) target.rotation.set(value[0], value[1], value[2]);
-  } else if (prop === 'opacity') {
-    if (target.material) target.material.opacity = value;
-  } else {
-    // dotted path e.g. 'material.metalness'
-    const parts = prop.split('.'); let obj = target;
-    for (let i=0; i<parts.length-1; i++) { obj = obj[parts[i]]; if (!obj) return; }
-    obj[parts[parts.length-1]] = value;
-  }
-}
-
-class KeyframePlayer {
-  constructor(animations) {
-    this.animations = animations;
-    this.activeClips = [];
-    this.onPlayCb = null;
-    this.onTickCb = null;
-  }
-  play(name, opts = {}) {
-    const anim = this.animations[name];
-    if (!anim) { console.warn('[Keyframe] unknown animation: '+name); return null; }
-    const clip = {
-      name, anim, time: 0, duration: anim.duration,
-      loop: opts.loop !== undefined ? opts.loop : !!anim.loop,
-      targets: opts.targets || {}, bindings: opts.bindings || {},
-      onComplete: opts.onComplete || null, done: false,
-    };
-    this.activeClips.push(clip);
-    if (this.onPlayCb) this.onPlayCb(clip);
-    return clip;
-  }
-  stop(clip) { const i = this.activeClips.indexOf(clip); if (i>=0) this.activeClips.splice(i,1); }
-  stopAll() { this.activeClips.length = 0; }
-  update(dt) {
-    for (let i = this.activeClips.length - 1; i >= 0; i--) {
-      const clip = this.activeClips[i];
-      clip.time += dt;
-      // Looping animations wrap around; one-shot clips clamp at duration
-      if (clip.loop && clip.duration > 0) {
-        clip.time = clip.time % clip.duration;
-      } else if (clip.time > clip.duration) {
-        clip.time = clip.duration;
-      }
-      const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
-      for (const track of clip.anim.tracks) {
-        const target = clip.targets[track.target]; if (!target) continue;
-        for (const prop in track.properties) {
-          const v = _sampleTrack(track.properties[prop], t01, clip.bindings);
-          if (v !== null) _applyProperty(target, prop, v);
-        }
-      }
-      if (!clip.loop && clip.time >= clip.duration && !clip.done) {
-        clip.done = true;
-        if (clip.onComplete) clip.onComplete();
-        this.activeClips.splice(i, 1);
-      }
-    }
-    if (this.onTickCb) this.onTickCb(this.activeClips);
-  }
-}
-
-// =====================================================================
-//   ANIMATIONS — loaded from src/data/animations.ts via injected JSON.
-// =====================================================================
-const ANIMATIONS = JSON.parse(document.getElementById('animations-data').textContent);
-const keyframePlayer = new KeyframePlayer(ANIMATIONS);
-
-// =====================================================================
-//   DEBUG TIMELINE OVERLAY — visualises whatever the player is running
-// =====================================================================
-const tlEls = {
-  panel:   document.getElementById('timeline-debug'),
-  anim:    document.getElementById('tl-anim'),
-  time:    document.getElementById('tl-time'),
-  tracks:  document.getElementById('tl-tracks'),
-  replay:  document.getElementById('tl-replay'),
-  toggle:  document.getElementById('tl-toggle'),
-};
-let _lastClipMeta = null;  // { name, targets, bindings } — used by replay button
-
-function buildTimelineRows(clip) {
-  tlEls.tracks.innerHTML = '';
-  for (const track of clip.anim.tracks) {
-    for (const prop in track.properties) {
-      const keyframes = track.properties[prop];
-      const row = document.createElement('div');
-      row.className = 'tl-track';
-      const dots = keyframes.map((kf, i) => {
-        const left = (kf.t * 100).toFixed(2);
-        return `<div class="tl-kf" data-t="${kf.t}" style="left:${left}%" title="t=${kf.t.toFixed(2)} · ${kf.ease||'linear'}"></div>`;
-      }).join('');
-      row.innerHTML = `
-        <div class="tl-track-label">${track.target} <span class="prop">· ${prop}</span></div>
-        <div class="tl-track-bar">${dots}<div class="tl-playhead" style="left:0%"></div></div>
-      `;
-      tlEls.tracks.appendChild(row);
-    }
-  }
-  tlEls.anim.textContent = clip.name;
-  tlEls.replay.disabled = false;
-}
-function updateTimelineUI() {
-  if (!keyframePlayer.activeClips.length) return;
-  const clip = keyframePlayer.activeClips[0];
-  const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
-  const pct = (t01 * 100).toFixed(2) + '%';
-  for (const ph of tlEls.tracks.querySelectorAll('.tl-playhead')) ph.style.left = pct;
-  // highlight the keyframe currently in range
-  for (const bar of tlEls.tracks.querySelectorAll('.tl-track-bar')) {
-    const dots = bar.querySelectorAll('.tl-kf');
-    dots.forEach(d => d.classList.remove('active'));
-    let activeIdx = 0;
-    dots.forEach((d, i) => { if (parseFloat(d.dataset.t) <= t01) activeIdx = i; });
-    if (dots[activeIdx]) dots[activeIdx].classList.add('active');
-  }
-  tlEls.time.textContent = clip.time.toFixed(2) + ' / ' + clip.duration.toFixed(2);
-}
-function clearTimelineWhenIdle() {
-  if (keyframePlayer.activeClips.length === 0) {
-    tlEls.time.textContent = '0.00 / 0.00';
-    // leave the last anim's rows visible so user can inspect
-  }
-}
-
-keyframePlayer.onPlayCb = (clip) => {
-  _lastClipMeta = { name: clip.name, targets: clip.targets, bindings: clip.bindings };
-  buildTimelineRows(clip);
-};
-keyframePlayer.onTickCb = () => {
-  if (!tlEls.panel.classList.contains('hidden')) { updateTimelineUI(); clearTimelineWhenIdle(); }
-};
-
-tlEls.toggle.addEventListener('click', () => tlEls.panel.classList.add('hidden'));
-tlEls.replay.addEventListener('click', () => {
-  if (!_lastClipMeta) return;
-  // play again with the same targets+bindings; skip onComplete to avoid retriggering cleanup
-  keyframePlayer.play(_lastClipMeta.name, { targets: _lastClipMeta.targets, bindings: _lastClipMeta.bindings });
-});
-window.addEventListener('keydown', e => {
-  if (e.key === 't' || e.key === 'T') {
-    if (!e.metaKey && !e.ctrlKey && !e.altKey) tlEls.panel.classList.toggle('hidden');
-  }
-});
-
-// =====================================================================
 //   PHOTO LIFTS OFF THE PAGE — image rises from book + info card beside
 // =====================================================================
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(' '); const lines = []; let line = '';
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
-    else line = test;
-  }
-  if (line) lines.push(line);
-  return lines;
-}
 
-function renderInfoCanvas(photo) {
-  const W = 760, H = 1080;
-  const c = document.createElement('canvas'); c.width = W; c.height = H;
-  const ctx = c.getContext('2d');
-  // Background — semi-opaque dark with subtle gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(20, 12, 6, 0.94)');
-  grad.addColorStop(1, 'rgba(8, 4, 2, 0.96)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-  // Border
-  ctx.strokeStyle = 'rgba(217,180,120,0.45)'; ctx.lineWidth = 2; ctx.strokeRect(3, 3, W-6, H-6);
-  ctx.strokeStyle = 'rgba(217,180,120,0.16)'; ctx.lineWidth = 1; ctx.strokeRect(22, 22, W-44, H-44);
-  // Inner gold corner ornaments
-  for (const [cx, cy, fx, fy] of [[22,22,1,1],[W-22,22,-1,1],[22,H-22,1,-1],[W-22,H-22,-1,-1]]) {
-    ctx.strokeStyle = 'rgba(217,180,120,0.55)'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + fy*22); ctx.lineTo(cx, cy);
-    ctx.lineTo(cx + fx*22, cy);
-    ctx.stroke();
-  }
-
-  let cy = 90;
-  ctx.font = '700 22px "Inter", system-ui, sans-serif';
-  ctx.fillStyle = '#9a6730';
-  ctx.fillText('ΦΩΤΟΓΡΑΦΙΑ · ΑΠΟ ΤΟ ΑΡΧΕΙΟΝ'.split('').join('  '), 60, cy);
-  cy += 64;
-
-  ctx.font = 'italic 500 60px "Cormorant Garamond", Georgia, serif';
-  ctx.fillStyle = '#efddb0';
-  const title = photo.title || photo.cap || 'φωτογραφία';
-  const titleLines = wrapText(ctx, title, W - 120);
-  for (const line of titleLines) { ctx.fillText(line, 60, cy); cy += 72; }
-  cy += 14;
-
-  ctx.fillStyle = '#c9a96a'; ctx.fillRect(60, cy, 64, 3); cy += 46;
-
-  ctx.font = '400 24px "Inter", system-ui, sans-serif';
-  ctx.fillStyle = '#c9a96a';
-  const descLines = wrapText(ctx, photo.desc || '', W - 120);
-  for (const line of descLines) { ctx.fillText(line, 60, cy); cy += 40; }
-  cy += 26;
-
-  if (photo.italic) {
-    ctx.font = 'italic 26px "Cormorant Garamond", Georgia, serif';
-    ctx.fillStyle = '#d9b478';
-    const italLines = wrapText(ctx, photo.italic, W - 120);
-    for (const line of italLines) { ctx.fillText(line, 60, cy); cy += 38; }
-  }
-
-  // Hint
-  ctx.font = '600 16px "Inter", system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(154,103,48,0.7)';
-  ctx.fillText('· CLICK · ΕΠΙΣΤΡΟΦΗ ΣΤΟ ΒΙΒΛΙΟΝ ·'.split('').join(' '), 60, H - 50);
-
-  return c;
-}
-
-// Photo modal — now uses the HTML #modal element instead of 3D world meshes.
-// Why: the camera-relative 3D lift-off was unusable on mobile / Quest browsers
-// (huge plane in front of the camera, hard to size, hard to dismiss).
-// The HTML modal is responsive, accessible, and trivially fast on every device.
+// Photo modal — HTML #modal (no 3D world meshes). Defensive close: anywhere
+// outside the .panel content closes; X button closes; Esc closes.
 const photoView = { active: false, closing: false };
-const _mdl = {
-  root:     document.getElementById('modal'),
-  img:      document.getElementById('modal-img'),
-  eyebrow:  document.getElementById('modal-eyebrow'),
-  title:    document.getElementById('modal-title'),
-  desc:     document.getElementById('modal-desc'),
-  italic:   document.getElementById('modal-italic'),
-  closeBtn: document.getElementById('modal-close'),
-};
+const modalEl      = document.getElementById('modal');
+const modalPanel   = modalEl ? modalEl.querySelector('.panel') : null;
+const modalCloseEl = document.getElementById('modal-close');
+const modalImg     = document.getElementById('modal-img');
+const modalEyebrow = document.getElementById('modal-eyebrow');
+const modalTitle   = document.getElementById('modal-title');
+const modalDesc    = document.getElementById('modal-desc');
+const modalItalic  = document.getElementById('modal-italic');
 
 function cleanupPhotoView() {
   photoView.active = false;
@@ -1544,20 +1208,19 @@ async function openModal(photo /*, hitPoint */) {
   if (photoView.active && !photoView.closing) return;
   cleanupPhotoView();
 
-  _mdl.img.src    = photo.src;
-  _mdl.img.alt    = photo.title || photo.cap || '';
-  _mdl.eyebrow.textContent = 'φωτογραφία · ἀπὸ τὸ ἀρχεῖον';
-  _mdl.title.textContent   = photo.title || photo.cap || '';
-  _mdl.desc.textContent    = photo.desc  || '';
-  _mdl.italic.textContent  = photo.italic || '';
-  _mdl.italic.style.display = photo.italic ? '' : 'none';
+  modalImg.src = photo.src;
+  modalImg.alt = photo.title || photo.cap || '';
+  modalEyebrow.textContent = 'φωτογραφία · ἀπὸ τὸ ἀρχεῖον';
+  modalTitle.textContent   = photo.title || photo.cap || '';
+  modalDesc.textContent    = photo.desc  || '';
+  modalItalic.textContent  = photo.italic || '';
+  modalItalic.style.display = photo.italic ? '' : 'none';
 
-  _mdl.root.classList.add('open');
-  _mdl.root.setAttribute('aria-hidden', 'false');
+  modalEl.classList.add('open');
+  modalEl.setAttribute('aria-hidden', 'false');
   photoView.active = true;
   photoView.closing = false;
   playPop();
-  // Auto-play narration once the fade-in completes
   setTimeout(() => playPhotoNarration(photo.src), 350);
 }
 
@@ -1565,13 +1228,24 @@ function closeModal() {
   if (!photoView.active || photoView.closing) return;
   photoView.closing = true;
   stopNarration();
-  _mdl.root.classList.remove('open');
-  _mdl.root.setAttribute('aria-hidden', 'true');
-  setTimeout(cleanupPhotoView, 500);  // matches CSS opacity transition
+  modalEl.classList.remove('open');
+  modalEl.setAttribute('aria-hidden', 'true');
+  setTimeout(cleanupPhotoView, 500);
 }
 
-if (_mdl.closeBtn) _mdl.closeBtn.addEventListener('click', closeModal);
-if (_mdl.root)     _mdl.root.addEventListener('click', e => { if (e.target === _mdl.root) closeModal(); });
+// (A) X button — explicit close, stop propagation so nothing else interferes
+modalCloseEl.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); closeModal(); });
+modalCloseEl.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); closeModal(); });
+
+// (B) Clicking the dim backdrop (the #modal element, not the panel) closes
+modalEl.addEventListener('click', e => {
+  if (e.target === modalEl) closeModal();
+});
+
+// (C) Clicking the panel content does NOT close — stop propagation here, but
+//     ALLOW the close button inside to keep working (it uses stopPropagation
+//     in its own handler before this one fires).
+modalPanel.addEventListener('click', e => { e.stopPropagation(); });
 
 // =====================================================================
 //   PICKING — raycaster on page meshes; UV → photo bbox lookup
@@ -1658,9 +1332,16 @@ controls.maxPolarAngle = Math.PI * 0.6;
 controls.target.set(0, 0, 0);
 
 // =====================================================================
-//   WEBXR
+//   WEBXR — only mount the entry button if WebXR is actually supported.
+//   No "VR NOT SUPPORTED" stub for users that have no headset.
 // =====================================================================
-document.body.appendChild(VRButton.createButton(renderer));
+(async () => {
+  if (!('xr' in navigator) || !navigator.xr) return;
+  try {
+    const ok = await navigator.xr.isSessionSupported('immersive-vr');
+    if (ok) document.body.appendChild(VRButton.createButton(renderer));
+  } catch (e) { /* unsupported — silently skip */ }
+})();
 
 // XR session handlers — only WebGLRenderer has these events; WebGPURenderer's xr API is still WIP
 if (renderer.xr && typeof renderer.xr.addEventListener === 'function') {
@@ -1725,7 +1406,6 @@ function animate() {
     p.update(dt, delayedPage, isBookClosed);
   }
 
-  keyframePlayer.update(dt);    // JSON-driven animations (page nudge, etc.)
 
   renderer.render(scene, camera);
 }
