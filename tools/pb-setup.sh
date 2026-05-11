@@ -38,9 +38,8 @@ else
   "name": "church_pages",
   "type": "base",
   "fields": [
-    { "name": "order",         "type": "number", "unique": true, "min": 0, "max": 15, "onlyInt": true },
-    { "name": "book_index",    "type": "number",                  "min": 0, "max": 7,  "onlyInt": true },
-    { "name": "side",          "type": "select", "required": true, "maxSelect": 1, "values": ["front","back"] },
+    { "name": "order",         "type": "number", "unique": true, "min": 0, "onlyInt": true },
+    { "name": "type",          "type": "select", "maxSelect": 1, "values": ["cover","page","back-cover"] },
     { "name": "label",         "type": "text",   "required": true, "max": 100 },
     { "name": "eyebrow",       "type": "text",   "max": 100 },
     { "name": "title",         "type": "text",   "max": 200 },

@@ -47,9 +47,6 @@ import { PHOTO_NARRATIONS } from '../data/animations';
   #hud > *{pointer-events:auto}
   .brand{position:fixed;top:24px;left:32px;font-size:10px;letter-spacing:0.45em;text-transform:uppercase;opacity:0.55;font-family:'Inter',sans-serif}
   .brand b{display:block;font-family:'Cormorant Garamond',serif;font-weight:400;font-style:italic;font-size:22px;letter-spacing:0.02em;text-transform:none;margin-top:4px;color:#efddb0}
-  .badge{position:fixed;top:24px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:0.45em;text-transform:uppercase;
-    font-family:'Inter',sans-serif;padding:6px 14px;border:1px solid rgba(217,180,120,0.3);border-radius:999px;
-    background:rgba(20,12,6,0.6);backdrop-filter:blur(10px);color:#d9b478}
   .pagecount{position:fixed;top:28px;right:32px;font-size:11px;letter-spacing:0.3em;opacity:0.6;font-family:'Inter',sans-serif}
   .pagecount em{font-style:italic;color:#efddb0;padding:0 6px;font-family:'Cormorant Garamond',serif}
 
@@ -210,11 +207,19 @@ import { PHOTO_NARRATIONS } from '../data/animations';
   /* The book has its own HUD — hide the duplicate brand block to avoid clash with the
      ImmersiveLayout exit button at top-left. */
   #hud .brand { display: none; }
-  /* Push the badge a bit so it doesn't collide with the audio button */
+
+  /* Sync status pill — bottom-right HUD. Avoids audio btn (top-right) and nav pill (bottom-center). */
+  .sync-pill{position:fixed;bottom:30px;right:32px;display:none;align-items:center;gap:8px;
+    padding:6px 14px;background:rgba(20,12,6,0.7);backdrop-filter:blur(10px) saturate(140%);
+    border:1px solid rgba(217,180,120,0.3);border-radius:999px;
+    color:#d9b478;font-family:'Inter',sans-serif;font-size:9px;letter-spacing:0.3em;text-transform:uppercase;
+    transition:opacity 0.45s ease;opacity:0;z-index:11;pointer-events:none}
+  .sync-pill.visible{display:inline-flex;opacity:1}
+  .sync-pill.offline{color:#c98a55;border-color:rgba(201,138,85,0.35)}
 
   /* ===================== MOBILE / TABLET ===================== */
   @media (max-width: 760px) {
-    /* Compact top bar: pagecount tucks below badge */
+    /* Compact top bar */
     .pagecount   { top: 14px !important; right: 14px !important; font-size: 10px !important; letter-spacing: 0.2em !important; }
     .audio-btn   { top: 46px !important; right: 14px !important; padding: 6px 12px 6px 9px !important; font-size: 8.5px !important; letter-spacing: 0.22em !important; }
     .audio-label { display: none !important; }                                /* icon only on mobile */
@@ -228,6 +233,9 @@ import { PHOTO_NARRATIONS } from '../data/animations';
 
     /* Hint: hidden on phones — irrelevant to touch users (no kbd, no drag affordance) */
     .hint { display: none !important; }
+
+    /* Sync pill: smaller and shifted above mobile nav so it doesn't overlap */
+    .sync-pill { bottom: 78px !important; right: 14px !important; padding: 5px 10px !important; font-size: 8px !important; letter-spacing: 0.22em !important; }
 
     /* Photo modal: SINGLE column, image on top, text below */
     #modal .panel {
@@ -276,6 +284,7 @@ import { PHOTO_NARRATIONS } from '../data/animations';
     <kbd>←</kbd> <kbd>→</kbd> γύρισμα · <kbd>click</kbd> εἰκόνα = προβολή<br>
     <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση
   </div>
+  <div id="sync-pill" class="sync-pill" role="status" aria-live="polite"></div>
 </div>
 
 <div id="vignette"></div>
@@ -1035,64 +1044,83 @@ const pages = [];
 // texture. PB record's (book_index, side) maps to PAGES[bookIndex][side].
 const PB_URL = 'https://yms.galerra.art';
 
-function _applyContentOverrides(side, ov) {
-  if (!ov) return;
-  const dom = side.dom; if (!dom) return;
-  if (ov.eyebrow) { const el = dom.querySelector('.eyebrow'); if (el) el.textContent = ov.eyebrow; }
-  if (ov.title)   {
-    const h = dom.querySelector('h1, h2') || dom.querySelector('.cover-title');
-    if (h) h.innerHTML = String(ov.title).replace(/\n/g, '<br>');
-  }
-  if (ov.date)    { const el = dom.querySelector('.date'); if (el) el.textContent = ov.date; }
-  // lead / body / photo_desc come from PB 'editor' fields → HTML. Set innerHTML so
-  // formatting (bold, italic, links) survives the override.
-  if (ov.lead) {
-    const el = dom.querySelector('p.lead');
-    if (el) el.innerHTML = ov.lead;
-  }
-  if (ov.body) {
-    const ps = dom.querySelectorAll('p');
-    for (const p of ps) { if (!p.classList.contains('lead')) { p.innerHTML = ov.body; break; } }
-  }
-  const photo0 = side.photos && side.photos[0];
-  if (photo0) {
-    const photoUrl = ov.photo ? `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.photo}` : null;
-    if (photoUrl) { const img = dom.querySelector('.photo img'); if (img) img.src = photoUrl; photo0.src = photoUrl; }
-    if (ov.photo_cap)    { const c = dom.querySelector('.photo .cap'); if (c) c.textContent = ov.photo_cap; photo0.cap = ov.photo_cap; }
-    if (ov.photo_title)  { photo0.title  = ov.photo_title; }
-    if (ov.photo_desc)   { photo0.desc   = ov.photo_desc; }
-    if (ov.photo_italic) { photo0.italic = ov.photo_italic; }
-    if (ov.photo_audio)  { photo0.audio  = `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.photo_audio}`; }
-  }
-  if (ov.narration)      { side._narrationUrl = `${PB_URL}/api/files/${ov.collectionId}/${ov.id}/${ov.narration}`; }
-}
+// Tiny non-blocking status pill in the HUD that surfaces the PocketBase
+// fetch state without blocking the user. Tracked counts let the pill stay
+// visible while either the church_pages or church_animations fetch is in
+// flight, then settle to a brief success/offline notice.
+const _syncPill = {
+  inflight: 0,
+  failed: false,
+  el() { return document.getElementById('sync-pill'); },
+  _setText(text, offline) {
+    const el = this.el(); if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('offline', !!offline);
+    el.classList.add('visible');
+  },
+  _hideSoon(ms) {
+    const el = this.el(); if (!el) return;
+    setTimeout(() => { el.classList.remove('visible'); }, ms);
+  },
+  begin() {
+    this.inflight++;
+    this._setText('⌛ συγχρονισμός…', false);
+  },
+  end(ok) {
+    this.inflight = Math.max(0, this.inflight - 1);
+    if (!ok) this.failed = true;
+    if (this.inflight > 0) return;
+    if (this.failed) {
+      this._setText('○ offline — τοπικὰ δεδομένα', true);
+      this._hideSoon(4000);
+    } else {
+      this._setText('✓ συγχρονισμένο', false);
+      this._hideSoon(1500);
+    }
+  },
+};
 
 async function _loadAndApplyContentOverrides() {
+  _syncPill.begin();
   let records = null;
   try {
     const res = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`);
     if (!res.ok) throw new Error('PB status ' + res.status);
     const json = await res.json();
-    records = json.items || [];
+    records = Array.isArray(json && json.items) ? json.items : [];
   } catch (e) {
     console.info('[content] PB unreachable — using inline defaults');
+    _syncPill.end(false);
     return;
   }
-  if (!records || !records.length) return;
+  if (!records.length) { _syncPill.end(true); return; }
 
-  // Group records by book_index → { front, back }
+  // Group records into sheets dynamically from `order`. Every two consecutive
+  // orders (2k, 2k+1) form a sheet — even is the front, odd is the back. The
+  // `type` field ('cover' | 'page' | 'back-cover') decides how each side is
+  // rendered. Records with negative/non-numeric `order` are skipped.
   const sheets = {};
+  let skipped = 0;
   for (const rec of records) {
-    if (!sheets[rec.book_index]) sheets[rec.book_index] = {};
-    sheets[rec.book_index][rec.side] = rec;
+    if (!rec || typeof rec !== 'object') { skipped++; continue; }
+    const ord = Number(rec.order);
+    if (!Number.isFinite(ord) || ord < 0) { skipped++; continue; }
+    const sheetIdx = Math.floor(ord / 2);
+    const sideName = ord % 2 === 0 ? 'front' : 'back';
+    if (!sheets[sheetIdx]) sheets[sheetIdx] = {};
+    sheets[sheetIdx][sideName] = rec;
   }
-  const sheetKeys = Object.keys(sheets).map(Number).sort((a, b) => a - b);
-  const maxKey   = sheetKeys[sheetKeys.length - 1];
+  if (skipped) console.warn('[content] skipped', skipped, 'malformed PB record(s)');
 
-  // Build a fresh PAGES array from PB records. The cover() function is used
-  // for sheet 0 front and the last sheet's back; every other side is page().
-  function _buildSide(rec, i, sideName, isCover) {
+  const sheetKeys = Object.keys(sheets).map(Number).sort((a, b) => a - b);
+  if (!sheetKeys.length) { _syncPill.end(true); return; }
+
+  // Build a fresh PAGES array from PB records. The explicit `type` field on
+  // each record drives the renderer: 'cover' / 'back-cover' use cover(),
+  // 'page' (or missing) uses page().
+  function _buildSide(rec, i, sideName) {
     if (!rec) return (PAGES[i] && PAGES[i][sideName]) || page({ blocks: [], folio: '' });
+    const isCover = rec.type === 'cover' || rec.type === 'back-cover';
     const data = _pbRecordToPageData(rec, i, sideName);
     const built = isCover
       ? cover(rec.title || rec.label || '', _stripHtml(rec.lead || rec.body || ''), rec.eyebrow || '')
@@ -1105,8 +1133,8 @@ async function _loadAndApplyContentOverrides() {
   for (const i of sheetKeys) {
     const sheet = sheets[i];
     rebuilt.push({
-      front: _buildSide(sheet.front, i, 'front', i === 0),
-      back:  _buildSide(sheet.back,  i, 'back',  i === maxKey),
+      front: _buildSide(sheet.front, i, 'front'),
+      back:  _buildSide(sheet.back,  i, 'back'),
     });
   }
 
@@ -1115,6 +1143,7 @@ async function _loadAndApplyContentOverrides() {
   for (const p of rebuilt) PAGES.push(p);
   // photoView state references PAGES; nothing else cached yet at this point.
   console.info('[content] rebuilt', PAGES.length, 'sheet(s) from PB');
+  _syncPill.end(true);
 }
 
 // Map a flat PB record onto the {eyebrow, h2, date, blocks, folio} shape
@@ -1240,8 +1269,18 @@ function playPop() {
 //   NARRATION (recorded mp3) — per-page and per-photo
 // =====================================================================
 const NARRATION_BASE = '';   // PHOTO_NARRATION_MAP values are already absolute paths under /audio/
-// Photo→narration map injected at build time from src/data/animations.ts
-const PHOTO_NARRATION_MAP = JSON.parse(document.getElementById('photo-narrations-data').textContent);
+// Photo→narration map injected at build time from src/data/animations.ts.
+// Defaults to an empty map if the inline JSON is missing or malformed —
+// per-photo narrations simply become a no-op.
+const PHOTO_NARRATION_MAP = (() => {
+  try {
+    const el = document.getElementById('photo-narrations-data');
+    return el ? (JSON.parse(el.textContent) || {}) : {};
+  } catch (e) {
+    console.warn('[narration] malformed PHOTO_NARRATION_MAP — using empty');
+    return {};
+  }
+})();
 let _narrationAudio = null;
 let _narrationProgressTimer = null;
 
@@ -1285,7 +1324,7 @@ function toggleNarration() {
   }
 }
 // Per-sheet page narration: PB override (stored on PAGES[i].front._narrationUrl
-// during applyContentOverrides) wins over the default mp3.
+// during _loadAndApplyContentOverrides) wins over the default mp3.
 function playPageNarration(idx) {
   if (idx < 0 || idx >= PAGES.length) return;
   const frontUrl = PAGES[idx].front && PAGES[idx].front._narrationUrl;
@@ -1334,7 +1373,8 @@ window.addEventListener('keydown', e => {
 //   KEYFRAME RUNTIME — JSON-driven animation player.
 //   Targets can be DOM HTMLElements (transform/opacity) or three.js Object3Ds
 //   (position/scale/rotation). Drives the photo modal and is editable
-//   through the /admin CMS — values live in localStorage 'church.animations'.
+//   through the /admin CMS, which writes to the PocketBase
+//   `church_animations` collection (fetched below).
 // =====================================================================
 const EASE = {
   linear:         t => t,
@@ -1436,7 +1476,8 @@ class KeyframePlayer {
   }
 }
 
-// Load animations: prefer CMS edits in localStorage, fall back to defaults.
+// Default photo-modal animations. The PB fetch below replaces these once
+// available; otherwise the defaults stay live for the session.
 const _DEFAULT_ANIMATIONS = {
   photoModalOpen: {
     duration: 0.7,
@@ -1473,21 +1514,30 @@ const keyframePlayer = new KeyframePlayer(ANIMATIONS);
 // Async fetch PB animations and swap into the player. Defaults stay live until
 // the network reply lands, so the modal never blocks on a slow PB.
 (async () => {
+  _syncPill.begin();
   try {
     const res = await fetch(`${PB_URL}/api/collections/church_animations/records?perPage=50`);
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('PB animations status ' + res.status);
     const json = await res.json();
+    const items = Array.isArray(json && json.items) ? json.items : [];
     const map = {};
-    for (const rec of (json.items || [])) {
+    for (const rec of items) {
+      if (!rec || typeof rec !== 'object') continue;
       if (!rec.anim_name || !Array.isArray(rec.tracks)) continue;
-      map[rec.anim_name] = { duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks };
+      const dur = Number(rec.duration);
+      if (!Number.isFinite(dur) || dur <= 0) continue;
+      map[rec.anim_name] = { duration: dur, loop: !!rec.loop, tracks: rec.tracks };
     }
     if (Object.keys(map).length) {
       ANIMATIONS = map;
       keyframePlayer.animations = map;
       console.info('[keyframe] loaded', Object.keys(map).length, 'PB animations');
     }
-  } catch (e) { /* keep defaults */ }
+    _syncPill.end(true);
+  } catch (e) {
+    console.info('[keyframe] PB animations unavailable — using defaults');
+    _syncPill.end(false);
+  }
 })();
 
 // =====================================================================

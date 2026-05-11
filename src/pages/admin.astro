@@ -167,6 +167,40 @@
     border-color:rgba(217,180,120,0.7); border-style:solid}
   .add-page-btn:disabled{opacity:0.4;cursor:wait}
 
+  /* === MARKDOWN EDITOR === */
+  .md-editor{display:flex;flex-direction:column;width:100%;border:1px solid rgba(217,180,120,0.22);
+    border-radius:3px;background:rgba(8,4,2,0.6);overflow:hidden}
+  .md-editor:focus-within{border-color:rgba(217,180,120,0.55);background:rgba(8,4,2,0.85)}
+  .md-toolbar{display:flex;gap:2px;padding:5px 6px;background:rgba(8,4,2,0.8);
+    border-bottom:1px solid rgba(217,180,120,0.15)}
+  .md-toolbar button{padding:4px 9px;background:transparent;border:1px solid rgba(217,180,120,0.18);
+    border-radius:2px;color:#c9a96a;font-size:11px;font-family:inherit;cursor:pointer;
+    transition:all 0.15s;min-width:26px;line-height:1}
+  .md-toolbar button:hover{background:rgba(217,180,120,0.12);color:#efddb0;border-color:rgba(217,180,120,0.45)}
+  .md-toolbar button.bold{font-weight:700}
+  .md-toolbar button.italic{font-style:italic;font-family:'Cormorant Garamond',serif;font-size:14px}
+  .md-toolbar .md-sep{width:1px;background:rgba(217,180,120,0.15);margin:2px 4px}
+  .md-editor textarea{width:100%;padding:9px 12px;background:transparent;border:none;
+    color:#efddb0;font-size:15px;letter-spacing:0.01em;font-family:'Cormorant Garamond',Georgia,serif;
+    line-height:1.55;resize:vertical;min-height:60px;outline:none}
+  .md-editor.locked textarea{opacity:0.45;pointer-events:none;background:rgba(8,4,2,0.3)}
+  .md-editor.locked .md-toolbar{opacity:0.45;pointer-events:none}
+  .md-preview{padding:10px 12px;border-top:1px dashed rgba(217,180,120,0.18);
+    background:rgba(20,12,6,0.35);font-family:'Cormorant Garamond',Georgia,serif;
+    font-size:14px;line-height:1.6;color:#d9b478;min-height:0;max-height:200px;overflow-y:auto}
+  .md-preview .md-preview-label{display:block;font-size:8px;letter-spacing:0.3em;text-transform:uppercase;
+    color:#9a6730;font-weight:600;margin-bottom:6px;font-family:'Inter',sans-serif;font-style:normal}
+  .md-preview p{margin-bottom:6px}
+  .md-preview p:last-child{margin-bottom:0}
+  .md-preview strong{color:#efddb0;font-weight:700}
+  .md-preview em{font-style:italic;color:#efddb0}
+  .md-preview h1,.md-preview h2,.md-preview h3{font-style:italic;color:#efddb0;
+    font-weight:500;margin:4px 0 6px;font-size:18px}
+  .md-preview ul{margin:4px 0 6px 18px}
+  .md-preview li{margin-bottom:2px}
+  .md-preview a{color:#efddb0;text-decoration:underline;text-decoration-color:rgba(217,180,120,0.4)}
+  .md-preview .md-preview-empty{font-style:italic;opacity:0.5;font-size:12px}
+
   /* === SIDEBAR === */
   aside{border-right:1px solid rgba(217,180,120,0.15);overflow-y:auto;background:rgba(6,3,1,0.4)}
   aside h2{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;font-weight:700;
@@ -320,6 +354,16 @@
         <div class="content-section">
           <h3>Κεφαλίδα</h3>
           <div class="field-row">
+            <label>Τύπος σελίδας
+              <select id="ce-type" data-field="type">
+                <option value="page">page · κανονική σελίδα</option>
+                <option value="cover">cover · ἐξώφυλλο</option>
+                <option value="back-cover">back-cover · ὀπισθόφυλλο</option>
+              </select>
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="type"> 🔒</label>
+          </div>
+          <div class="field-row">
             <label>Eyebrow (κεφάλαιο)
               <input type="text" id="ce-eyebrow" data-field="eyebrow">
             </label>
@@ -340,14 +384,36 @@
         <div class="content-section">
           <h3>Σῶμα κειμένου</h3>
           <div class="field-row">
-            <label>Lead (εἰσαγωγή)
-              <textarea id="ce-lead" data-field="lead" rows="3"></textarea>
+            <label>Lead (εἰσαγωγή · markdown)
+              <div class="md-editor" data-md="lead">
+                <div class="md-toolbar">
+                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
+                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
+                  <span class="md-sep"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
+                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
+                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+                </div>
+                <textarea id="ce-lead" data-field="lead" rows="3"></textarea>
+                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+              </div>
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="lead"> 🔒</label>
           </div>
           <div class="field-row">
-            <label>Παράγραφος
-              <textarea id="ce-body" data-field="body" rows="4"></textarea>
+            <label>Παράγραφος (markdown)
+              <div class="md-editor" data-md="body">
+                <div class="md-toolbar">
+                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
+                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
+                  <span class="md-sep"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
+                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
+                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+                </div>
+                <textarea id="ce-body" data-field="body" rows="4"></textarea>
+                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+              </div>
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="body"> 🔒</label>
           </div>
@@ -374,8 +440,19 @@
             <label class="field-lock"><input type="checkbox" data-lock="photoCap"> 🔒</label>
           </div>
           <div class="field-row">
-            <label>Περιγραφή (rich · HTML)
-              <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"></textarea>
+            <label>Περιγραφή (markdown)
+              <div class="md-editor" data-md="photoDesc">
+                <div class="md-toolbar">
+                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
+                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
+                  <span class="md-sep"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
+                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
+                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+                </div>
+                <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"></textarea>
+                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+              </div>
             </label>
             <label class="field-lock"><input type="checkbox" data-lock="photoDesc"> 🔒</label>
           </div>
@@ -421,6 +498,7 @@
     <aside>
       <h2>Animations</h2>
       <div id="anim-list"></div>
+      <button id="add-anim-btn" class="add-page-btn" type="button">+ νέα animation</button>
     </aside>
 
     <section id="editor">
@@ -428,6 +506,8 @@
         <h2 id="anim-name">— ἐπίλεξε animation —</h2>
         <label class="field">duration <input type="number" id="anim-duration" step="0.05" min="0.05" value="0.75" disabled> sec</label>
         <label class="field">loop <input type="checkbox" id="anim-loop" disabled></label>
+        <button class="toolbtn" id="anim-duplicate-btn" disabled title="δημιουργία ἀντιγράφου">⎘ duplicate</button>
+        <button class="toolbtn danger" id="anim-delete-btn" disabled title="διαγραφὴ animation">🗑 διαγραφή</button>
       </div>
 
       <div id="ruler"></div>
@@ -593,6 +673,7 @@ function _recordToContent(rec) {
   return {
     _recordId:    rec.id,
     _collId:      rec.collectionId,
+    type:         rec.type         || 'page',
     eyebrow:      rec.eyebrow      || '',
     title:        rec.title        || '',
     date:         rec.date         || '',
@@ -626,6 +707,13 @@ async function load() {
       State.contentLocks[id] = Object.fromEntries(locks.map(f => [f, true]));
     }
 
+    // Rebuild the sidebar from live PB records — supports any slide count.
+    PAGES_DEFAULT = pages.map(rec => ({
+      id:    'p' + rec.order,
+      label: rec.label || ('Σελίδα ' + (rec.order + 1)),
+      hint:  rec.type  || 'page',
+    }));
+
     State.animations    = {};
     State.animRecordId  = {};
     for (const rec of anims) {
@@ -648,6 +736,7 @@ async function load() {
 
 // Map UI field name → PB column name.
 const _FIELD_TO_PB = {
+  type: 'type',
   eyebrow: 'eyebrow', title: 'title', date: 'date',
   lead: 'lead', body: 'body',
   photoTitle: 'photo_title', photoCap: 'photo_cap',
@@ -907,9 +996,13 @@ function renderEditor() {
   const tracksArea = document.getElementById('tracks-area');
   const ruler = document.getElementById('ruler');
 
+  const delBtn = document.getElementById('anim-delete-btn');
+  const dupBtn = document.getElementById('anim-duplicate-btn');
   if (!animName || !State.animations[animName]) {
     nameEl.textContent = '— ἐπίλεξε animation —';
     durInput.disabled = true; loopInput.disabled = true;
+    if (delBtn) delBtn.disabled = true;
+    if (dupBtn) dupBtn.disabled = true;
     tracksArea.innerHTML = '';
     ruler.innerHTML = '';
     document.getElementById('inspector-body').innerHTML = '<div class="empty">ἐπίλεξε animation ἀπὸ τὴν λίστα</div>';
@@ -920,6 +1013,8 @@ function renderEditor() {
   nameEl.textContent = animName;
   durInput.disabled = false; durInput.value = anim.duration;
   loopInput.disabled = false; loopInput.checked = !!anim.loop;
+  if (delBtn) delBtn.disabled = false;
+  if (dupBtn) dupBtn.disabled = false;
   document.getElementById('dur-readout').textContent = anim.duration.toFixed(2);
 
   // Ruler
@@ -1310,7 +1405,11 @@ window.addEventListener('beforeunload', e => {
 //   CONTENT EDITOR — texts / photos / audio per page (the "σελίδες" tab)
 // =====================================================================
 // 16 logical pages = 8 sheets × 2 sides (front + back). Each side is editable.
-const PAGES_DEFAULT = [
+// Sidebar entries are now built dynamically from PB records at load time —
+// any number of slides supported, each labelled by its record's `label` and
+// hinted by its `type` (cover / page / back-cover). This array is mutated
+// in load() and after each + νέα σελίδα; declared with `let` for that reason.
+let PAGES_DEFAULT = [
   { id: 'p0',  bookIndex: 0, side: 'front', label: 'Ἐξώφυλλο',          hint: 'cover' },
   { id: 'p1',  bookIndex: 0, side: 'back',  label: 'Πρόλογος',          hint: 'πολιοῦχος τῶν Πατρῶν' },
   { id: 'p2',  bookIndex: 1, side: 'front', label: 'Περιεχόμενα',       hint: 'toc' },
@@ -1328,11 +1427,111 @@ const PAGES_DEFAULT = [
   { id: 'p14', bookIndex: 7, side: 'front', label: 'τέλος',             hint: 'πνευματικὸν κέντρον' },
   { id: 'p15', bookIndex: 7, side: 'back',  label: 'Ὀπισθόφυλλο',       hint: 'πρωτόκλητος' },
 ];
-const CONTENT_FIELDS = ['eyebrow','title','date','lead','body','photoSrc','photoTitle','photoCap','photoDesc','photoItalic','narration','photoAudio'];
+const CONTENT_FIELDS = ['type','eyebrow','title','date','lead','body','photoSrc','photoTitle','photoCap','photoDesc','photoItalic','narration','photoAudio'];
+const MD_FIELDS = ['lead','body','photoDesc'];
 
 function ensurePageState(pageId) {
   if (!State.content[pageId])      State.content[pageId]      = {};
   if (!State.contentLocks[pageId]) State.contentLocks[pageId] = {};
+}
+
+// =====================================================================
+//   TINY MARKDOWN → HTML PARSER
+//   Supports: # heading, **bold**, *italic*, - bullets, [text](url)
+//   Escapes HTML first so user input can't inject tags.
+// =====================================================================
+function mdToHtml(md) {
+  if (!md) return '';
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines = esc(md).split(/\r?\n/);
+  const out = [];
+  let inList = false;
+  const inline = (s) => s
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g,     '<em>$1</em>');
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const h = line.match(/^(#{1,3})\s+(.*)$/);
+    const li = line.match(/^\s*-\s+(.*)$/);
+    if (li) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push('<li>' + inline(li[1]) + '</li>');
+    } else {
+      if (inList) { out.push('</ul>'); inList = false; }
+      if (h)             out.push('<h' + h[1].length + '>' + inline(h[2]) + '</h' + h[1].length + '>');
+      else if (line === '') { /* blank → paragraph break, handled by next line */ }
+      else               out.push('<p>' + inline(line) + '</p>');
+    }
+  }
+  if (inList) out.push('</ul>');
+  return out.join('');
+}
+
+function updateMdPreview(field) {
+  const wrap = document.querySelector(`.md-editor[data-md="${field}"]`);
+  if (!wrap) return;
+  const ta   = wrap.querySelector('textarea');
+  const body = wrap.querySelector('.md-preview-body');
+  if (!ta || !body) return;
+  const html = mdToHtml(ta.value || '');
+  body.innerHTML = html || '<span class="md-preview-empty">— κενό —</span>';
+}
+
+// Wrap the current selection inside a textarea with markdown syntax.
+// cmd: 'bold' | 'italic' | 'heading' | 'bullet' | 'link'
+function applyMdCommand(ta, cmd) {
+  if (!ta || ta.disabled) return;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const before = ta.value.slice(0, start);
+  const sel    = ta.value.slice(start, end);
+  const after  = ta.value.slice(end);
+  let insert = sel, caretStart = start, caretEnd = end;
+  if (cmd === 'bold')   { insert = '**' + (sel || 'bold') + '**';       caretStart = start + 2; caretEnd = caretStart + (sel || 'bold').length; }
+  else if (cmd === 'italic') { insert = '*' + (sel || 'italic') + '*';  caretStart = start + 1; caretEnd = caretStart + (sel || 'italic').length; }
+  else if (cmd === 'heading') {
+    // Apply heading to the start of the current line
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const lineBefore = ta.value.slice(0, lineStart);
+    const lineEnd   = ta.value.indexOf('\n', lineStart);
+    const restEnd   = lineEnd === -1 ? ta.value.length : lineEnd;
+    const lineText  = ta.value.slice(lineStart, restEnd).replace(/^#{1,3}\s*/, '');
+    const newLine   = '# ' + (lineText || 'Heading');
+    ta.value = lineBefore + newLine + ta.value.slice(restEnd);
+    const pos = lineStart + newLine.length;
+    ta.focus(); ta.setSelectionRange(pos, pos);
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  else if (cmd === 'bullet') {
+    // Convert selection (or current line) into bulleted lines.
+    if (sel) {
+      const bulleted = sel.split(/\r?\n/).map(l => l.trim() ? '- ' + l.replace(/^-\s*/, '') : l).join('\n');
+      ta.value = before + bulleted + after;
+      const pos = start + bulleted.length;
+      ta.focus(); ta.setSelectionRange(pos, pos);
+    } else {
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const nextNl    = ta.value.indexOf('\n', start);
+      const lineEnd   = nextNl === -1 ? ta.value.length : nextNl;
+      const lineText  = ta.value.slice(lineStart, lineEnd) || 'item';
+      const bulleted  = lineText.trim() ? '- ' + lineText.replace(/^-\s*/, '') : '- item';
+      ta.value = ta.value.slice(0, lineStart) + bulleted + ta.value.slice(lineEnd);
+      const pos = lineStart + bulleted.length;
+      ta.focus(); ta.setSelectionRange(pos, pos);
+    }
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  else if (cmd === 'link') {
+    const url = prompt('URL', 'https://');
+    if (!url) return;
+    insert = '[' + (sel || 'link') + '](' + url + ')';
+    caretStart = start + insert.length; caretEnd = caretStart;
+  }
+  ta.value = before + insert + after;
+  ta.focus(); ta.setSelectionRange(caretStart, caretEnd);
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function renderPagesList() {
@@ -1389,7 +1588,12 @@ function renderContentForm() {
     document.querySelectorAll(`[data-lock="${field}"]`).forEach(box => {
       box.checked = !!locks[field];
     });
+    // Mirror lock state on the md-editor wrapper so the toolbar greys out too
+    const mdWrap = document.querySelector(`.md-editor[data-md="${field}"]`);
+    if (mdWrap) mdWrap.classList.toggle('locked', !!locks[field]);
   }
+  // Re-render markdown previews
+  for (const f of MD_FIELDS) updateMdPreview(f);
   updatePhotoPreview();
   updateAudioPreview();
 }
@@ -1434,6 +1638,7 @@ function wireContentFields() {
         markDirty();
         if (field === 'photoSrc')                            updatePhotoPreview();
         if (field === 'narration' || field === 'photoAudio') updateAudioPreview();
+        if (MD_FIELDS.includes(field))                       updateMdPreview(field);
         renderPagesList();
       });
       input.addEventListener('blur', () => { State._editingField = null; });
@@ -1449,6 +1654,17 @@ function wireContentFields() {
       });
     });
   }
+  // Markdown toolbar buttons inside .md-editor wrappers
+  document.querySelectorAll('.md-editor').forEach(wrap => {
+    const ta = wrap.querySelector('textarea');
+    wrap.querySelectorAll('[data-md-cmd]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (wrap.classList.contains('locked')) return;
+        applyMdCommand(ta, btn.dataset.mdCmd);
+      });
+    });
+  });
   // File inputs — photo / narration / photo_audio
   document.querySelectorAll('[data-upload]').forEach(input => {
     input.addEventListener('change', () => {
@@ -1483,25 +1699,23 @@ async function addNewPage() {
   const btn = document.getElementById('add-page-btn');
   btn.disabled = true; btn.textContent = '⌛ δημιουργία…';
 
-  // Compute next order (max existing + 1) and the (book_index, side) pair
+  // Compute the next free `order` — slides are linearly ordered, no
+  // book_index/side gymnastics any more.
   let maxOrder = -1;
   for (const id in State.content) {
     const m = id.match(/^p(\d+)$/);
     if (m) maxOrder = Math.max(maxOrder, parseInt(m[1]));
   }
-  const newOrder    = maxOrder + 1;
-  const newBookIdx  = Math.floor(newOrder / 2);
-  const newSide     = newOrder % 2 === 0 ? 'front' : 'back';
-  const label       = (newSide === 'front' ? 'Νέο φύλλο · ' : 'Πίσω ὄψις · ') + (newBookIdx + 1);
+  const newOrder = maxOrder + 1;
+  const label    = 'Νέα σελίδα · ' + (newOrder + 1);
 
   try {
     const res = await fetch(`${PB_URL}/api/collections/church_pages/records`, {
       method:  'POST',
       headers: authHeader({ 'Content-Type': 'application/json' }),
       body:    JSON.stringify({
-        order:      newOrder,
-        book_index: newBookIdx,
-        side:       newSide,
+        order: newOrder,
+        type:  'page',
         label,
         eyebrow: '', title: '', date: '',
         lead: '', body: '',
@@ -1521,8 +1735,7 @@ async function addNewPage() {
     State.contentLocks[pageId] = {};
     State.selectedPageId       = pageId;
     PAGES_DEFAULT.push({
-      id: pageId, bookIndex: rec.book_index, side: rec.side,
-      label: rec.label || label, hint: '(νέα)',
+      id: pageId, label: rec.label || label, hint: '(νέα)',
     });
     renderPagesList();
     renderContentForm();
@@ -1535,6 +1748,126 @@ async function addNewPage() {
   }
 }
 document.getElementById('add-page-btn').addEventListener('click', addNewPage);
+
+// =====================================================================
+//   ANIMATION CRUD — create / duplicate / delete in church_animations
+// =====================================================================
+async function addNewAnimation() {
+  if (!State.token) return toast('μη συνδεδεμένος', 'error');
+  const rawName = prompt('Ὄνομα animation (μοναδικό):');
+  if (!rawName) return;
+  const name = rawName.trim();
+  if (!name) { toast('✕ κενὸ ὄνομα', 'error'); return; }
+  if (State.animations[name]) { toast('✕ ὑπάρχει ἤδη', 'error'); return; }
+  const btn = document.getElementById('add-anim-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⌛ δημιουργία…'; }
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/church_animations/records`, {
+      method:  'POST',
+      headers: authHeader({ 'Content-Type': 'application/json' }),
+      body:    JSON.stringify({
+        anim_name:   name,
+        duration:    0.5,
+        loop:        false,
+        tracks:      [],
+        description: '',
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn('add-anim failed:', err);
+      toast('✕ ἀποτυχία δημιουργίας', 'error');
+      return;
+    }
+    const rec = await res.json();
+    State.animations[rec.anim_name] = {
+      duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks || [],
+    };
+    State.animRecordId[rec.anim_name] = rec.id;
+    State.selected = { anim: rec.anim_name, trackIdx: -1, prop: null, kfIdx: -1 };
+    renderAll();
+    toast(`✓ νέα animation · ${rec.anim_name}`);
+  } catch (e) {
+    console.warn(e);
+    toast('✕ δίκτυο: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '+ νέα animation'; }
+  }
+}
+
+async function deleteSelectedAnimation() {
+  const name = State.selected.anim;
+  if (!name) return;
+  const recId = State.animRecordId[name];
+  if (!recId) { toast('✕ λείπει record id', 'error'); return; }
+  if (!confirm(`Διαγραφὴ animation "${name}";\nἈμετάκλητο.`)) return;
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/church_animations/records/${recId}`, {
+      method: 'DELETE', headers: authHeader(),
+    });
+    if (!res.ok && res.status !== 204) {
+      const err = await res.text();
+      console.warn('delete-anim failed:', err);
+      toast('✕ ἀποτυχία διαγραφῆς', 'error');
+      return;
+    }
+    delete State.animations[name];
+    delete State.animRecordId[name];
+    State.dirtyAnims.delete(name);
+    // Pick another animation (or none) and refresh
+    const next = Object.keys(State.animations)[0] || null;
+    State.selected = { anim: next, trackIdx: -1, prop: null, kfIdx: -1 };
+    renderAll();
+    toast(`✓ διαγράφηκε · ${name}`);
+  } catch (e) {
+    console.warn(e);
+    toast('✕ δίκτυο: ' + e.message, 'error');
+  }
+}
+
+async function duplicateSelectedAnimation() {
+  const name = State.selected.anim;
+  if (!name || !State.animations[name]) return;
+  // Find an available "-copy" name (append a numeric suffix if needed)
+  let dupName = name + '-copy';
+  let n = 2;
+  while (State.animations[dupName]) { dupName = name + '-copy-' + n; n++; }
+  const src = State.animations[name];
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/church_animations/records`, {
+      method:  'POST',
+      headers: authHeader({ 'Content-Type': 'application/json' }),
+      body:    JSON.stringify({
+        anim_name:   dupName,
+        duration:    src.duration,
+        loop:        !!src.loop,
+        tracks:      deepClone(src.tracks || []),
+        description: '',
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn('duplicate-anim failed:', err);
+      toast('✕ ἀποτυχία ἀντιγραφῆς', 'error');
+      return;
+    }
+    const rec = await res.json();
+    State.animations[rec.anim_name] = {
+      duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks || [],
+    };
+    State.animRecordId[rec.anim_name] = rec.id;
+    State.selected = { anim: rec.anim_name, trackIdx: -1, prop: null, kfIdx: -1 };
+    renderAll();
+    toast(`✓ ἀντίγραφο · ${rec.anim_name}`);
+  } catch (e) {
+    console.warn(e);
+    toast('✕ δίκτυο: ' + e.message, 'error');
+  }
+}
+
+document.getElementById('add-anim-btn').addEventListener('click',       addNewAnimation);
+document.getElementById('anim-delete-btn').addEventListener('click',    deleteSelectedAnimation);
+document.getElementById('anim-duplicate-btn').addEventListener('click', duplicateSelectedAnimation);
 
 // =====================================================================
 //   TAB SWITCHING
