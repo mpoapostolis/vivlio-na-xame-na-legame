@@ -134,14 +134,14 @@ The CMS data lives on a PocketBase instance at `https://yms.galerra.art`.
 ### One-time setup (already executed on the hosted instance)
 
 ```bash
-export PB_TOKEN="<superuser auth token from PB admin UI>"
+export PB_TOKEN="<your PB admin token>"
 bash tools/pb-setup.sh        # creates the three collections (idempotent)
 python3 tools/pb-seed.py      # seeds 16 pages + 2 animations
 ```
 
 ### Creating a CMS user
 
-1. Open `https://yms.galerra.art/_/` and log in with your **superuser** credentials
+1. Open `https://yms.galerra.art/_/` and log in
 2. Navigate to the `church_admins` collection
 3. Click **+ New record**, set `email` + `password` (+ optional `name`)
 4. Save
@@ -151,7 +151,7 @@ That user can now log in at `/admin` in this app.
 ### Security model
 
 - `church_pages` / `church_animations`: **public read** (so `/book` works without auth) · **write only by `church_admins`**
-- The PB `_superusers` account is **never used by the app at runtime** — it's only for backend administration via `/_/`
+- The PB `/_/` backend is for collection schema / record management; the running app never authenticates with those credentials.
 
 ---
 

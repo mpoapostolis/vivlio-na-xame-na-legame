@@ -22,9 +22,9 @@ create_collection() {
 }
 
 # ---------------------------------------------------------------------------
-# 0) church_admins — auth collection for CMS users (NOT the superuser)
+# 0) church_admins — auth collection for CMS editors.
 #    The /admin route authenticates against THIS collection.
-#    Users are created by you via the PocketBase admin UI at /_/.
+#    Users are created via the PocketBase admin UI at /_/.
 # ---------------------------------------------------------------------------
 if exists church_admins; then
   echo "• church_admins already exists — skipping"

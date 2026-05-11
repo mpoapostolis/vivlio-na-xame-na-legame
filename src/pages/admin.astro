@@ -781,8 +781,8 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 }
-// /admin authenticates against the dedicated `church_admins` collection,
-// NOT the PocketBase _superusers. Create users via the PB admin UI at /_/.
+// /admin authenticates against the dedicated `church_admins` collection.
+// Users are created via the PocketBase admin UI at /_/.
 async function login(email, pass) {
   const errEl = document.getElementById('login-error');
   errEl.textContent = '⌛ σύνδεση…';
