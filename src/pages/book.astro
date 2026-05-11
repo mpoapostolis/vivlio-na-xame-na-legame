@@ -535,7 +535,7 @@ function page(data) {
         fig.appendChild(el('div','pop-hint','⛶ μεγέθυνση'));
         fig.appendChild(el('span','cap', escape(b.cap || '')));
         root.appendChild(fig);
-        photos.push({ src: b.src, title: b.title || '', desc: b.desc || '', italic: b.italic || '', cap: b.cap || '', figEl: fig });
+        photos.push({ src: b.src, title: b.title || '', desc: b.desc || '', italic: b.italic || '', cap: b.cap || '', audio: b.audio || null, figEl: fig });
         break;
       }
     }
@@ -1070,7 +1070,7 @@ function _applyContentOverrides(side, ov) {
 async function _loadAndApplyContentOverrides() {
   let records = null;
   try {
-    const res = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=20`);
+    const res = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`);
     if (!res.ok) throw new Error('PB status ' + res.status);
     const json = await res.json();
     records = json.items || [];
@@ -1079,13 +1079,85 @@ async function _loadAndApplyContentOverrides() {
     return;
   }
   if (!records || !records.length) return;
+
+  // Group records by book_index → { front, back }
+  const sheets = {};
   for (const rec of records) {
-    const bi   = rec.book_index;
-    const side = rec.side;
-    if (!PAGES[bi] || !PAGES[bi][side]) continue;
-    _applyContentOverrides(PAGES[bi][side], rec);
+    if (!sheets[rec.book_index]) sheets[rec.book_index] = {};
+    sheets[rec.book_index][rec.side] = rec;
   }
-  console.info('[content] applied PB overrides for', records.length, 'page(s)');
+  const sheetKeys = Object.keys(sheets).map(Number).sort((a, b) => a - b);
+  const maxKey   = sheetKeys[sheetKeys.length - 1];
+
+  // Build a fresh PAGES array from PB records. The cover() function is used
+  // for sheet 0 front and the last sheet's back; every other side is page().
+  function _buildSide(rec, i, sideName, isCover) {
+    if (!rec) return (PAGES[i] && PAGES[i][sideName]) || page({ blocks: [], folio: '' });
+    const data = _pbRecordToPageData(rec, i, sideName);
+    const built = isCover
+      ? cover(rec.title || rec.label || '', _stripHtml(rec.lead || rec.body || ''), rec.eyebrow || '')
+      : page(data);
+    if (data._narrationUrl) built._narrationUrl = data._narrationUrl;
+    return built;
+  }
+
+  const rebuilt = [];
+  for (const i of sheetKeys) {
+    const sheet = sheets[i];
+    rebuilt.push({
+      front: _buildSide(sheet.front, i, 'front', i === 0),
+      back:  _buildSide(sheet.back,  i, 'back',  i === maxKey),
+    });
+  }
+
+  // Replace inline PAGES contents in place (PAGES is const but contents mutable)
+  PAGES.length = 0;
+  for (const p of rebuilt) PAGES.push(p);
+  // photoView state references PAGES; nothing else cached yet at this point.
+  console.info('[content] rebuilt', PAGES.length, 'sheet(s) from PB');
+}
+
+// Map a flat PB record onto the {eyebrow, h2, date, blocks, folio} shape
+// expected by page(). Body and lead are emitted as separate blocks; if a
+// photo file is present, it becomes a 'photo' block with caption/desc/etc.
+function _pbRecordToPageData(rec, bookIndex, side) {
+  const blocks = [];
+  if (rec.lead) blocks.push({ type: 'lead', text: _stripHtml(rec.lead) });
+  if (rec.body) blocks.push({ type: 'p',    text: _stripHtml(rec.body) });
+  if (rec.photo) {
+    const photoUrl = `${PB_URL}/api/files/${rec.collectionId}/${rec.id}/${rec.photo}`;
+    blocks.push({
+      type:   'photo',
+      src:    photoUrl,
+      cap:    rec.photo_cap    || '',
+      title:  rec.photo_title  || rec.title || '',
+      desc:   _stripHtml(rec.photo_desc) || '',
+      italic: rec.photo_italic || '',
+      audio:  rec.photo_audio ? `${PB_URL}/api/files/${rec.collectionId}/${rec.id}/${rec.photo_audio}` : null,
+    });
+  }
+  const folioNum = bookIndex * 2 + (side === 'front' ? 1 : 2);
+  return {
+    eyebrow: rec.eyebrow || '',
+    h2:      rec.title   || rec.label || '',
+    date:    rec.date    || '',
+    blocks,
+    folio:   _toRomanish(folioNum),
+    _narrationUrl: rec.narration ? `${PB_URL}/api/files/${rec.collectionId}/${rec.id}/${rec.narration}` : null,
+  };
+}
+// Strip an HTML string down to its text content. PB 'editor' fields return
+// HTML; the page renderer uses textContent for most blocks so we collapse
+// it to plain text here. Keeps line breaks from <br>/<p> via newline.
+function _stripHtml(html) {
+  if (!html || typeof html !== 'string') return html || '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n');
+  return (tmp.textContent || tmp.innerText || '').trim();
+}
+function _toRomanish(n) {
+  const map = ['','i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii','xiii','xiv','xv','xvi','xvii','xviii','xix','xx'];
+  return map[n] || String(n);
 }
 
 async function buildBook() {
