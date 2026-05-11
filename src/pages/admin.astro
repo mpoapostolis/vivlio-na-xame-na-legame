@@ -52,26 +52,22 @@
   .toolbtn.primary:hover{background:rgba(154,103,48,0.6)}
   .toolbtn.danger:hover{background:rgba(180,60,60,0.2);border-color:#c44;color:#fff}
 
-  main{display:grid;grid-template-columns:240px 1fr 320px;height:calc(100vh - 54px);overflow:hidden}
-  main.view-content{grid-template-columns:240px 1fr}
+  /* 3-column layout: page list | edit form | live book preview.
+     The preview is always visible — no toggle, no surprise. */
+  main{display:grid;grid-template-columns:220px minmax(420px, 1fr) minmax(440px, 1fr);
+       height:calc(100vh - 54px);overflow:hidden}
 
-  /* === SHARED LIVE PREVIEW PANEL (app level — visible in both tabs) === */
+  /* Live preview panel — embedded in the grid as the third column. */
   #book-preview-panel{
-    position:fixed; top:54px; right:0; bottom:0;
-    width:42vw; max-width:760px; min-width:380px;
-    z-index:25;
     background:#000;
-    border-left:1px solid rgba(217,180,120,0.28);
-    box-shadow:-18px 0 40px -16px rgba(0,0,0,0.7);
+    border-left:1px solid rgba(217,180,120,0.18);
     display:flex; flex-direction:column;
-    transform:translateX(102%);
-    transition:transform 0.38s cubic-bezier(0.4,0,0.2,1);
+    min-width:0; overflow:hidden;
   }
-  #app.with-preview #book-preview-panel{ transform:translateX(0); }
-  #app.with-preview > main{ padding-right:42vw; transition:padding-right 0.38s cubic-bezier(0.4,0,0.2,1) }
-  @media (max-width: 1180px) {
-    #app.with-preview > main{ padding-right:0 }
-    #book-preview-panel{ width:100vw; max-width:100vw }
+  @media (max-width: 1100px) {
+    /* On narrower screens drop the preview column to keep the form usable. */
+    main{ grid-template-columns:220px 1fr; }
+    #book-preview-panel{ display:none; }
   }
   .bp-header{display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(8,4,2,0.92);
     border-bottom:1px solid rgba(217,180,120,0.18);font-size:8px;letter-spacing:0.32em;text-transform:uppercase;color:#9a6730;font-weight:700}
@@ -314,7 +310,7 @@
     <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
     <button type="submit">Εἴσοδος</button>
     <div id="login-error"></div>
-    <div class="hint">users · PocketBase</div>
+    <div class="hint">οἱ κωδικοὶ δίνονται ἀπὸ τὸν διαχειριστὴ</div>
   </form>
 </div>
 
@@ -323,25 +319,18 @@
 <!-- ============================================================ -->
 <div id="app" class="hidden">
   <header>
-    <h1>Ἅγιος Ἀνδρέας <span class="tag">CMS · διαχείρισις</span></h1>
-    <div class="tabs">
-      <button class="tab active" data-tab="content">σελίδες</button>
-      <button class="tab"        data-tab="animations">animations</button>
-    </div>
-    <button class="toolbtn" id="undo-btn" title="Ctrl/Cmd + Z" disabled>↶ undo</button>
-    <button class="toolbtn" id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled>↷ redo</button>
-    <button class="toolbtn" id="reset-btn" title="Επαναφορὰ προεπιλογῶν">↺ reset</button>
-    <button class="toolbtn primary" id="save-btn" title="Cmd + S">💾 save</button>
-    <button class="toolbtn" id="export-btn">📁 export json</button>
-    <button class="toolbtn" id="preview-toggle">📖 preview pane</button>
-    <button class="toolbtn" id="preview-btn">↗ open book</button>
-    <button class="toolbtn danger" id="logout-btn">↪ logout</button>
+    <h1>Ἅγιος Ἀνδρέας <span class="tag">διαχείρισις περιεχομένου</span></h1>
+    <button class="toolbtn" id="undo-btn" title="Ctrl/Cmd + Z" disabled>↶ ἀναίρεσις</button>
+    <button class="toolbtn" id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled>↷ ἐπανάληψις</button>
+    <button class="toolbtn primary" id="save-btn" title="Cmd + S">💾 ἀποθήκευσις</button>
+    <button class="toolbtn" id="preview-btn">↗ ἀνοίξτε τὸ βιβλίον</button>
+    <button class="toolbtn danger" id="logout-btn">↪ ἔξοδος</button>
   </header>
 
   <!-- ============================================================ -->
   <!--  CONTENT TAB — edit per-page texts, photos, audio              -->
   <!-- ============================================================ -->
-  <main class="view view-content" id="view-content">
+  <main>
     <aside>
       <h2>Σελίδες</h2>
       <div id="pages-list"></div>
@@ -489,59 +478,16 @@
         </div>
       </div>
     </section>
-  </main>
 
-  <!-- ============================================================ -->
-  <!--  ANIMATIONS TAB — keyframe timeline editor                      -->
-  <!-- ============================================================ -->
-  <main class="view view-animations hidden" id="view-animations">
-    <aside>
-      <h2>Animations</h2>
-      <div id="anim-list"></div>
-      <button id="add-anim-btn" class="add-page-btn" type="button">+ νέα animation</button>
+    <!-- Live preview — always visible as the third column -->
+    <aside id="book-preview-panel">
+      <div class="bp-header">
+        <span class="bp-label">προεπισκόπησις · ζωντανή</span>
+        <button class="bp-refresh" id="bp-refresh" title="ἀνανέωση">↻</button>
+      </div>
+      <iframe id="book-preview-iframe" src="/book" referrerpolicy="no-referrer"></iframe>
     </aside>
-
-    <section id="editor">
-      <div id="anim-meta">
-        <h2 id="anim-name">— ἐπίλεξε animation —</h2>
-        <label class="field">duration <input type="number" id="anim-duration" step="0.05" min="0.05" value="0.75" disabled> sec</label>
-        <label class="field">loop <input type="checkbox" id="anim-loop" disabled></label>
-        <button class="toolbtn" id="anim-duplicate-btn" disabled title="δημιουργία ἀντιγράφου">⎘ duplicate</button>
-        <button class="toolbtn danger" id="anim-delete-btn" disabled title="διαγραφὴ animation">🗑 διαγραφή</button>
-      </div>
-
-      <div id="ruler"></div>
-      <div id="tracks-scroll">
-        <div id="tracks-area"></div>
-      </div>
-
-      <div id="playback-bar">
-        <button class="toolbtn" id="play-btn">▶ play</button>
-        <button class="toolbtn" id="stop-btn" disabled>⏹ stop</button>
-        <div class="time-readout"><em id="cur-time">0.00</em>s · <span id="dur-readout">0.00</span>s</div>
-        <div class="scrub-bar" id="scrub-bar"><div class="scrub-fill" id="scrub-fill"></div></div>
-      </div>
-    </section>
-
-    <div id="inspector">
-      <h3>Inspector</h3>
-      <div id="inspector-body">
-        <div class="empty">πάτα keyframe γιὰ νὰ τὸν ἐπεξεργαστεῖς<br><br>πάτα στο μπάρ κενοῦ track γιὰ νέο</div>
-      </div>
-    </div>
   </main>
-
-  <!-- ============================================================ -->
-  <!-- LIVE PREVIEW PANE — shared across both tabs, slides in from   -->
-  <!-- the right when the header toggle is pressed.                  -->
-  <!-- ============================================================ -->
-  <aside id="book-preview-panel" class="book-preview-panel">
-    <div class="bp-header">
-      <span class="bp-label">live preview · /book</span>
-      <button class="bp-refresh" id="bp-refresh" title="refresh">↻</button>
-    </div>
-    <iframe id="book-preview-iframe" loading="lazy" referrerpolicy="no-referrer"></iframe>
-  </aside>
 </div>
 
 <div id="toast"></div>
@@ -658,8 +604,8 @@ const State = {
 //   PERSISTENCE
 // =====================================================================
 // =====================================================================
-//   PERSISTENCE — talks directly to PocketBase via fetch (no SDK in the
-//   inline module: Astro doesn't process is:inline imports).
+//   PERSISTENCE — content lives on the remote server. Reads are public,
+//   writes require auth.
 // =====================================================================
 function authHeader(extra) {
   const h = { Authorization: State.token };
@@ -691,12 +637,9 @@ function _recordToContent(rec) {
 
 async function load() {
   try {
-    const [pagesRes, animsRes] = await Promise.all([
-      fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=20`,    { headers: authHeader() }),
-      fetch(`${PB_URL}/api/collections/church_animations/records?perPage=50`,         { headers: authHeader() }),
-    ]);
+    const pagesRes = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`, { headers: authHeader() });
     const pages = (await pagesRes.json()).items || [];
-    const anims = (await animsRes.json()).items || [];
+    const anims = [];   // animations live in code now, not in PocketBase
 
     State.content      = {};
     State.contentLocks = {};
@@ -727,10 +670,10 @@ async function load() {
     if (!Object.keys(State.animations).length) {
       State.animations = deepClone(DEFAULT_ANIMATIONS);
     }
-    toast(`Φορτώθηκαν ${pages.length} σελίδες · ${anims.length} animations`);
+    toast(`Φορτώθηκαν ${pages.length} σελίδες ✓`);
   } catch (e) {
     console.error('[CMS] load failed', e);
-    toast('✕ ἀδυναμία φορτώματος ἀπὸ PB', 'error');
+    toast('✕ ἀδυναμία φορτώματος', 'error');
   }
 }
 
@@ -794,7 +737,7 @@ async function save() {
   State.dirtyAnims.clear();
   State.dirty = false;
   refreshSaveBtn();
-  toast(`Ἀποθηκεύθηκαν · ${pageCount} σελίδες · ${animCount} animations ✓`);
+  toast(`Ἀποθηκεύθηκαν ${pageCount} σελίδες ✓`);
   if (typeof renderPagesList === 'function') renderPagesList();
   // Refresh the live book preview iframe if it's open
   const iframe = document.getElementById('book-preview-iframe');
@@ -816,7 +759,7 @@ function exportJson() {
   toast('Ἐξήχθη church-cms.json');
 }
 function resetDefaults() {
-  toast('Reset δὲν εἶναι διαθέσιμο μὲ PocketBase backend — χρησιμοποίησε τὸ /_/ admin UI', 'error');
+  toast('Δὲν διατίθεται ἐπαναφορὰ — ἐπεξεργαστεῖτε ἀνὰ ἐγγραφὴ', 'error');
 }
 
 // =====================================================================
@@ -988,6 +931,8 @@ function selectKeyframe(trackIdx, prop, kfIdx) {
 }
 
 function renderEditor() {
+  // Animations tab removed — only run if the DOM still has the timeline elements.
+  if (!document.getElementById('tracks-area')) return;
   const animName = State.selected.anim;
   const meta = document.getElementById('anim-meta');
   const nameEl = document.getElementById('anim-name');
@@ -1273,7 +1218,7 @@ function renderInspector() {
 // =====================================================================
 //   META FIELDS — duration / loop
 // =====================================================================
-document.getElementById('anim-duration').addEventListener('change', e => {
+document.getElementById('anim-duration')?.addEventListener('change', e => {
   const v = parseFloat(e.target.value);
   if (isNaN(v) || v <= 0) return;
   pushHistory();
@@ -1281,7 +1226,7 @@ document.getElementById('anim-duration').addEventListener('change', e => {
   markDirty();
   renderAll();
 });
-document.getElementById('anim-loop').addEventListener('change', e => {
+document.getElementById('anim-loop')?.addEventListener('change', e => {
   pushHistory();
   State.animations[State.selected.anim].loop = e.target.checked;
   markDirty();
@@ -1324,9 +1269,9 @@ function setPlayhead(t01) {
   if (ph) ph.style.left = (t01 * 100) + '%';
   document.getElementById('scrub-fill').style.width = (t01 * 100) + '%';
 }
-document.getElementById('play-btn').addEventListener('click', startPlayback);
-document.getElementById('stop-btn').addEventListener('click', stopPlayback);
-document.getElementById('scrub-bar').addEventListener('click', e => {
+document.getElementById('play-btn')?.addEventListener('click', startPlayback);
+document.getElementById('stop-btn')?.addEventListener('click', stopPlayback);
+document.getElementById('scrub-bar')?.addEventListener('click', e => {
   if (!State.selected.anim) return;
   const r = e.currentTarget.getBoundingClientRect();
   const t01 = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
@@ -1352,8 +1297,8 @@ function toast(msg, type) {
 //   TOOLBAR ACTIONS
 // =====================================================================
 document.getElementById('save-btn').addEventListener('click', save);
-document.getElementById('export-btn').addEventListener('click', exportJson);
-document.getElementById('reset-btn').addEventListener('click', resetDefaults);
+document.getElementById('export-btn')?.addEventListener('click', exportJson);
+document.getElementById('reset-btn')?.addEventListener('click', resetDefaults);
 document.getElementById('undo-btn').addEventListener('click', undo);
 document.getElementById('redo-btn').addEventListener('click', redo);
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -1362,7 +1307,7 @@ document.getElementById('preview-btn').addEventListener('click', async () => {
   window.open('/book', '_blank');
 });
 // Toggle the live preview pane — visible across both tabs (app-level panel)
-document.getElementById('preview-toggle').addEventListener('click', () => {
+document.getElementById('preview-toggle')?.addEventListener('click', () => {
   const app = document.getElementById('app');
   const on  = !app.classList.contains('with-preview');
   app.classList.toggle('with-preview', on);
@@ -1867,7 +1812,7 @@ async function duplicateSelectedAnimation() {
 
 document.getElementById('add-anim-btn').addEventListener('click',       addNewAnimation);
 document.getElementById('anim-delete-btn').addEventListener('click',    deleteSelectedAnimation);
-document.getElementById('anim-duplicate-btn').addEventListener('click', duplicateSelectedAnimation);
+document.getElementById('anim-duplicate-btn')?.addEventListener('click', duplicateSelectedAnimation);
 
 // =====================================================================
 //   TAB SWITCHING
@@ -1878,9 +1823,7 @@ function setActiveTab(tab) {
   document.getElementById('view-animations').classList.toggle('hidden', tab !== 'animations');
   State.activeTab = tab;
 }
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
-});
+// (tabs removed — single content view)
 
 // =====================================================================
 //   INIT — extend renderAll to refresh both views, set up content wiring
@@ -1900,7 +1843,6 @@ async function init() {
   if (PAGES_DEFAULT[0]) State.selectedPageId = PAGES_DEFAULT[0].id;
   refreshSaveBtn();
   refreshUndoBtns();
-  setActiveTab('content');
   renderAll();
 }
 

@@ -65,37 +65,6 @@ JSON
 )"
 fi
 
-# ---------------------------------------------------------------------------
-# 2) church_animations — keyframe animation definitions
-# ---------------------------------------------------------------------------
-if exists church_animations; then
-  echo "• church_animations already exists — skipping"
-else
-  echo "• creating church_animations"
-  create_collection "$(cat <<'JSON'
-{
-  "name": "church_animations",
-  "type": "base",
-  "fields": [
-    { "name": "anim_name",   "type": "text",   "required": true, "max": 100 },
-    { "name": "duration",    "type": "number", "required": true, "min": 0.05, "max": 60 },
-    { "name": "loop",        "type": "bool"   },
-    { "name": "tracks",      "type": "json",   "required": true },
-    { "name": "track_locks", "type": "json"   },
-    { "name": "description", "type": "text",   "max": 500 }
-  ],
-  "indexes": [
-    "CREATE UNIQUE INDEX `idx_church_anim_name` ON `church_animations` (`anim_name`)"
-  ],
-  "listRule":   "",
-  "viewRule":   "",
-  "createRule": "@request.auth.collectionName = 'users'",
-  "updateRule": "@request.auth.collectionName = 'users'",
-  "deleteRule": "@request.auth.collectionName = 'users'"
-}
-JSON
-)"
-fi
 
 echo
 echo "Done."

@@ -163,40 +163,6 @@ PAGES = [
          photo_title="", photo_cap="", photo_desc="", photo_italic=""),
 ]
 
-# ---------------------------------------------------------------------------
-# 2 default animations driving the photo modal (image + info side)
-# ---------------------------------------------------------------------------
-ANIMATIONS = [
-    dict(anim_name="photoModalOpen", duration=0.7, loop=False,
-         description="Φωτογραφία ξεπροβάλλει με bounce και η περιγραφὴ ἔρχεται ἀπὸ δεξιά",
-         tracks=[
-            { "target": "modalImg", "properties": {
-                "scale":    [{ "t":0.0, "value":0.65, "ease":"easeOutBack" }, { "t":0.78, "value":1.04 }, { "t":1.0, "value":1.0 }],
-                "rotation": [{ "t":0.0, "value":-0.035, "ease":"easeOutCubic" }, { "t":0.55, "value":0.008 }, { "t":1.0, "value":0 }],
-                "opacity":  [{ "t":0.0, "value":0, "ease":"easeOutCubic" }, { "t":0.45, "value":1 }, { "t":1.0, "value":1 }],
-            }},
-            { "target": "modalInfo", "properties": {
-                "translateX": [{ "t":0.0, "value":40, "ease":"easeOutCubic" }, { "t":0.3, "value":40 }, { "t":1.0, "value":0 }],
-                "opacity":    [{ "t":0.0, "value":0 }, { "t":0.3, "value":0, "ease":"easeOutCubic" }, { "t":1.0, "value":1 }],
-            }},
-         ],
-         track_locks={}),
-
-    dict(anim_name="photoModalClose", duration=0.35, loop=False,
-         description="Κλείσιμο modal — γρήγορο fade-out",
-         tracks=[
-            { "target": "modalImg", "properties": {
-                "scale":   [{ "t":0.0, "value":1.0, "ease":"easeInCubic" }, { "t":1.0, "value":0.85 }],
-                "opacity": [{ "t":0.0, "value":1.0, "ease":"easeInCubic" }, { "t":1.0, "value":0 }],
-            }},
-            { "target": "modalInfo", "properties": {
-                "translateX": [{ "t":0.0, "value":0, "ease":"easeInCubic" }, { "t":1.0, "value":30 }],
-                "opacity":    [{ "t":0.0, "value":1, "ease":"easeInCubic" }, { "t":1.0, "value":0 }],
-            }},
-         ],
-         track_locks={}),
-]
-
 
 def api(path, method="GET", body=None):
     url  = PB_URL + path

@@ -3,7 +3,7 @@
 #
 # Verifies that the collections /book and /admin depend on are wired correctly:
 #   • /api/health is reachable
-#   • church_pages + church_animations are publicly readable and well-shaped
+#   • church_pages is publicly readable and well-shaped
 #   • file URLs for page photos serve actual image bytes
 #   • (with PB_TOKEN) the `users` collection authenticates and authed reads work
 #
@@ -156,12 +156,6 @@ else
   bad "GET /collections/church_pages/records → 200 with ≥1 item" "HTTP $code or empty items[]"
 fi
 
-code=$(fetch anims "$PB_URL/api/collections/church_animations/records?perPage=1")
-if [ "$code" = "200" ] && json_list_nonempty anims items; then
-  ok "GET /collections/church_animations/records → 200 with ≥1 item"
-else
-  bad "GET /collections/church_animations/records → 200 with ≥1 item" "HTTP $code or empty items[]"
-fi
 
 # Schema sanity on the first page record (only if the fetch above succeeded).
 if json_list_nonempty pages items; then
@@ -178,26 +172,6 @@ if json_list_nonempty pages items; then
   fi
 else
   bad "church_pages[0] schema" "no records to inspect"
-fi
-
-# Schema sanity on the first animation record.
-if json_list_nonempty anims items; then
-  missing=""
-  for field in anim_name duration; do
-    if ! jq_get "$(body_path anims)" "items[0].$field" > /dev/null 2>&1; then
-      missing="$missing $field"
-    fi
-  done
-  if ! json_list_nonempty anims 'items[0].tracks'; then
-    missing="$missing tracks(array)"
-  fi
-  if [ -z "$missing" ]; then
-    ok "church_animations[0] has anim_name, duration, tracks[]"
-  else
-    bad "church_animations[0] schema" "missing:$missing"
-  fi
-else
-  bad "church_animations[0] schema" "no records to inspect"
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
