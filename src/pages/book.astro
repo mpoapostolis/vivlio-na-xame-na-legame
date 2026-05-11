@@ -737,8 +737,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
-const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 0.6, 4.6);
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0.35, 3.4);          // closer + lower → book fills the frame head-on
+camera.lookAt(0, 0, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1700,8 +1701,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.enablePan = false;
-controls.minDistance = 2.0;
-controls.maxDistance = 6;
+controls.minDistance = 1.6;          // user can lean in close
+controls.maxDistance = 5.5;
 controls.minPolarAngle = 0.2;
 controls.maxPolarAngle = Math.PI * 0.6;
 controls.target.set(0, 0, 0);
