@@ -21,35 +21,10 @@ create_collection() {
     | python3 -c "import sys,json; r=json.load(sys.stdin); print('  ✓ created:', r['name'])"
 }
 
-# ---------------------------------------------------------------------------
-# 0) church_admins — auth collection for CMS editors.
-#    The /admin route authenticates against THIS collection.
-#    Users are created via the PocketBase admin UI at /_/.
-# ---------------------------------------------------------------------------
-if exists church_admins; then
-  echo "• church_admins already exists — skipping"
-else
-  echo "• creating church_admins"
-  create_collection "$(cat <<'JSON'
-{
-  "name": "church_admins",
-  "type": "auth",
-  "fields": [
-    { "name": "name", "type": "text", "max": 100 }
-  ],
-  "passwordAuth":   { "enabled": true,  "identityFields": ["email"] },
-  "oauth2":         { "enabled": false },
-  "verified":       false,
-  "listRule":   "id = @request.auth.id",
-  "viewRule":   "id = @request.auth.id",
-  "createRule": null,
-  "updateRule": "id = @request.auth.id",
-  "deleteRule": null,
-  "authRule":   ""
-}
-JSON
-)"
-fi
+# NOTE: CMS authentication uses the existing `users` collection on the PB
+# instance. No church-specific auth collection is created here.
+# Write rules on church_pages / church_animations restrict mutations to
+# tokens issued from `users` only.
 
 # ---------------------------------------------------------------------------
 # 1) church_pages — content per logical page (16 entries; 2 sides × 8 sheets)
@@ -83,9 +58,9 @@ else
   ],
   "listRule":   "",
   "viewRule":   "",
-  "createRule": "@request.auth.collectionName = 'church_admins'",
-  "updateRule": "@request.auth.collectionName = 'church_admins'",
-  "deleteRule": "@request.auth.collectionName = 'church_admins'"
+  "createRule": "@request.auth.collectionName = 'users'",
+  "updateRule": "@request.auth.collectionName = 'users'",
+  "deleteRule": "@request.auth.collectionName = 'users'"
 }
 JSON
 )"
@@ -115,9 +90,9 @@ else
   ],
   "listRule":   "",
   "viewRule":   "",
-  "createRule": "@request.auth.collectionName = 'church_admins'",
-  "updateRule": "@request.auth.collectionName = 'church_admins'",
-  "deleteRule": "@request.auth.collectionName = 'church_admins'"
+  "createRule": "@request.auth.collectionName = 'users'",
+  "updateRule": "@request.auth.collectionName = 'users'",
+  "deleteRule": "@request.auth.collectionName = 'users'"
 }
 JSON
 )"

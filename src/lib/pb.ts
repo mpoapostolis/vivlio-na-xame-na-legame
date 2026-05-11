@@ -85,9 +85,9 @@ export function pagePhotoAudioUrl(p: ChurchPage):  string | null { return p.phot
 //  AUTH (used by /admin)
 // =============================================================================
 
-/** Authenticates against the dedicated `church_admins` auth collection. */
+/** Authenticates against the `users` auth collection in PocketBase. */
 export async function loginAsAdmin(email: string, password: string) {
-  return pb.collection('church_admins').authWithPassword(email, password);
+  return pb.collection('users').authWithPassword(email, password);
 }
 
 export function logout() { pb.authStore.clear(); }

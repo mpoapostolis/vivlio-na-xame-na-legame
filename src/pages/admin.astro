@@ -251,7 +251,7 @@
     <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
     <button type="submit">Εἴσοδος</button>
     <div id="login-error"></div>
-    <div class="hint">church_admins · PocketBase</div>
+    <div class="hint">users · PocketBase</div>
   </form>
 </div>
 
@@ -781,13 +781,12 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 }
-// /admin authenticates against the dedicated `church_admins` collection.
-// Users are created via the PocketBase admin UI at /_/.
+// /admin authenticates against the `users` collection in PocketBase.
 async function login(email, pass) {
   const errEl = document.getElementById('login-error');
   errEl.textContent = '⌛ σύνδεση…';
   try {
-    const res = await fetch(`${PB_URL}/api/collections/church_admins/auth-with-password`, {
+    const res = await fetch(`${PB_URL}/api/collections/users/auth-with-password`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ identity: email, password: pass }),
