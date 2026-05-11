@@ -13,484 +13,757 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style is:global>
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;background:#0c0604;color:#d9b478;font-family:'Inter',-apple-system,sans-serif;font-size:13px;overflow:hidden}
-  button{font-family:inherit;cursor:pointer}
-  input,select,textarea{font-family:inherit}
-  .hidden{display:none !important}
+  /* Reset baseline that Tailwind's preflight doesn't cover */
+  html, body { height: 100%; overflow: hidden; }
+  body { font-size: 13px; }
 
-  /* === LOGIN SCREEN === */
-  #login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(ellipse at center,#1a0e07 0%,#020100 80%);z-index:100}
-  #login-form{width:380px;max-width:90vw;padding:48px 40px;background:rgba(20,12,6,0.85);backdrop-filter:blur(20px);
-    border:1px solid rgba(217,180,120,0.3);border-radius:6px;box-shadow:0 30px 80px -10px rgba(0,0,0,0.85);text-align:center}
-  #login-form h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-style:italic;font-weight:500;color:#efddb0;margin-bottom:6px}
-  #login-form .sub{font-size:9px;letter-spacing:0.45em;text-transform:uppercase;opacity:0.55;margin-bottom:34px;color:#9a6730}
-  #login-form input{width:100%;padding:12px 16px;margin-bottom:14px;background:rgba(8,4,2,0.6);
-    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:13px;letter-spacing:0.05em}
-  #login-form input:focus{outline:none;border-color:rgba(217,180,120,0.6);background:rgba(8,4,2,0.85)}
-  #login-form button{width:100%;padding:13px;background:linear-gradient(180deg,#9a6730 0%,#6e4920 100%);
-    border:1px solid rgba(217,180,120,0.5);border-radius:3px;color:#efddb0;font-size:11px;letter-spacing:0.35em;
-    text-transform:uppercase;font-weight:600;transition:all 0.3s}
-  #login-form button:hover{background:linear-gradient(180deg,#b07838 0%,#7e5424 100%);box-shadow:0 6px 20px -4px rgba(255,170,80,0.3)}
-  #login-form .hint{margin-top:18px;font-size:10px;letter-spacing:0.25em;opacity:0.4;text-transform:uppercase}
-  #login-error{color:#c44;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin-top:10px;min-height:14px}
+  /* --- Things Tailwind cannot easily express ----------------------- */
 
-  /* === APP LAYOUT === */
-  #app{display:grid;grid-template-rows:54px 1fr;height:100vh}
-
-  header{display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid rgba(217,180,120,0.18);
-    background:rgba(8,4,2,0.7);backdrop-filter:blur(10px)}
-  header h1{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:500;font-size:20px;color:#efddb0;flex:1;letter-spacing:0.01em}
-  header h1 .tag{font-family:'Inter',sans-serif;font-style:normal;font-size:9px;letter-spacing:0.4em;
-    color:#9a6730;text-transform:uppercase;margin-left:14px;font-weight:600;vertical-align:middle}
-  .toolbtn{padding:7px 14px;background:transparent;border:1px solid rgba(217,180,120,0.25);border-radius:3px;
-    color:#d9b478;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;transition:all 0.2s}
-  .toolbtn:hover{background:rgba(217,180,120,0.12);color:#efddb0;border-color:rgba(217,180,120,0.5)}
-  .toolbtn:disabled{opacity:0.3;cursor:not-allowed}
-  .toolbtn.primary{background:rgba(154,103,48,0.4);border-color:rgba(217,180,120,0.5);color:#efddb0}
-  .toolbtn.primary:hover{background:rgba(154,103,48,0.6)}
-  .toolbtn.danger:hover{background:rgba(180,60,60,0.2);border-color:#c44;color:#fff}
-
-  /* 3-column layout: page list | edit form | live book preview.
-     The preview is always visible — no toggle, no surprise. */
-  main{display:grid;grid-template-columns:220px minmax(420px, 1fr) minmax(440px, 1fr);
-       height:calc(100vh - 54px);overflow:hidden}
-
-  /* Live preview panel — embedded in the grid as the third column. */
-  #book-preview-panel{
-    background:#000;
-    border-left:1px solid rgba(217,180,120,0.18);
-    display:flex; flex-direction:column;
-    min-width:0; overflow:hidden;
+  /* File input: ::file-selector-button cannot be targeted by utility classes. */
+  .upload-row input[type=file] {
+    font-size: 11px;
+    color: #c9a96a;
+    background: transparent;
+    border: none;
+    padding: 0;
   }
-  @media (max-width: 1100px) {
-    /* On narrower screens drop the preview column to keep the form usable. */
-    main{ grid-template-columns:220px 1fr; }
-    #book-preview-panel{ display:none; }
+  .upload-row input[type=file]::file-selector-button {
+    padding: 6px 14px;
+    background: linear-gradient(180deg, rgba(154,103,48,0.55) 0%, rgba(70,46,24,0.55) 100%);
+    color: #efddb0;
+    border: 1px solid rgba(217,180,120,0.45);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-right: 12px;
+    transition: background 0.2s;
   }
-  .bp-header{display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(8,4,2,0.92);
-    border-bottom:1px solid rgba(217,180,120,0.18);font-size:8px;letter-spacing:0.32em;text-transform:uppercase;color:#9a6730;font-weight:700}
-  .bp-label{flex:1}
-  .bp-refresh{background:transparent;border:1px solid rgba(217,180,120,0.3);color:#d9b478;padding:4px 10px;
-    border-radius:2px;font-family:inherit;font-size:11px;cursor:pointer}
-  .bp-refresh:hover{background:rgba(217,180,120,0.13);color:#efddb0}
-  #book-preview-iframe{flex:1;width:100%;border:none;background:#000;min-height:0}
-
-  /* === TABS === */
-  .tabs{display:flex;gap:2px;background:rgba(8,4,2,0.6);border-radius:4px;padding:3px;margin-left:8px}
-  .tab{padding:7px 18px;background:transparent;border:none;border-radius:3px;
-    color:#9a6730;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;font-weight:600;
-    cursor:pointer;transition:all 0.2s}
-  .tab:hover{color:#d9b478}
-  .tab.active{background:linear-gradient(180deg,rgba(154,103,48,0.5) 0%,rgba(70,46,24,0.5) 100%);
-    color:#efddb0;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-
-  .view{display:grid}
-  .view.hidden{display:none !important}
-
-  /* === CONTENT EDITOR === */
-  .content-empty{padding:80px 20px;text-align:center;font-style:italic;font-family:'Cormorant Garamond',serif;
-    font-size:16px;color:#9a6730;opacity:0.6}
-  #content-editor{overflow-y:auto;padding:24px clamp(24px,4vw,48px) 48px}
-  #content-form{display:flex;flex-direction:column;gap:24px;max-width:780px;margin:0 auto}
-  .content-section{background:rgba(20,12,6,0.4);border:1px solid rgba(217,180,120,0.15);
-    border-radius:6px;padding:18px 22px}
-  .content-section h3{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;
-    font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.15)}
-  .field-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:12px}
-  .field-row:last-child{margin-bottom:0}
-  .field-row label{display:flex;flex-direction:column;gap:5px;font-size:9px;letter-spacing:0.22em;
-    text-transform:uppercase;color:#9a6730;font-weight:600}
-  .field-row input[type=text],
-  .field-row textarea{width:100%;padding:9px 12px;background:rgba(8,4,2,0.6);
-    border:1px solid rgba(217,180,120,0.22);border-radius:3px;color:#efddb0;font-size:13px;
-    letter-spacing:0.01em;font-family:'Inter',sans-serif;line-height:1.55}
-  .field-row textarea{resize:vertical;min-height:60px;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px}
-  .field-row input[type=text]:focus,
-  .field-row textarea:focus{outline:none;border-color:rgba(217,180,120,0.55);background:rgba(8,4,2,0.85)}
-  .field-row input.locked,
-  .field-row textarea.locked{opacity:0.45;pointer-events:none;background:rgba(8,4,2,0.3)}
-  .field-lock{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:0.18em;
-    color:#9a6730;cursor:pointer;padding-bottom:9px}
-  .field-lock input[type=checkbox]{accent-color:#9a6730;width:14px;height:14px;cursor:pointer}
-
-  .photo-preview{margin-top:14px;padding:14px;background:#000;border:1px solid rgba(217,180,120,0.18);
-    border-radius:3px;min-height:120px;display:flex;align-items:center;justify-content:center}
-  .photo-preview img{max-width:100%;max-height:200px;display:block;border:1px solid rgba(217,180,120,0.2)}
-  .photo-preview .empty-img{color:#9a6730;font-style:italic;font-size:12px;opacity:0.5}
-
-  /* Upload rows under the file fields */
-  .upload-row{display:flex;align-items:center;gap:10px;margin:-4px 0 12px;padding:9px 12px;background:rgba(154,103,48,0.06);
-    border:1px dashed rgba(217,180,120,0.25);border-radius:3px}
-  .upload-row input[type=file]{font-size:11px;color:#c9a96a;background:transparent;border:none;padding:0}
-  .upload-row input[type=file]::file-selector-button{padding:5px 12px;background:rgba(154,103,48,0.4);
-    color:#efddb0;border:1px solid rgba(217,180,120,0.4);border-radius:3px;font-family:inherit;
-    font-size:9px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;margin-right:10px}
-  .upload-row input[type=file]::file-selector-button:hover{background:rgba(154,103,48,0.6)}
-  .upload-hint{font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:#9a6730;opacity:0.7;flex-shrink:0}
-  .upload-row.pending{background:rgba(154,103,48,0.2);border-style:solid;border-color:rgba(217,180,120,0.6)}
-  .upload-row.pending::after{content:'⌛ ἐκκρεμεῖ — πάτα Save';font-size:8px;letter-spacing:0.2em;color:#efddb0;margin-left:auto}
-
-  .audio-preview{margin-top:10px;padding:10px;background:rgba(8,4,2,0.55);border:1px solid rgba(217,180,120,0.15);border-radius:3px}
-  .audio-preview audio{width:100%;height:32px}
-  .audio-preview .empty-audio{color:#9a6730;font-style:italic;font-size:11px;opacity:0.5;padding:5px}
-
-  /* Page list (sidebar in Content view) */
-  .page-item{padding:11px 18px;border-bottom:1px solid rgba(217,180,120,0.07);cursor:pointer;
-    display:flex;align-items:center;gap:10px;transition:background 0.2s}
-  .page-item:hover{background:rgba(217,180,120,0.06)}
-  .page-item.active{background:rgba(154,103,48,0.18);border-left:2px solid #efddb0;padding-left:16px}
-  .page-item .num{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:#9a6730;width:22px;flex-shrink:0}
-  .page-item.active .num{color:#efddb0}
-  .page-item .meta{flex:1;min-width:0}
-  .page-item .meta .title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:#efddb0;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .page-item .meta .sub{font-size:8px;letter-spacing:0.18em;opacity:0.5;text-transform:uppercase;margin-top:2px}
-  .page-item .edited-dot{width:5px;height:5px;border-radius:50%;background:#efddb0;flex-shrink:0;opacity:0}
-  .page-item.edited .edited-dot{opacity:1;box-shadow:0 0 6px rgba(255,220,150,0.6)}
-
-  .add-page-btn{
-    display:block; width:calc(100% - 28px); margin:14px;
-    padding:11px 14px;
-    background:linear-gradient(180deg,rgba(154,103,48,0.45) 0%,rgba(70,46,24,0.45) 100%);
-    border:1px dashed rgba(217,180,120,0.4);
-    border-radius:3px;
-    color:#efddb0;
-    font-family:inherit; font-size:10px; letter-spacing:0.3em; text-transform:uppercase; font-weight:600;
-    cursor:pointer; transition:all 0.25s;
+  .upload-row input[type=file]::file-selector-button:hover {
+    background: linear-gradient(180deg, rgba(176,120,56,0.7) 0%, rgba(80,52,24,0.7) 100%);
   }
-  .add-page-btn:hover{background:linear-gradient(180deg,rgba(154,103,48,0.7) 0%,rgba(70,46,24,0.7) 100%);
-    border-color:rgba(217,180,120,0.7); border-style:solid}
-  .add-page-btn:disabled{opacity:0.4;cursor:wait}
+  /* Pending-state pseudo element (written by JS through .pending class) */
+  .upload-row.pending::after {
+    content: '⌛ ἐκκρεμεῖ — πάτα ἀποθήκευσιν';
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: #efddb0;
+    margin-left: auto;
+  }
 
-  /* === MARKDOWN EDITOR === */
-  .md-editor{display:flex;flex-direction:column;width:100%;border:1px solid rgba(217,180,120,0.22);
-    border-radius:3px;background:rgba(8,4,2,0.6);overflow:hidden}
-  .md-editor:focus-within{border-color:rgba(217,180,120,0.55);background:rgba(8,4,2,0.85)}
-  .md-toolbar{display:flex;gap:2px;padding:5px 6px;background:rgba(8,4,2,0.8);
-    border-bottom:1px solid rgba(217,180,120,0.15)}
-  .md-toolbar button{padding:4px 9px;background:transparent;border:1px solid rgba(217,180,120,0.18);
-    border-radius:2px;color:#c9a96a;font-size:11px;font-family:inherit;cursor:pointer;
-    transition:all 0.15s;min-width:26px;line-height:1}
-  .md-toolbar button:hover{background:rgba(217,180,120,0.12);color:#efddb0;border-color:rgba(217,180,120,0.45)}
-  .md-toolbar button.bold{font-weight:700}
-  .md-toolbar button.italic{font-style:italic;font-family:'Cormorant Garamond',serif;font-size:14px}
-  .md-toolbar .md-sep{width:1px;background:rgba(217,180,120,0.15);margin:2px 4px}
-  .md-editor textarea{width:100%;padding:9px 12px;background:transparent;border:none;
-    color:#efddb0;font-size:15px;letter-spacing:0.01em;font-family:'Cormorant Garamond',Georgia,serif;
-    line-height:1.55;resize:vertical;min-height:60px;outline:none}
-  .md-editor.locked textarea{opacity:0.45;pointer-events:none;background:rgba(8,4,2,0.3)}
-  .md-editor.locked .md-toolbar{opacity:0.45;pointer-events:none}
-  .md-preview{padding:10px 12px;border-top:1px dashed rgba(217,180,120,0.18);
-    background:rgba(20,12,6,0.35);font-family:'Cormorant Garamond',Georgia,serif;
-    font-size:14px;line-height:1.6;color:#d9b478;min-height:0;max-height:200px;overflow-y:auto}
-  .md-preview .md-preview-label{display:block;font-size:8px;letter-spacing:0.3em;text-transform:uppercase;
-    color:#9a6730;font-weight:600;margin-bottom:6px;font-family:'Inter',sans-serif;font-style:normal}
-  .md-preview p{margin-bottom:6px}
-  .md-preview p:last-child{margin-bottom:0}
-  .md-preview strong{color:#efddb0;font-weight:700}
-  .md-preview em{font-style:italic;color:#efddb0}
-  .md-preview h1,.md-preview h2,.md-preview h3{font-style:italic;color:#efddb0;
-    font-weight:500;margin:4px 0 6px;font-size:18px}
-  .md-preview ul{margin:4px 0 6px 18px}
-  .md-preview li{margin-bottom:2px}
-  .md-preview a{color:#efddb0;text-decoration:underline;text-decoration-color:rgba(217,180,120,0.4)}
-  .md-preview .md-preview-empty{font-style:italic;opacity:0.5;font-size:12px}
+  /* The iframe must fill remaining flex height; Tailwind's min-h-0 + flex-1 works
+     but giving border:none here keeps it bullet-proof across browsers. */
+  #book-preview-iframe { border: none; }
 
-  /* === SIDEBAR === */
-  aside{border-right:1px solid rgba(217,180,120,0.15);overflow-y:auto;background:rgba(6,3,1,0.4)}
-  aside h2{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;font-weight:700;
-    padding:18px 18px 10px;border-bottom:1px solid rgba(217,180,120,0.12)}
-  .anim-item{padding:12px 18px;border-bottom:1px solid rgba(217,180,120,0.06);cursor:pointer;
-    display:flex;align-items:center;gap:8px;transition:background 0.2s}
-  .anim-item:hover{background:rgba(217,180,120,0.06)}
-  .anim-item.active{background:rgba(154,103,48,0.18);border-left:2px solid #efddb0;padding-left:16px}
-  .anim-item .name{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:#efddb0;flex:1}
-  .anim-item .meta{font-size:9px;letter-spacing:0.18em;opacity:0.5;text-transform:uppercase}
-  .anim-item .loop-badge{font-size:8px;padding:2px 6px;background:rgba(154,103,48,0.4);border-radius:2px;letter-spacing:0.15em}
+  /* Subtle inset top shadow on the iframe wrapper to feel embedded */
+  #book-preview-panel .iframe-wrap {
+    box-shadow: inset 0 8px 18px -8px rgba(0,0,0,0.9);
+  }
 
-  /* === EDITOR === */
-  #editor{display:flex;flex-direction:column;overflow:hidden}
-  #anim-meta{padding:18px 24px;border-bottom:1px solid rgba(217,180,120,0.12);background:rgba(8,4,2,0.4);
-    display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-  #anim-meta h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:26px;color:#efddb0;flex:1;min-width:200px}
-  .field{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#c9a96a}
-  .field input[type=number],.field input[type=text],.field select{padding:6px 10px;background:rgba(8,4,2,0.6);
-    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:12px;letter-spacing:0.05em;width:90px}
-  .field input[type=number]:focus,.field input[type=text]:focus,.field select:focus{outline:none;border-color:rgba(217,180,120,0.55)}
-  .field input[type=text]{width:170px}
-  .field input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#9a6730}
+  /* Markdown preview rendered HTML — these are injected by JS so we can't
+     pre-apply Tailwind classes; small block of typographic rules. */
+  .md-preview p { margin-bottom: 6px; }
+  .md-preview p:last-child { margin-bottom: 0; }
+  .md-preview strong { color: #efddb0; font-weight: 700; }
+  .md-preview em { font-style: italic; color: #efddb0; }
+  .md-preview h1,
+  .md-preview h2,
+  .md-preview h3 {
+    font-style: italic; color: #efddb0; font-weight: 500;
+    margin: 4px 0 6px; font-size: 18px;
+  }
+  .md-preview ul { margin: 4px 0 6px 18px; }
+  .md-preview li { margin-bottom: 2px; }
+  .md-preview a {
+    color: #efddb0; text-decoration: underline;
+    text-decoration-color: rgba(217,180,120,0.4);
+  }
+  .md-preview .md-preview-empty { font-style: italic; opacity: 0.5; font-size: 12px; }
 
-  #ruler{height:28px;background:rgba(8,4,2,0.4);border-bottom:1px solid rgba(217,180,120,0.12);position:relative;font-size:9px;letter-spacing:0.1em;color:#9a6730}
-  #ruler .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(217,180,120,0.18)}
-  #ruler .tick-label{position:absolute;top:7px;transform:translateX(-50%);font-variant-numeric:tabular-nums}
-  #ruler .playhead-line{position:absolute;top:0;bottom:-9999px;width:2px;background:#efddb0;
-    box-shadow:0 0 6px rgba(255,220,150,0.7);pointer-events:none;z-index:10;border-radius:1px}
+  /* Page-list edited-dot pulse — keyframe animation already defined in
+     tailwind.config.mjs as `animate-pulse-dot`, but applying via CSS
+     here because the dot is injected by JS template-literal HTML. */
+  .page-item.edited .edited-dot {
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(255,220,150,0.6);
+    animation: pulseDot 1.8s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(255,220,150,0.6); }
+    50%      { opacity: 0.45; box-shadow: 0 0 12px rgba(255,220,150,0.95); }
+  }
 
-  #tracks-scroll{flex:1;overflow-y:auto;background:rgba(6,3,1,0.2)}
-  .track-row{display:grid;grid-template-columns:200px 1fr 30px;align-items:center;
-    border-bottom:1px solid rgba(217,180,120,0.06);min-height:38px;transition:background 0.18s}
-  .track-row:hover{background:rgba(217,180,120,0.03)}
-  .track-row.locked{opacity:0.45}
-  .track-row.locked .track-bar{cursor:not-allowed}
-  .track-label{padding:0 12px;font-size:10px;letter-spacing:0.06em;color:#c9a96a;display:flex;align-items:center;gap:8px}
-  .track-label .target{font-weight:600;color:#efddb0}
-  .track-label .prop{opacity:0.7;font-style:italic;font-family:'Cormorant Garamond',serif;font-size:13px}
-  .lock-btn{background:transparent;border:none;color:#c9a96a;cursor:pointer;font-size:13px;padding:4px;
-    border-radius:2px;transition:all 0.2s;opacity:0.4}
-  .lock-btn:hover{opacity:1;background:rgba(217,180,120,0.12)}
-  .lock-btn.locked{opacity:1;color:#9a6730}
-  .track-bar{position:relative;height:30px;cursor:crosshair;background:rgba(217,180,120,0.04)}
-  .track-bar::before{content:'';position:absolute;top:50%;left:8px;right:8px;height:1px;
-    background:rgba(217,180,120,0.18);transform:translateY(-50%)}
-  .kf{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;
-    background:#c9a96a;border:1.5px solid #efddb0;cursor:grab;transition:transform 0.15s,box-shadow 0.15s;z-index:2}
-  .kf:hover{transform:translate(-50%,-50%) scale(1.3);box-shadow:0 0 10px rgba(255,220,150,0.7)}
-  .kf.active{background:#efddb0;border-color:#fff;box-shadow:0 0 12px rgba(255,220,150,0.95);transform:translate(-50%,-50%) scale(1.4)}
-  .kf.dragging{cursor:grabbing;transform:translate(-50%,-50%) scale(1.5)}
-  .kf-add-btn{padding:4px 6px;background:transparent;border:1px dashed rgba(217,180,120,0.3);color:#9a6730;
-    font-size:14px;border-radius:2px;transition:all 0.2s}
-  .kf-add-btn:hover{background:rgba(217,180,120,0.08);color:#efddb0;border-color:rgba(217,180,120,0.6)}
+  /* Scrollbars — Tailwind doesn't ship a built-in webkit-scrollbar plugin */
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: rgba(217,180,120,0.18); border-radius: 4px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(217,180,120,0.4); }
+  *::-webkit-scrollbar-track { background: transparent; }
 
-  #playback-bar{display:flex;align-items:center;gap:14px;padding:12px 24px;border-top:1px solid rgba(217,180,120,0.12);
-    background:rgba(8,4,2,0.5)}
-  #playback-bar .time-readout{font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:0.1em;color:#c9a96a;font-weight:500}
-  #playback-bar .time-readout em{color:#efddb0;font-style:normal}
-  .scrub-bar{flex:1;height:6px;background:rgba(217,180,120,0.08);border-radius:3px;position:relative;cursor:pointer}
-  .scrub-bar .scrub-fill{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,#9a6730,#efddb0);
-    border-radius:3px;width:0%;transition:width 0.05s linear}
+  /* keyframe-dot cursors for the (legacy, hidden) animation timeline; left
+     untouched so the JS still has a clean styling channel if/when the
+     timeline view re-emerges. */
+  .kf { cursor: grab; }
+  .kf.dragging { cursor: grabbing; }
+  .track-bar { cursor: crosshair; }
+  .track-row.locked .track-bar { cursor: not-allowed; }
 
-  /* === INSPECTOR === */
-  #inspector{border-left:1px solid rgba(217,180,120,0.15);background:rgba(6,3,1,0.5);overflow-y:auto;padding:18px}
-  #inspector h3{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;font-weight:700;
-    padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.15);margin-bottom:14px}
-  #inspector .empty{text-align:center;padding:40px 10px;font-style:italic;font-family:'Cormorant Garamond',serif;
-    font-size:14px;opacity:0.45;line-height:1.5}
-  #inspector .ins-row{margin-bottom:14px}
-  #inspector label{display:block;font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:#9a6730;
-    margin-bottom:5px;font-weight:600}
-  #inspector input,#inspector select,#inspector textarea{width:100%;padding:8px 10px;background:rgba(8,4,2,0.7);
-    border:1px solid rgba(217,180,120,0.25);border-radius:3px;color:#efddb0;font-size:12px;letter-spacing:0.05em}
-  #inspector input:focus,#inspector select:focus,#inspector textarea:focus{outline:none;border-color:rgba(217,180,120,0.55)}
-  #inspector textarea{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px;resize:vertical;min-height:36px}
-  #inspector .target-prop{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:#efddb0;margin-bottom:14px}
-  #inspector .target-prop .target{font-weight:600}
-  #inspector .target-prop .prop{opacity:0.75}
-  #inspector .bindings{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
-  .binding-chip{font-size:9px;padding:3px 7px;background:rgba(217,180,120,0.1);border:1px solid rgba(217,180,120,0.25);
-    border-radius:2px;color:#c9a96a;cursor:pointer;letter-spacing:0.05em;transition:all 0.18s}
-  .binding-chip:hover{background:rgba(217,180,120,0.25);color:#efddb0}
+  /* Locked field — small lock glyph in front of the label + dim text */
+  .ce-label.is-locked { opacity: 0.6; }
+  .ce-label.is-locked::before {
+    content: '🔒 ';
+    font-size: 10px;
+    margin-right: 4px;
+    opacity: 0.85;
+  }
 
-  /* === TOAST === */
-  #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
-    padding:11px 22px;background:rgba(20,12,6,0.95);border:1px solid rgba(217,180,120,0.4);border-radius:3px;
-    color:#efddb0;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:500;
-    opacity:0;pointer-events:none;transition:all 0.3s;z-index:50;
-    box-shadow:0 14px 40px -8px rgba(0,0,0,0.7)}
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  #toast.error{border-color:#c44;color:#fcc}
+  /* Locked input/textarea/md-editor — JS toggles `.locked` */
+  input.locked,
+  select.locked,
+  textarea.locked {
+    opacity: 0.5;
+    pointer-events: none;
+    background: rgba(8,4,2,0.3) !important;
+  }
+  .md-editor.locked textarea  { opacity: 0.5; pointer-events: none; background: rgba(8,4,2,0.3); }
+  .md-editor.locked .md-toolbar { opacity: 0.5; pointer-events: none; }
 
-  /* === SCROLLBARS === */
-  *::-webkit-scrollbar{width:8px;height:8px}
-  *::-webkit-scrollbar-thumb{background:rgba(217,180,120,0.18);border-radius:4px}
-  *::-webkit-scrollbar-thumb:hover{background:rgba(217,180,120,0.35)}
-  *::-webkit-scrollbar-track{background:transparent}
+  /* Toast — JS toggles `.show` and `.error` */
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.error {
+    border-color: #c44;
+    color: #fcc;
+    background: rgba(60, 18, 18, 0.95);
+  }
+
+  /* Pending upload-row state — JS adds `.pending` */
+  .upload-row.pending {
+    background: rgba(154,103,48,0.22);
+    border-style: solid;
+    border-color: rgba(217,180,120,0.6);
+  }
+
+  /* ============================================================ */
+  /*  Page list items — built by JS innerHTML so styled here       */
+  /* ============================================================ */
+  .page-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(217,180,120,0.07);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s, padding-left 0.2s;
+  }
+  .page-item:hover  { background: rgba(217,180,120,0.06); }
+  .page-item.active {
+    background: linear-gradient(90deg, rgba(154,103,48,0.22) 0%, rgba(154,103,48,0.04) 100%);
+    border-left: 2px solid #efddb0;
+    padding-left: 16px;
+  }
+  .page-item .num {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 19px;
+    color: #9a6730;
+    width: 22px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .page-item.active .num { color: #efddb0; }
+  .page-item .meta { flex: 1; min-width: 0; }
+  .page-item .meta .title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    color: #efddb0;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .page-item .meta .sub {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    opacity: 0.5;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .page-item .edited-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #efddb0;
+    flex-shrink: 0;
+    opacity: 0;
+  }
+
+  /* ============================================================ */
+  /*  Save button — JS toggles `.primary` for dirty state           */
+  /* ============================================================ */
+  #save-btn.primary {
+    background: linear-gradient(180deg, #9a6730 0%, #6e4920 100%);
+    border-color: rgba(217,180,120,0.7);
+    color: #efddb0;
+    animation: saveGlow 2.2s ease-in-out infinite;
+  }
+  @keyframes saveGlow {
+    0%, 100% { box-shadow: 0 2px 8px -2px rgba(154,103,48,0.4); }
+    50%      { box-shadow: 0 2px 14px -1px rgba(255,170,80,0.55); }
+  }
+
+  /* Audio preview tweaks (the wrapper's content is injected by JS) */
+  #ce-audio-preview audio { width: 100%; height: 36px; }
+  #ce-audio-preview .empty-audio {
+    color: #9a6730;
+    font-style: italic;
+    font-size: 11px;
+    opacity: 0.5;
+    padding: 6px;
+  }
+
+  /* Photo preview image */
+  #ce-photo-preview img {
+    max-width: 100%;
+    max-height: 220px;
+    display: block;
+    border: 1px solid rgba(217,180,120,0.25);
+    border-radius: 2px;
+  }
+  #ce-photo-preview .empty-img {
+    color: #9a6730;
+    font-style: italic;
+    font-size: 12px;
+    opacity: 0.55;
+  }
+
+  /* Form/empty visibility toggled by JS — when hidden Tailwind handles it
+     via display:none. When NOT hidden we want the flex-col layout to come back. */
+  #content-form:not(.hidden) { display: flex; }
 </style>
 </head>
-<body>
+<body class="font-sans text-gold-mid bg-bg-near antialiased">
 
 <!-- ============================================================ -->
 <!-- LOGIN SCREEN                                                  -->
 <!-- ============================================================ -->
-<div id="login-screen">
-  <form id="login-form">
-    <h1>Ἅγιος Ἀνδρέας</h1>
-    <div class="sub">CMS · διαχείρισις</div>
-    <input type="email" id="login-user" placeholder="email" autocomplete="username" autofocus>
-    <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
-    <button type="submit">Εἴσοδος</button>
-    <div id="login-error"></div>
-    <div class="hint">οἱ κωδικοὶ δίνονται ἀπὸ τὸν διαχειριστὴ</div>
+<div id="login-screen"
+     class="fixed inset-0 flex items-center justify-center z-[100]"
+     style="background: radial-gradient(ellipse at center, #1a0e07 0%, #020100 80%);">
+  <form id="login-form"
+        class="w-[400px] max-w-[90vw] px-10 py-12 text-center
+               bg-bg-mid/85 backdrop-blur-xl
+               border border-gold-mid/30 rounded-lg shadow-login">
+    <h1 class="font-serif italic font-medium text-[34px] text-gold-bright mb-1.5">Ἅγιος Ἀνδρέας</h1>
+    <div class="text-[9px] tracking-[0.45em] uppercase opacity-60 mb-9 text-gold-deep font-semibold">
+      CMS · διαχείρισις
+    </div>
+    <input type="email" id="login-user" placeholder="email" autocomplete="username" autofocus
+           class="w-full px-4 py-3 mb-3.5 bg-bg-deep/60 border border-gold-mid/25
+                  rounded text-gold-bright text-[13px] tracking-[0.05em]
+                  focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                  focus:ring-2 focus:ring-gold-mid/20 transition" />
+    <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password"
+           class="w-full px-4 py-3 mb-3.5 bg-bg-deep/60 border border-gold-mid/25
+                  rounded text-gold-bright text-[13px] tracking-[0.05em]
+                  focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                  focus:ring-2 focus:ring-gold-mid/20 transition" />
+    <button type="submit"
+            class="w-full py-3.5 rounded
+                   bg-gradient-to-b from-gold-deep to-gold-darkest
+                   hover:from-[#b07838] hover:to-[#7e5424]
+                   hover:shadow-[0_6px_20px_-4px_rgba(255,170,80,0.3)]
+                   border border-gold-mid/50 text-gold-bright
+                   text-[11px] tracking-[0.35em] uppercase font-semibold
+                   transition-all duration-300">
+      Εἴσοδος
+    </button>
+    <div id="login-error"
+         class="text-[#d44] text-[10px] tracking-[0.15em] uppercase mt-2.5 min-h-[14px]"></div>
+    <div class="mt-4 text-[10px] tracking-[0.25em] opacity-40 uppercase">
+      οἱ κωδικοὶ δίνονται ἀπὸ τὸν διαχειριστὴ
+    </div>
   </form>
 </div>
 
 <!-- ============================================================ -->
 <!-- MAIN APP                                                      -->
 <!-- ============================================================ -->
-<div id="app" class="hidden">
-  <header>
-    <h1>Ἅγιος Ἀνδρέας <span class="tag">διαχείρισις περιεχομένου</span></h1>
-    <button class="toolbtn" id="undo-btn" title="Ctrl/Cmd + Z" disabled>↶ ἀναίρεσις</button>
-    <button class="toolbtn" id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled>↷ ἐπανάληψις</button>
-    <button class="toolbtn primary" id="save-btn" title="Cmd + S">💾 ἀποθήκευσις</button>
-    <button class="toolbtn" id="preview-btn">↗ ἀνοίξτε τὸ βιβλίον</button>
-    <button class="toolbtn danger" id="logout-btn">↪ ἔξοδος</button>
+<div id="app" class="hidden grid grid-rows-[58px_1fr] h-screen">
+  <header class="flex items-center gap-3 px-5
+                 border-b border-gold-mid/20 bg-bg-deep/75 backdrop-blur-md shadow-panel">
+    <h1 class="font-serif italic font-medium text-[21px] text-gold-bright flex-1 tracking-[0.01em]">
+      Ἅγιος Ἀνδρέας
+      <span class="font-sans not-italic text-[9px] tracking-[0.4em] text-gold-deep uppercase
+                   ml-4 font-semibold align-middle">διαχείρισις περιεχομένου</span>
+    </h1>
+    <button id="undo-btn" title="Ctrl/Cmd + Z" disabled
+            class="px-3.5 py-1.5 rounded bg-transparent text-gold-mid
+                   text-[10px] tracking-[0.22em] uppercase font-medium
+                   border border-gold-mid/25 transition-all duration-200
+                   hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/50
+                   disabled:opacity-30 disabled:cursor-not-allowed">
+      ↶ ἀναίρεσις
+    </button>
+    <button id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled
+            class="px-3.5 py-1.5 rounded bg-transparent text-gold-mid
+                   text-[10px] tracking-[0.22em] uppercase font-medium
+                   border border-gold-mid/25 transition-all duration-200
+                   hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/50
+                   disabled:opacity-30 disabled:cursor-not-allowed">
+      ↷ ἐπανάληψις
+    </button>
+    <button id="save-btn" title="Cmd + S"
+            class="px-3.5 py-1.5 rounded text-gold-bright
+                   text-[10px] tracking-[0.22em] uppercase font-semibold
+                   bg-gradient-to-b from-gold-deep/60 to-gold-darkest/60
+                   border border-gold-mid/50 transition-all duration-200
+                   hover:from-gold-deep/80 hover:to-gold-darkest/80
+                   shadow-[0_2px_8px_-2px_rgba(154,103,48,0.4)]">
+      💾 ἀποθήκευσις
+    </button>
+    <button id="preview-btn"
+            class="px-3.5 py-1.5 rounded bg-transparent text-gold-mid
+                   text-[10px] tracking-[0.22em] uppercase font-medium
+                   border border-gold-mid/25 transition-all duration-200
+                   hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/50">
+      ↗ ἀνοίξτε τὸ βιβλίον
+    </button>
+    <button id="logout-btn"
+            class="px-3.5 py-1.5 rounded bg-transparent text-gold-mid
+                   text-[10px] tracking-[0.22em] uppercase font-medium
+                   border border-gold-mid/25 transition-all duration-200
+                   hover:bg-red-900/30 hover:border-red-500 hover:text-white">
+      ↪ ἔξοδος
+    </button>
   </header>
 
   <!-- ============================================================ -->
   <!--  CONTENT TAB — edit per-page texts, photos, audio              -->
   <!-- ============================================================ -->
-  <main>
-    <aside>
-      <h2>Σελίδες</h2>
-      <div id="pages-list"></div>
-      <button id="add-page-btn" class="add-page-btn" type="button">+ νέα σελίδα</button>
+  <main class="grid h-[calc(100vh-58px)] overflow-hidden
+               grid-cols-[220px_minmax(420px,1fr)_minmax(440px,1fr)]
+               max-[1100px]:grid-cols-[220px_1fr]">
+    <aside class="border-r border-gold-mid/15 overflow-y-auto bg-bg-deep/45
+                  flex flex-col shadow-[2px_0_12px_-4px_rgba(0,0,0,0.6)]">
+      <h2 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                 px-5 pt-5 pb-2.5 border-b border-gold-mid/15">Σελίδες</h2>
+      <div id="pages-list" class="flex-1 overflow-y-auto"></div>
+      <button id="add-page-btn" type="button"
+              class="block w-[calc(100%-28px)] mx-3.5 my-3.5 px-3.5 py-3 rounded
+                     bg-gradient-to-b from-gold-deep/45 to-gold-darkest/45
+                     hover:from-gold-deep/70 hover:to-gold-darkest/70
+                     hover:border-solid hover:border-gold-mid/70
+                     border border-dashed border-gold-mid/40 text-gold-bright
+                     text-[10px] tracking-[0.3em] uppercase font-semibold
+                     transition-all duration-250
+                     disabled:opacity-40 disabled:cursor-wait
+                     shadow-[0_2px_8px_-2px_rgba(0,0,0,0.5)]">
+        + νέα σελίδα
+      </button>
     </aside>
 
-    <section id="content-editor">
-      <div id="content-empty" class="content-empty">— ἐπίλεξε σελίδα ἀπὸ τὴν λίστα —</div>
-      <div id="content-form" class="hidden">
-        <div class="content-section">
-          <h3>Κεφαλίδα</h3>
-          <div class="field-row">
-            <label>Τύπος σελίδας
-              <select id="ce-type" data-field="type">
-                <option value="page">page · κανονική σελίδα</option>
+    <section id="content-editor" class="overflow-y-auto px-6 md:px-12 py-6 pb-12 bg-bg-near/40">
+      <div id="content-empty"
+           class="px-5 py-20 text-center italic font-serif text-[17px] text-gold-deep opacity-60">
+        — ἐπίλεξε σελίδα ἀπὸ τὴν λίστα —
+      </div>
+      <div id="content-form" class="hidden flex-col gap-6 max-w-[780px] mx-auto">
+        <!-- ============ Section: Header / Κεφαλίδα ============ -->
+        <div class="bg-bg-mid/45 border border-gold-mid/15 rounded-lg px-6 py-5
+                    shadow-panel transition-all">
+          <h3 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                     mb-4 pb-2.5 border-b border-gold-mid/15">Κεφαλίδα</h3>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="type">
+              Τύπος σελίδας
+              <select id="ce-type" data-field="type"
+                      class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em]
+                             bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                             focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                             focus:ring-2 focus:ring-gold-mid/20 transition">
+                <option value="page">σελίδα · κανονική</option>
                 <option value="cover">cover · ἐξώφυλλο</option>
                 <option value="back-cover">back-cover · ὀπισθόφυλλο</option>
               </select>
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="type"> 🔒</label>
-          </div>
-          <div class="field-row">
-            <label>Eyebrow (κεφάλαιο)
-              <input type="text" id="ce-eyebrow" data-field="eyebrow">
-            </label>
-            <label class="field-lock">
-              <input type="checkbox" data-lock="eyebrow"> 🔒 lock
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="type" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
             </label>
           </div>
-          <div class="field-row">
-            <label>Τίτλος <input type="text" id="ce-title" data-field="title"></label>
-            <label class="field-lock"><input type="checkbox" data-lock="title"> 🔒</label>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="eyebrow">
+              Eyebrow (κεφάλαιο)
+              <input type="text" id="ce-eyebrow" data-field="eyebrow"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="eyebrow" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="field-row">
-            <label>Ἡμερομηνία <input type="text" id="ce-date" data-field="date" placeholder="π.χ. 1ᾳ Ἰουνίου 1908"></label>
-            <label class="field-lock"><input type="checkbox" data-lock="date"> 🔒</label>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="title">
+              Τίτλος
+              <input type="text" id="ce-title" data-field="title"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="title" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
+          </div>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="date">
+              Ἡμερομηνία
+              <input type="text" id="ce-date" data-field="date" placeholder="π.χ. 1ᾳ Ἰουνίου 1908"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition
+                            placeholder:text-gold-deep/50" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="date" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
         </div>
 
-        <div class="content-section">
-          <h3>Σῶμα κειμένου</h3>
-          <div class="field-row">
-            <label>Lead (εἰσαγωγή · markdown)
-              <div class="md-editor" data-md="lead">
-                <div class="md-toolbar">
-                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
-                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
-                  <span class="md-sep"></span>
-                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
-                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
-                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+        <!-- ============ Section: Body / Σῶμα κειμένου ============ -->
+        <div class="bg-bg-mid/45 border border-gold-mid/15 rounded-lg px-6 py-5 shadow-panel">
+          <h3 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                     mb-4 pb-2.5 border-b border-gold-mid/15">Σῶμα κειμένου</h3>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="lead">
+              Lead (εἰσαγωγή · markdown)
+              <div class="md-editor flex flex-col w-full mt-1 overflow-hidden rounded
+                          border border-gold-mid/25 bg-bg-deep/60
+                          focus-within:border-gold-mid/55 focus-within:bg-bg-deep/85
+                          focus-within:ring-2 focus-within:ring-gold-mid/20 transition" data-md="lead">
+                <div class="md-toolbar flex gap-0.5 px-1.5 py-1.5
+                            bg-bg-deep/80 border-b border-gold-mid/15">
+                  <button type="button" data-md-cmd="bold"   title="Bold (**…**)"
+                          class="font-bold px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">B</button>
+                  <button type="button" data-md-cmd="italic" title="Italic (*…*)"
+                          class="italic font-serif text-[15px] px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">I</button>
+                  <span class="w-px bg-gold-mid/15 mx-1 my-0.5"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">H</button>
+                  <button type="button" data-md-cmd="bullet" title="Bullet list (- …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">·</button>
+                  <button type="button" data-md-cmd="link" title="Link ([text](url))"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">🔗</button>
                 </div>
-                <textarea id="ce-lead" data-field="lead" rows="3"></textarea>
-                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+                <textarea id="ce-lead" data-field="lead" rows="3"
+                          class="w-full px-3 py-2.5 bg-transparent border-none outline-none resize-y
+                                 text-gold-bright text-[15px] tracking-[0.01em] font-serif leading-[1.55]
+                                 min-h-[60px]"></textarea>
+                <div class="md-preview px-3 py-2.5 border-t border-dashed border-gold-mid/20
+                            bg-bg-mid/35 font-serif text-[14px] leading-[1.6] text-gold-mid
+                            min-h-0 max-h-[200px] overflow-y-auto">
+                  <span class="md-preview-label block text-[8px] tracking-[0.3em] uppercase
+                               text-gold-deep font-semibold mb-1.5 font-sans not-italic">προεπισκόπησις</span>
+                  <div class="md-preview-body"></div>
+                </div>
               </div>
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="lead"> 🔒</label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="lead" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="field-row">
-            <label>Παράγραφος (markdown)
-              <div class="md-editor" data-md="body">
-                <div class="md-toolbar">
-                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
-                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
-                  <span class="md-sep"></span>
-                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
-                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
-                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="body">
+              Παράγραφος (markdown)
+              <div class="md-editor flex flex-col w-full mt-1 overflow-hidden rounded
+                          border border-gold-mid/25 bg-bg-deep/60
+                          focus-within:border-gold-mid/55 focus-within:bg-bg-deep/85
+                          focus-within:ring-2 focus-within:ring-gold-mid/20 transition" data-md="body">
+                <div class="md-toolbar flex gap-0.5 px-1.5 py-1.5
+                            bg-bg-deep/80 border-b border-gold-mid/15">
+                  <button type="button" data-md-cmd="bold"   title="Bold (**…**)"
+                          class="font-bold px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">B</button>
+                  <button type="button" data-md-cmd="italic" title="Italic (*…*)"
+                          class="italic font-serif text-[15px] px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">I</button>
+                  <span class="w-px bg-gold-mid/15 mx-1 my-0.5"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">H</button>
+                  <button type="button" data-md-cmd="bullet" title="Bullet list (- …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">·</button>
+                  <button type="button" data-md-cmd="link" title="Link ([text](url))"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">🔗</button>
                 </div>
-                <textarea id="ce-body" data-field="body" rows="4"></textarea>
-                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+                <textarea id="ce-body" data-field="body" rows="4"
+                          class="w-full px-3 py-2.5 bg-transparent border-none outline-none resize-y
+                                 text-gold-bright text-[15px] tracking-[0.01em] font-serif leading-[1.55]
+                                 min-h-[80px]"></textarea>
+                <div class="md-preview px-3 py-2.5 border-t border-dashed border-gold-mid/20
+                            bg-bg-mid/35 font-serif text-[14px] leading-[1.6] text-gold-mid
+                            min-h-0 max-h-[200px] overflow-y-auto">
+                  <span class="md-preview-label block text-[8px] tracking-[0.3em] uppercase
+                               text-gold-deep font-semibold mb-1.5 font-sans not-italic">προεπισκόπησις</span>
+                  <div class="md-preview-body"></div>
+                </div>
               </div>
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="body"> 🔒</label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="body" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
         </div>
 
-        <div class="content-section">
-          <h3>Φωτογραφία</h3>
-          <div class="field-row">
-            <label>Τρέχουσα εἰκόνα
-              <input type="text" id="ce-photo-src" data-field="photoSrc" readonly placeholder="(κενό)">
+        <!-- ============ Section: Photo / Φωτογραφία ============ -->
+        <div class="bg-bg-mid/45 border border-gold-mid/15 rounded-lg px-6 py-5 shadow-panel">
+          <h3 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                     mb-4 pb-2.5 border-b border-gold-mid/15">Φωτογραφία</h3>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoSrc">
+              Τρέχουσα εἰκόνα
+              <input type="text" id="ce-photo-src" data-field="photoSrc" readonly placeholder="(κενό)"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[12px] tracking-[0.01em]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-soft/80
+                            font-mono placeholder:text-gold-deep/50" />
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoSrc"> 🔒</label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoSrc" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="upload-row">
-            <input type="file" id="ce-photo-upload" accept="image/jpeg,image/png,image/webp,image/gif" data-upload="photo">
-            <span class="upload-hint">JPG / PNG / WEBP · μέγιστο 15 MB</span>
+
+          <div class="upload-row flex items-center gap-2.5 mb-3 px-3 py-2.5 rounded
+                      bg-gold-deep/5 border border-dashed border-gold-mid/25">
+            <input type="file" id="ce-photo-upload"
+                   accept="image/jpeg,image/png,image/webp,image/gif" data-upload="photo" />
+            <span class="text-[8px] tracking-[0.18em] uppercase text-gold-deep opacity-70 shrink-0">
+              JPG / PNG / WEBP · μέγιστο 15 MB
+            </span>
           </div>
-          <div class="field-row">
-            <label>Τίτλος φωτογραφίας <input type="text" id="ce-photo-title" data-field="photoTitle"></label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoTitle"> 🔒</label>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoTitle">
+              Τίτλος φωτογραφίας
+              <input type="text" id="ce-photo-title" data-field="photoTitle"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoTitle" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="field-row">
-            <label>Λεζάντα <input type="text" id="ce-photo-cap" data-field="photoCap"></label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoCap"> 🔒</label>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoCap">
+              Λεζάντα
+              <input type="text" id="ce-photo-cap" data-field="photoCap"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoCap" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="field-row">
-            <label>Περιγραφή (markdown)
-              <div class="md-editor" data-md="photoDesc">
-                <div class="md-toolbar">
-                  <button type="button" data-md-cmd="bold"    class="bold"   title="Bold (**…**)">B</button>
-                  <button type="button" data-md-cmd="italic"  class="italic" title="Italic (*…*)">I</button>
-                  <span class="md-sep"></span>
-                  <button type="button" data-md-cmd="heading" title="Heading (# …)">H</button>
-                  <button type="button" data-md-cmd="bullet"  title="Bullet list (- …)">·</button>
-                  <button type="button" data-md-cmd="link"    title="Link ([text](url))">🔗</button>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoDesc">
+              Περιγραφή (markdown)
+              <div class="md-editor flex flex-col w-full mt-1 overflow-hidden rounded
+                          border border-gold-mid/25 bg-bg-deep/60
+                          focus-within:border-gold-mid/55 focus-within:bg-bg-deep/85
+                          focus-within:ring-2 focus-within:ring-gold-mid/20 transition" data-md="photoDesc">
+                <div class="md-toolbar flex gap-0.5 px-1.5 py-1.5
+                            bg-bg-deep/80 border-b border-gold-mid/15">
+                  <button type="button" data-md-cmd="bold"   title="Bold (**…**)"
+                          class="font-bold px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">B</button>
+                  <button type="button" data-md-cmd="italic" title="Italic (*…*)"
+                          class="italic font-serif text-[15px] px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">I</button>
+                  <span class="w-px bg-gold-mid/15 mx-1 my-0.5"></span>
+                  <button type="button" data-md-cmd="heading" title="Heading (# …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">H</button>
+                  <button type="button" data-md-cmd="bullet" title="Bullet list (- …)"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">·</button>
+                  <button type="button" data-md-cmd="link" title="Link ([text](url))"
+                          class="px-2.5 py-1 rounded min-w-[28px] leading-none
+                                 bg-transparent text-gold-soft text-[11px] border border-gold-mid/20
+                                 hover:bg-gold-mid/10 hover:text-gold-bright hover:border-gold-mid/45
+                                 transition">🔗</button>
                 </div>
-                <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"></textarea>
-                <div class="md-preview"><span class="md-preview-label">preview</span><div class="md-preview-body"></div></div>
+                <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"
+                          class="w-full px-3 py-2.5 bg-transparent border-none outline-none resize-y
+                                 text-gold-bright text-[15px] tracking-[0.01em] font-serif leading-[1.55]
+                                 min-h-[60px]"></textarea>
+                <div class="md-preview px-3 py-2.5 border-t border-dashed border-gold-mid/20
+                            bg-bg-mid/35 font-serif text-[14px] leading-[1.6] text-gold-mid
+                            min-h-0 max-h-[200px] overflow-y-auto">
+                  <span class="md-preview-label block text-[8px] tracking-[0.3em] uppercase
+                               text-gold-deep font-semibold mb-1.5 font-sans not-italic">προεπισκόπησις</span>
+                  <div class="md-preview-body"></div>
+                </div>
               </div>
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoDesc"> 🔒</label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoDesc" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="field-row">
-            <label>Italic note <input type="text" id="ce-photo-italic" data-field="photoItalic"></label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoItalic"> 🔒</label>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoItalic">
+              Σημείωσις πλαγία
+              <input type="text" id="ce-photo-italic" data-field="photoItalic"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[13px] tracking-[0.01em] leading-[1.55]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-bright italic font-serif text-[15px]
+                            focus:outline-none focus:border-gold-mid/60 focus:bg-bg-deep/85
+                            focus:ring-2 focus:ring-gold-mid/20 transition" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoItalic" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
           </div>
-          <div class="photo-preview" id="ce-photo-preview"></div>
+
+          <div class="photo-preview mt-3.5 p-3.5 rounded bg-black border border-gold-mid/20
+                      min-h-[120px] flex items-center justify-center
+                      shadow-[inset_0_2px_8px_-2px_rgba(0,0,0,0.8)]"
+               id="ce-photo-preview"></div>
         </div>
 
-        <div class="content-section">
-          <h3>Ἀφήγησις</h3>
-          <div class="field-row">
-            <label>Page audio (mp3)
-              <input type="text" id="ce-narration" data-field="narration" readonly placeholder="(κενό)">
+        <!-- ============ Section: Narration / Ἀφήγησις ============ -->
+        <div class="bg-bg-mid/45 border border-gold-mid/15 rounded-lg px-6 py-5 shadow-panel">
+          <h3 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                     mb-4 pb-2.5 border-b border-gold-mid/15">Ἀφήγησις</h3>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="narration">
+              Ἦχος σελίδας (mp3)
+              <input type="text" id="ce-narration" data-field="narration" readonly placeholder="(κενό)"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[12px] tracking-[0.01em]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-soft/80
+                            font-mono placeholder:text-gold-deep/50" />
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="narration"> 🔒</label>
-          </div>
-          <div class="upload-row">
-            <input type="file" id="ce-narration-upload" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="narration">
-            <span class="upload-hint">MP3 · μέγιστο 20 MB</span>
-          </div>
-          <div class="field-row">
-            <label>Photo audio (mp3)
-              <input type="text" id="ce-photo-audio" data-field="photoAudio" readonly placeholder="(κενό)">
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="narration" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
             </label>
-            <label class="field-lock"><input type="checkbox" data-lock="photoAudio"> 🔒</label>
           </div>
-          <div class="upload-row">
-            <input type="file" id="ce-photo-audio-upload" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="photo_audio">
-            <span class="upload-hint">MP3 · μέγιστο 20 MB</span>
+
+          <div class="upload-row flex items-center gap-2.5 mb-3 px-3 py-2.5 rounded
+                      bg-gold-deep/5 border border-dashed border-gold-mid/25">
+            <input type="file" id="ce-narration-upload"
+                   accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="narration" />
+            <span class="text-[8px] tracking-[0.18em] uppercase text-gold-deep opacity-70 shrink-0">
+              MP3 · μέγιστο 20 MB
+            </span>
           </div>
-          <div class="audio-preview" id="ce-audio-preview"></div>
+
+          <div class="grid grid-cols-[1fr_auto] gap-3 items-end mb-3">
+            <label class="ce-label flex flex-col gap-1.5 text-[9px] tracking-[0.22em] uppercase text-gold-deep font-semibold" data-label-for="photoAudio">
+              Ἦχος φωτογραφίας (mp3)
+              <input type="text" id="ce-photo-audio" data-field="photoAudio" readonly placeholder="(κενό)"
+                     class="w-full px-3 py-2.5 mt-1 rounded text-[12px] tracking-[0.01em]
+                            bg-bg-deep/60 border border-gold-mid/25 text-gold-soft/80
+                            font-mono placeholder:text-gold-deep/50" />
+            </label>
+            <label class="flex items-center gap-1.5 text-[9px] tracking-[0.18em] text-gold-deep cursor-pointer pb-2">
+              <input type="checkbox" data-lock="photoAudio" class="w-3.5 h-3.5 accent-gold-deep cursor-pointer"> 🔒
+            </label>
+          </div>
+
+          <div class="upload-row flex items-center gap-2.5 mb-3 px-3 py-2.5 rounded
+                      bg-gold-deep/5 border border-dashed border-gold-mid/25">
+            <input type="file" id="ce-photo-audio-upload"
+                   accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg" data-upload="photo_audio" />
+            <span class="text-[8px] tracking-[0.18em] uppercase text-gold-deep opacity-70 shrink-0">
+              MP3 · μέγιστο 20 MB
+            </span>
+          </div>
+
+          <div id="ce-audio-preview"
+               class="mt-2.5 p-3 rounded bg-bg-deep/55 border border-gold-mid/15"></div>
         </div>
       </div>
     </section>
 
     <!-- Live preview — always visible as the third column -->
-    <aside id="book-preview-panel">
-      <div class="bp-header">
-        <span class="bp-label">προεπισκόπησις · ζωντανή</span>
-        <button class="bp-refresh" id="bp-refresh" title="ἀνανέωση">↻</button>
+    <aside id="book-preview-panel"
+           class="bg-black border-l border-gold-mid/20 flex flex-col min-w-0 overflow-hidden
+                  max-[1100px]:hidden">
+      <div class="flex items-center gap-2.5 px-4 py-2.5 bg-bg-deep/95
+                  border-b border-gold-mid/20 text-[8px] tracking-[0.32em] uppercase
+                  text-gold-deep font-bold">
+        <span class="flex-1">προεπισκόπησις · ζωντανή</span>
+        <button id="bp-refresh" title="ἀνανέωση"
+                class="bg-transparent border border-gold-mid/30 text-gold-mid
+                       px-2.5 py-1 rounded text-[11px] font-sans cursor-pointer
+                       hover:bg-gold-mid/10 hover:text-gold-bright transition">↻</button>
       </div>
-      <iframe id="book-preview-iframe" src="/book" referrerpolicy="no-referrer"></iframe>
+      <div class="iframe-wrap flex-1 flex min-h-0">
+        <iframe id="book-preview-iframe" src="/book" referrerpolicy="no-referrer"
+                class="flex-1 w-full bg-black min-h-0"></iframe>
+      </div>
     </aside>
   </main>
 </div>
 
-<div id="toast"></div>
+<div id="toast"
+     class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-5
+            px-6 py-3 rounded
+            bg-bg-mid/95 border border-gold-mid/40 text-gold-bright
+            text-[11px] tracking-[0.18em] uppercase font-medium
+            opacity-0 pointer-events-none transition-all duration-300
+            z-50 shadow-toast"></div>
 
 <script is:inline>
 'use strict';
@@ -806,7 +1079,7 @@ function refreshUndoBtns() {
 }
 function refreshSaveBtn() {
   const btn = document.getElementById('save-btn');
-  btn.textContent = State.dirty ? '💾 save *' : '💾 saved';
+  btn.textContent = State.dirty ? '💾 ἀποθήκευσις *' : '💾 ἀποθηκευμένα';
   btn.classList.toggle('primary', State.dirty);
 }
 function markDirty() {
@@ -1536,6 +1809,10 @@ function renderContentForm() {
     // Mirror lock state on the md-editor wrapper so the toolbar greys out too
     const mdWrap = document.querySelector(`.md-editor[data-md="${field}"]`);
     if (mdWrap) mdWrap.classList.toggle('locked', !!locks[field]);
+    // Surface the lock visually on the label (small 🔒 in front + dim text)
+    document.querySelectorAll(`[data-label-for="${field}"]`).forEach(lbl => {
+      lbl.classList.toggle('is-locked', !!locks[field]);
+    });
   }
   // Re-render markdown previews
   for (const f of MD_FIELDS) updateMdPreview(f);
@@ -1564,9 +1841,10 @@ function updateAudioPreview() {
   if (!wrap) return;
   const pageAudio  = document.getElementById('ce-narration').value.trim();
   const photoAudio = document.getElementById('ce-photo-audio').value.trim();
+  const labelCls = 'text-[8px] tracking-[0.22em] uppercase text-gold-deep font-semibold mb-1';
   let html = '';
-  if (pageAudio)  html += `<div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#9a6730;margin-bottom:3px">σελίδα</div><audio controls preload="none" src="${pageAudio}"></audio>`;
-  if (photoAudio) html += `<div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#9a6730;margin:8px 0 3px">φωτογραφία</div><audio controls preload="none" src="${photoAudio}"></audio>`;
+  if (pageAudio)  html += `<div class="${labelCls}">σελίδα</div><audio controls preload="none" src="${pageAudio}"></audio>`;
+  if (photoAudio) html += `<div class="${labelCls} mt-2">φωτογραφία</div><audio controls preload="none" src="${photoAudio}"></audio>`;
   wrap.innerHTML = html || '<div class="empty-audio">— δὲν ὁρίστηκε ἦχος —</div>';
 }
 
@@ -1810,8 +2088,10 @@ async function duplicateSelectedAnimation() {
   }
 }
 
-document.getElementById('add-anim-btn').addEventListener('click',       addNewAnimation);
-document.getElementById('anim-delete-btn').addEventListener('click',    deleteSelectedAnimation);
+// Animation tab UI is gone — these buttons no longer exist in the DOM.
+// Guard with ?. so the legacy handlers don't crash at module init.
+document.getElementById('add-anim-btn')?.addEventListener('click',       addNewAnimation);
+document.getElementById('anim-delete-btn')?.addEventListener('click',    deleteSelectedAnimation);
 document.getElementById('anim-duplicate-btn')?.addEventListener('click', duplicateSelectedAnimation);
 
 // =====================================================================
