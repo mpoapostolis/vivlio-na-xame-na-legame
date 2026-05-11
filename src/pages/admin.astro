@@ -947,9 +947,15 @@ function _recordToContent(rec) {
 
 async function load() {
   try {
-    const pagesRes = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`, { headers: authHeader() });
+    // GET on church_pages is public — sending Authorization triggers a CORS
+    // preflight (OPTIONS) that the proxy in front of PocketBase doesn't
+    // always handle, so the response can fail. Do anonymous reads here;
+    // writes still send the token.
+    const pagesRes = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`);
+    if (!pagesRes.ok) throw new Error('PB pages HTTP ' + pagesRes.status);
     const pages = (await pagesRes.json()).items || [];
-    const anims = [];   // animations live in code now, not in PocketBase
+    const anims = [];   // animations live in code, not in the backend
+    console.info('[admin] loaded', pages.length, 'page records');
 
     State.content      = {};
     State.contentLocks = {};
@@ -2048,11 +2054,11 @@ async function reorderPage(pageId, direction) {
   const b = State.content[PAGES_DEFAULT[swapIdx].id];
   if (!a || !b || !a._recordId || !b._recordId) return;
 
-  // Pull the current order values from the live records (re-fetch to avoid races)
+  // Re-fetch current values from the server (anonymous GET — no CORS preflight)
   let recA, recB;
   try {
-    const ra = await fetch(`${PB_URL}/api/collections/church_pages/records/${a._recordId}`, { headers: authHeader() });
-    const rb = await fetch(`${PB_URL}/api/collections/church_pages/records/${b._recordId}`, { headers: authHeader() });
+    const ra = await fetch(`${PB_URL}/api/collections/church_pages/records/${a._recordId}`);
+    const rb = await fetch(`${PB_URL}/api/collections/church_pages/records/${b._recordId}`);
     recA = await ra.json(); recB = await rb.json();
   } catch (e) { toast('✕ δίκτυο: ' + e.message, 'error'); return; }
 
