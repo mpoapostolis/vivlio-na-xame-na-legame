@@ -199,6 +199,31 @@
     opacity: 0;
   }
 
+  /* Up/Down reorder buttons at the right of each page item. */
+  .page-item .reorder {
+    display: flex; flex-direction: column; gap: 1px;
+    flex-shrink: 0; margin-left: 4px;
+    opacity: 0.45; transition: opacity 0.2s;
+  }
+  .page-item:hover .reorder, .page-item.active .reorder { opacity: 1; }
+  .page-item .re-btn {
+    width: 20px; height: 14px; line-height: 0;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.22);
+    color: #d9b478;
+    font-size: 8px;
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 0;
+    transition: all 0.15s;
+  }
+  .page-item .re-btn:hover:not(:disabled) {
+    background: rgba(217,180,120,0.18);
+    border-color: rgba(217,180,120,0.55);
+    color: #efddb0;
+  }
+  .page-item .re-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
   /* ============================================================ */
   /*  Save button — JS toggles `.primary` for dirty state           */
   /* ============================================================ */
@@ -370,6 +395,18 @@
         — ἐπίλεξε σελίδα ἀπὸ τὴν λίστα —
       </div>
       <div id="content-form" class="hidden flex-col gap-6 max-w-[780px] mx-auto">
+        <!-- ============ Action bar (delete page) ============ -->
+        <div class="flex justify-end">
+          <button id="delete-page-btn" type="button"
+                  class="inline-flex items-center gap-2 px-3.5 py-2 rounded
+                         border border-red-500/30 text-red-300 text-[10px]
+                         tracking-[0.22em] uppercase font-semibold
+                         hover:bg-red-500/15 hover:text-red-200 hover:border-red-500/55
+                         transition">
+            🗑 διαγραφὴ σελίδας
+          </button>
+        </div>
+
         <!-- ============ Section: Header / Κεφαλίδα ============ -->
         <div class="bg-bg-mid/45 border border-gold-mid/15 rounded-lg px-6 py-5
                     shadow-panel transition-all">
@@ -1756,13 +1793,16 @@ function renderPagesList() {
   const list = document.getElementById('pages-list');
   if (!list) return;
   list.innerHTML = '';
-  for (const p of PAGES_DEFAULT) {
+  for (let i = 0; i < PAGES_DEFAULT.length; i++) {
+    const p = PAGES_DEFAULT[i];
     const div = document.createElement('div');
     div.className = 'page-item' + (State.selectedPageId === p.id ? ' active' : '');
     const overrides = State.content[p.id] || {};
     const hasEdits = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
     if (hasEdits) div.classList.add('edited');
-    const numIdx = parseInt(p.id.slice(1)) + 1;
+    const numIdx = i + 1;
+    const canUp   = i > 0;
+    const canDown = i < PAGES_DEFAULT.length - 1;
     div.innerHTML = `
       <div class="num">${numIdx}</div>
       <div class="meta">
@@ -1770,8 +1810,24 @@ function renderPagesList() {
         <div class="sub">${p.hint}</div>
       </div>
       <div class="edited-dot" title="ἔχει ἀλλαγὲς"></div>
+      <div class="reorder">
+        <button class="re-btn" data-action="up"   ${canUp   ? '' : 'disabled'} title="ἀνέβα">▲</button>
+        <button class="re-btn" data-action="down" ${canDown ? '' : 'disabled'} title="κατέβα">▼</button>
+      </div>
     `;
-    div.addEventListener('click', () => selectPage(p.id));
+    // Page selection on click — but ignore clicks on the reorder buttons themselves
+    div.addEventListener('click', (e) => {
+      if (e.target.classList.contains('re-btn')) return;
+      selectPage(p.id);
+    });
+    div.querySelector('[data-action="up"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      reorderPage(p.id, -1);
+    });
+    div.querySelector('[data-action="down"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      reorderPage(p.id, +1);
+    });
     list.appendChild(div);
   }
 }
@@ -1971,6 +2027,79 @@ async function addNewPage() {
   }
 }
 document.getElementById('add-page-btn').addEventListener('click', addNewPage);
+
+// =====================================================================
+//   REORDER / DELETE PAGE — server-side mutations on church_pages
+// =====================================================================
+
+/**
+ * Swap the `order` value of two records: the page with `pageId` and its
+ * neighbour at position +1 (down) or -1 (up). After the two PATCHes
+ * succeed, we reload from the server so PAGES_DEFAULT and State.content
+ * reflect the new ordering.
+ */
+async function reorderPage(pageId, direction) {
+  if (!State.token) { toast('μη συνδεδεμένος', 'error'); return; }
+  const idx = PAGES_DEFAULT.findIndex(p => p.id === pageId);
+  const swapIdx = idx + direction;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= PAGES_DEFAULT.length) return;
+
+  const a = State.content[PAGES_DEFAULT[idx].id];
+  const b = State.content[PAGES_DEFAULT[swapIdx].id];
+  if (!a || !b || !a._recordId || !b._recordId) return;
+
+  // Pull the current order values from the live records (re-fetch to avoid races)
+  let recA, recB;
+  try {
+    const ra = await fetch(`${PB_URL}/api/collections/church_pages/records/${a._recordId}`, { headers: authHeader() });
+    const rb = await fetch(`${PB_URL}/api/collections/church_pages/records/${b._recordId}`, { headers: authHeader() });
+    recA = await ra.json(); recB = await rb.json();
+  } catch (e) { toast('✕ δίκτυο: ' + e.message, 'error'); return; }
+
+  // PocketBase enforces unique=true on `order` → we can't write the same value
+  // twice. Use a 3-step swap via a temporary sentinel value above the current max.
+  const TMP = 99999;
+  try {
+    const H = authHeader({ 'Content-Type': 'application/json' });
+    await fetch(`${PB_URL}/api/collections/church_pages/records/${recA.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: TMP })       });
+    await fetch(`${PB_URL}/api/collections/church_pages/records/${recB.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: recA.order }) });
+    await fetch(`${PB_URL}/api/collections/church_pages/records/${recA.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: recB.order }) });
+  } catch (e) {
+    toast('✕ ἀποτυχία ἀλλαγῆς σειρᾶς', 'error');
+    return;
+  }
+  await load();
+  renderAll();
+  toast('✓ ἀλλαγὴ σειρᾶς');
+}
+
+/** Hard delete a page record + reload. Editor confirms first. */
+async function deleteSelectedPage() {
+  if (!State.token || !State.selectedPageId) return;
+  const data = State.content[State.selectedPageId];
+  if (!data || !data._recordId) return;
+  const label = (PAGES_DEFAULT.find(p => p.id === State.selectedPageId) || {}).label || State.selectedPageId;
+  if (!confirm(`Σίγουρα νὰ διαγραφεῖ ἡ σελίδα «${label}»;`)) return;
+
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/church_pages/records/${data._recordId}`, {
+      method: 'DELETE', headers: authHeader(),
+    });
+    if (!res.ok && res.status !== 204) throw new Error('HTTP ' + res.status);
+  } catch (e) {
+    toast('✕ ἀποτυχία διαγραφῆς', 'error');
+    return;
+  }
+  // Reload from server — orders may have gaps now; book.astro tolerates them
+  await load();
+  // Pick the closest remaining page to land on
+  const first = PAGES_DEFAULT[0];
+  State.selectedPageId = first ? first.id : null;
+  renderAll();
+  toast(`✓ διαγράφηκε ἡ σελίδα «${label}»`);
+}
+
+document.getElementById('delete-page-btn')?.addEventListener('click', deleteSelectedPage);
 
 // =====================================================================
 //   ANIMATION CRUD — create / duplicate / delete in church_animations

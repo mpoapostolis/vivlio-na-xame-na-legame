@@ -1095,22 +1095,23 @@ async function _loadAndApplyContentOverrides() {
   }
   if (!records.length) { _syncPill.end(true); return; }
 
-  // Group records into sheets dynamically from `order`. Every two consecutive
-  // orders (2k, 2k+1) form a sheet — even is the front, odd is the back. The
-  // `type` field ('cover' | 'page' | 'back-cover') decides how each side is
-  // rendered. Records with negative/non-numeric `order` are skipped.
-  const sheets = {};
-  let skipped = 0;
-  for (const rec of records) {
-    if (!rec || typeof rec !== 'object') { skipped++; continue; }
-    const ord = Number(rec.order);
-    if (!Number.isFinite(ord) || ord < 0) { skipped++; continue; }
-    const sheetIdx = Math.floor(ord / 2);
-    const sideName = ord % 2 === 0 ? 'front' : 'back';
-    if (!sheets[sheetIdx]) sheets[sheetIdx] = {};
-    sheets[sheetIdx][sideName] = rec;
+  // Sort records by `order`, then pair them sequentially into sheets. Index-
+  // based pairing is resilient to gaps in the `order` values (e.g. after a
+  // page is deleted in /admin and the remaining orders are not compacted).
+  const sortedRecs = records
+    .filter(rec => rec && typeof rec === 'object' && Number.isFinite(Number(rec.order)))
+    .sort((a, b) => a.order - b.order);
+  if (records.length !== sortedRecs.length) {
+    console.warn('[content] skipped', records.length - sortedRecs.length, 'malformed PB record(s)');
   }
-  if (skipped) console.warn('[content] skipped', skipped, 'malformed PB record(s)');
+
+  const sheets = {};
+  for (let i = 0; i < sortedRecs.length; i++) {
+    const sheetIdx = Math.floor(i / 2);
+    const sideName = i % 2 === 0 ? 'front' : 'back';
+    if (!sheets[sheetIdx]) sheets[sheetIdx] = {};
+    sheets[sheetIdx][sideName] = sortedRecs[i];
+  }
 
   const sheetKeys = Object.keys(sheets).map(Number).sort((a, b) => a - b);
   if (!sheetKeys.length) { _syncPill.end(true); return; }
