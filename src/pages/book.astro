@@ -1191,16 +1191,163 @@ window.addEventListener('keydown', e => {
 });
 
 // =====================================================================
-//   PHOTO LIFTS OFF THE PAGE — image rises from book + info card beside
+//   KEYFRAME RUNTIME — JSON-driven animation player.
+//   Targets can be DOM HTMLElements (transform/opacity) or three.js Object3Ds
+//   (position/scale/rotation). Drives the photo modal and is editable
+//   through the /admin CMS — values live in localStorage 'church.animations'.
 // =====================================================================
+const EASE = {
+  linear:         t => t,
+  easeInQuad:     t => t*t,
+  easeOutQuad:    t => 1 - (1-t)*(1-t),
+  easeInOutQuad:  t => t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2,
+  easeInCubic:    t => t*t*t,
+  easeOutCubic:   t => 1 - Math.pow(1-t, 3),
+  easeInOutCubic: t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
+  easeInQuart:    t => t*t*t*t,
+  easeOutQuart:   t => 1 - Math.pow(1-t, 4),
+  easeOutBack:    t => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); },
+  easeOutElastic: t => { if (t===0||t===1) return t; const c4=(2*Math.PI)/3; return Math.pow(2,-10*t)*Math.sin((t*10-0.75)*c4)+1; },
+  easeOutBounce:  t => { const n=7.5625, d=2.75;
+    if (t<1/d) return n*t*t;
+    if (t<2/d){ t-=1.5/d; return n*t*t+0.75; }
+    if (t<2.5/d){ t-=2.25/d; return n*t*t+0.9375; }
+    t-=2.625/d; return n*t*t+0.984375; },
+};
 
-// Photo modal — HTML #modal (no 3D world meshes). Defensive close: anywhere
-// outside the .panel content closes; X button closes; Esc closes.
+function _sampleNumber(keyframes, t01) {
+  if (!keyframes.length) return null;
+  if (t01 <= keyframes[0].t) return keyframes[0].value;
+  const last = keyframes[keyframes.length-1];
+  if (t01 >= last.t) return last.value;
+  for (let i=0; i<keyframes.length-1; i++) {
+    const a = keyframes[i], b = keyframes[i+1];
+    if (t01 >= a.t && t01 <= b.t) {
+      const local = (t01 - a.t) / Math.max(b.t - a.t, 1e-6);
+      const ease = EASE[a.ease || 'linear'] || EASE.linear;
+      return a.value + (b.value - a.value) * ease(local);
+    }
+  }
+  return last.value;
+}
+
+// Apply a single property frame onto a DOM element. CSS transform parts compose.
+function _applyDom(target, prop, value, transformAccum) {
+  if (prop === 'opacity') {
+    target.style.opacity = String(value);
+  } else if (prop === 'scale' || prop === 'rotation' || prop === 'translateX' || prop === 'translateY') {
+    transformAccum[prop] = value;
+  }
+}
+function _flushTransform(target, t) {
+  const parts = [];
+  if (t.translateX !== undefined || t.translateY !== undefined)
+    parts.push(`translate(${t.translateX || 0}px, ${t.translateY || 0}px)`);
+  if (t.rotation !== undefined)  parts.push(`rotate(${t.rotation}rad)`);
+  if (t.scale !== undefined)     parts.push(`scale(${t.scale})`);
+  target.style.transform = parts.length ? parts.join(' ') : '';
+}
+
+class KeyframePlayer {
+  constructor(animations) {
+    this.animations = animations;
+    this.activeClips = [];
+  }
+  play(name, opts = {}) {
+    const anim = this.animations[name];
+    if (!anim) { console.warn('[keyframe] unknown anim:', name); return null; }
+    const clip = {
+      name, anim,
+      time: 0, duration: anim.duration,
+      targets: opts.targets || {},
+      onComplete: opts.onComplete || null,
+      done: false,
+    };
+    this.activeClips.push(clip);
+    return clip;
+  }
+  stopAll() { this.activeClips.length = 0; }
+  update(dt) {
+    for (let i = this.activeClips.length - 1; i >= 0; i--) {
+      const clip = this.activeClips[i];
+      clip.time = Math.min(clip.time + dt, clip.duration);
+      const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
+
+      for (const track of clip.anim.tracks) {
+        const target = clip.targets[track.target];
+        if (!target) continue;
+        const isDom = target instanceof HTMLElement;
+        const transformAccum = {};
+
+        for (const prop in track.properties) {
+          const value = _sampleNumber(track.properties[prop], t01);
+          if (value === null) continue;
+          if (isDom) _applyDom(target, prop, value, transformAccum);
+        }
+        if (isDom) _flushTransform(target, transformAccum);
+      }
+
+      if (clip.time >= clip.duration && !clip.done) {
+        clip.done = true;
+        if (clip.onComplete) clip.onComplete();
+        this.activeClips.splice(i, 1);
+      }
+    }
+  }
+}
+
+// Load animations: prefer CMS edits in localStorage, fall back to defaults.
+const _DEFAULT_ANIMATIONS = {
+  photoModalOpen: {
+    duration: 0.7,
+    tracks: [
+      { target: 'modalImg',
+        properties: {
+          scale:    [{ t:0.0, value:0.65, ease:'easeOutBack' }, { t:0.78, value:1.04 }, { t:1.0, value:1.0 }],
+          rotation: [{ t:0.0, value:-0.035, ease:'easeOutCubic' }, { t:0.55, value:0.008 }, { t:1.0, value:0 }],
+          opacity:  [{ t:0.0, value:0, ease:'easeOutCubic' }, { t:0.45, value:1 }, { t:1.0, value:1 }],
+        }},
+      { target: 'modalInfo',
+        properties: {
+          translateX: [{ t:0.0, value:40, ease:'easeOutCubic' }, { t:0.3, value:40 }, { t:1.0, value:0 }],
+          opacity:    [{ t:0.0, value:0 }, { t:0.3, value:0, ease:'easeOutCubic' }, { t:1.0, value:1 }],
+        }},
+    ],
+  },
+  photoModalClose: {
+    duration: 0.35,
+    tracks: [
+      { target: 'modalImg', properties: {
+          scale:   [{ t:0.0, value:1.0, ease:'easeInCubic' }, { t:1.0, value:0.85 }],
+          opacity: [{ t:0.0, value:1.0, ease:'easeInCubic' }, { t:1.0, value:0 }],
+      }},
+      { target: 'modalInfo', properties: {
+          translateX: [{ t:0.0, value:0, ease:'easeInCubic' }, { t:1.0, value:30 }],
+          opacity:    [{ t:0.0, value:1, ease:'easeInCubic' }, { t:1.0, value:0 }],
+      }},
+    ],
+  },
+};
+let ANIMATIONS = _DEFAULT_ANIMATIONS;
+try {
+  const raw = localStorage.getItem('church.animations');
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') ANIMATIONS = parsed;
+    console.info('[keyframe] loaded CMS overrides from localStorage');
+  }
+} catch (e) { /* fall back to defaults silently */ }
+const keyframePlayer = new KeyframePlayer(ANIMATIONS);
+
+// =====================================================================
+//   PHOTO MODAL — HTML overlay, animation-driven
+// =====================================================================
 const photoView = { active: false, closing: false };
 const modalEl      = document.getElementById('modal');
 const modalPanel   = modalEl ? modalEl.querySelector('.panel') : null;
 const modalCloseEl = document.getElementById('modal-close');
 const modalImg     = document.getElementById('modal-img');
+const modalInfo    = modalEl ? modalEl.querySelector('.info-side') : null;
 const modalEyebrow = document.getElementById('modal-eyebrow');
 const modalTitle   = document.getElementById('modal-title');
 const modalDesc    = document.getElementById('modal-desc');
@@ -1223,11 +1370,21 @@ async function openModal(photo /*, hitPoint */) {
   modalItalic.textContent  = photo.italic || '';
   modalItalic.style.display = photo.italic ? '' : 'none';
 
+  // Reset the transforms to the keyframe's t=0 pose so the first frame doesn't pop.
+  modalImg.style.opacity = '0';
+  modalImg.style.transform = 'scale(0.65) rotate(-0.035rad)';
+  modalInfo.style.opacity = '0';
+  modalInfo.style.transform = 'translate(40px, 0px)';
+
   modalEl.classList.add('open');
   modalEl.setAttribute('aria-hidden', 'false');
   photoView.active = true;
   photoView.closing = false;
   playPop();
+
+  keyframePlayer.stopAll();
+  keyframePlayer.play('photoModalOpen', { targets: { modalImg, modalInfo } });
+
   setTimeout(() => playPhotoNarration(photo.src), 350);
 }
 
@@ -1235,9 +1392,16 @@ function closeModal() {
   if (!photoView.active || photoView.closing) return;
   photoView.closing = true;
   stopNarration();
-  modalEl.classList.remove('open');
   modalEl.setAttribute('aria-hidden', 'true');
-  setTimeout(cleanupPhotoView, 500);
+
+  keyframePlayer.stopAll();
+  keyframePlayer.play('photoModalClose', {
+    targets: { modalImg, modalInfo },
+    onComplete: () => {
+      modalEl.classList.remove('open');
+      cleanupPhotoView();
+    },
+  });
 }
 
 // (A) X button — explicit close, stop propagation so nothing else interferes
@@ -1405,6 +1569,8 @@ function animate() {
   }
 
   stepDelayedPage(dt);
+
+  keyframePlayer.update(dt);   // DOM-target animations (photo modal open/close)
 
   // Re-center the book group: when CLOSED, slide it so the (single-sided) page
   // stack is centred; when OPEN, the spine should be at x=0 so both halves are

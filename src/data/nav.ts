@@ -15,4 +15,5 @@ export const NAV: NavItem[] = [
   { href: '/gallery',   label: 'gallery',   greek: 'γκαλερὶ',      description: 'τὸ ἀρχεῖο τῶν φωτογραφιῶν',         symbol: '◈' },
   { href: '/quiz',      label: 'quiz',      greek: 'γνώρισέ τον',  description: 'ἐκπαιδευτικὸ παιχνίδι',             symbol: '◉' },
   { href: '/about',     label: 'about',     greek: 'περὶ τοῦ ἔργου', description: 'πηγές & εὐχαριστίες',            symbol: '✧' },
+  { href: '/admin',     label: 'admin',     greek: 'διαχείρισις',    description: 'CMS · keyframe animations',     symbol: '⚙' },
 ];
