@@ -941,6 +941,9 @@ class Page {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
+    // Render order: page 0 (cover) on top, then page 1, ..., last page at the bottom of the stack.
+    // Prevents z-fight when pages share near-identical world depth (closed-book state).
+    this.mesh.renderOrder = totalPages - number;
     this.mesh.add(bones[0]);
     this.mesh.bind(this.skeleton);
     this.mesh.userData = { page: this };
@@ -1019,6 +1022,10 @@ function dampAngle(c, t, smoothing, dt) {
 // =====================================================================
 const bookGroup = new THREE.Group();
 bookGroup.rotation.y = -Math.PI / 2;
+// When the book is CLOSED, all pages live on one side of the spine (wawa rig).
+// Offset the whole group so the closed book is centered on the camera's lookAt.
+// During open states the group lerps back to x=0 so the spine is in the middle.
+bookGroup.position.x = -PAGE_WIDTH / 2;
 scene.add(bookGroup);
 
 const pages = [];
@@ -1399,13 +1406,18 @@ function animate() {
 
   stepDelayedPage(dt);
 
+  // Re-center the book group: when CLOSED, slide it so the (single-sided) page
+  // stack is centred; when OPEN, the spine should be at x=0 so both halves are
+  // symmetric. Smooth lerp avoids a visible jolt during the transition.
+  const _isBookClosed = (delayedPage === 0) || (delayedPage === PAGES.length);
+  const _targetGroupX = _isBookClosed ? -PAGE_WIDTH / 2 : 0;
+  bookGroup.position.x = THREE.MathUtils.lerp(bookGroup.position.x, _targetGroupX, 0.12);
+
   for (const p of pages) {
     const isOpened = delayedPage > p.number;
-    const isBookClosed = (delayedPage === 0) || (delayedPage === PAGES.length);
     p.setOpened(isOpened);
-    p.update(dt, delayedPage, isBookClosed);
+    p.update(dt, delayedPage, _isBookClosed);
   }
-
 
   renderer.render(scene, camera);
 }
