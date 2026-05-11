@@ -1030,7 +1030,56 @@ scene.add(bookGroup);
 
 const pages = [];
 
+// Apply per-page content overrides from the CMS (localStorage 'church.content')
+// onto each PAGES entry's pre-built DOM and photo metadata, BEFORE the page is
+// rasterised to a canvas texture. Each pageId maps to a (bookIndex, side):
+//   p0 → PAGES[0].front, p1 → PAGES[0].back, p2 → PAGES[1].front, …
+function _applyContentOverrides(side, ov) {
+  if (!ov) return;
+  const dom = side.dom; if (!dom) return;
+  if (ov.eyebrow) { const el = dom.querySelector('.eyebrow'); if (el) el.textContent = ov.eyebrow; }
+  if (ov.title)   {
+    const h = dom.querySelector('h1, h2') || dom.querySelector('.cover-title');
+    if (h) h.innerHTML = String(ov.title).replace(/\n/g, '<br>');
+  }
+  if (ov.date)    { const el = dom.querySelector('.date'); if (el) el.textContent = ov.date; }
+  if (ov.lead)    { const el = dom.querySelector('p.lead'); if (el) el.textContent = ov.lead; }
+  if (ov.body)    {
+    // Replace text of the FIRST non-lead, non-photo paragraph
+    const ps = dom.querySelectorAll('p');
+    for (const p of ps) { if (!p.classList.contains('lead')) { p.textContent = ov.body; break; } }
+  }
+  const photo0 = side.photos && side.photos[0];
+  if (photo0) {
+    if (ov.photoSrc)    { const img = dom.querySelector('.photo img'); if (img) img.src = ov.photoSrc; photo0.src = ov.photoSrc; }
+    if (ov.photoCap)    { const c = dom.querySelector('.photo .cap'); if (c) c.textContent = ov.photoCap; photo0.cap = ov.photoCap; }
+    if (ov.photoTitle)  { photo0.title  = ov.photoTitle; }
+    if (ov.photoDesc)   { photo0.desc   = ov.photoDesc; }
+    if (ov.photoItalic) { photo0.italic = ov.photoItalic; }
+    if (ov.photoAudio)  { photo0.audio  = ov.photoAudio; }
+  }
+}
+function _loadAndApplyContentOverrides() {
+  let overrides = null;
+  try {
+    const raw = localStorage.getItem('church.content');
+    if (raw) overrides = JSON.parse(raw);
+  } catch (e) {}
+  if (!overrides) return;
+  for (const pageId in overrides) {
+    const m = pageId.match(/^p(\d+)$/);
+    if (!m) continue;
+    const lin = parseInt(m[1]);
+    const bi  = Math.floor(lin / 2);
+    const side = lin % 2 === 0 ? 'front' : 'back';
+    if (!PAGES[bi] || !PAGES[bi][side]) continue;
+    _applyContentOverrides(PAGES[bi][side], overrides[pageId]);
+  }
+  console.info('[content] applied CMS overrides for', Object.keys(overrides).length, 'page(s)');
+}
+
 async function buildBook() {
+  _loadAndApplyContentOverrides();
   const total = PAGES.length;
   const progress = document.getElementById('progress');
 
@@ -1153,12 +1202,25 @@ function toggleNarration() {
     playPageNarration(targetPage);
   }
 }
+// Resolve per-sheet page narration: CMS override wins over the default mp3.
+function _resolveContentOverride() {
+  try { const raw = localStorage.getItem('church.content'); return raw ? JSON.parse(raw) : null; }
+  catch (e) { return null; }
+}
 function playPageNarration(idx) {
   if (idx < 0 || idx >= PAGES.length) return;
-  playNarration('/audio/narration_p' + idx + '.mp3');
+  const ov = _resolveContentOverride();
+  const frontOv = ov && ov['p' + (idx * 2)];
+  const backOv  = ov && ov['p' + (idx * 2 + 1)];
+  const file = (frontOv && frontOv.narration) || (backOv && backOv.narration) || ('/audio/narration_p' + idx + '.mp3');
+  playNarration(file);
 }
-function playPhotoNarration(photoSrc) {
-  const file = PHOTO_NARRATION_MAP[photoSrc];
+// photoOrSrc can be a {src, audio?} photo object OR a plain src string.
+function playPhotoNarration(photoOrSrc) {
+  const isObj = photoOrSrc && typeof photoOrSrc === 'object';
+  const src = isObj ? photoOrSrc.src : photoOrSrc;
+  const override = isObj ? photoOrSrc.audio : null;
+  const file = override || PHOTO_NARRATION_MAP[src];
   if (file) playNarration(file);
 }
 document.getElementById('audio-btn').addEventListener('click', () => { ensureAudio(); toggleNarration(); });
@@ -1385,7 +1447,7 @@ async function openModal(photo /*, hitPoint */) {
   keyframePlayer.stopAll();
   keyframePlayer.play('photoModalOpen', { targets: { modalImg, modalInfo } });
 
-  setTimeout(() => playPhotoNarration(photo.src), 350);
+  setTimeout(() => playPhotoNarration(photo), 350);
 }
 
 function closeModal() {

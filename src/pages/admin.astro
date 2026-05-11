@@ -53,6 +53,67 @@
   .toolbtn.danger:hover{background:rgba(180,60,60,0.2);border-color:#c44;color:#fff}
 
   main{display:grid;grid-template-columns:240px 1fr 320px;height:calc(100vh - 54px);overflow:hidden}
+  main.view-content{grid-template-columns:240px 1fr}
+
+  /* === TABS === */
+  .tabs{display:flex;gap:2px;background:rgba(8,4,2,0.6);border-radius:4px;padding:3px;margin-left:8px}
+  .tab{padding:7px 18px;background:transparent;border:none;border-radius:3px;
+    color:#9a6730;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;font-weight:600;
+    cursor:pointer;transition:all 0.2s}
+  .tab:hover{color:#d9b478}
+  .tab.active{background:linear-gradient(180deg,rgba(154,103,48,0.5) 0%,rgba(70,46,24,0.5) 100%);
+    color:#efddb0;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+
+  .view{display:grid}
+  .view.hidden{display:none !important}
+
+  /* === CONTENT EDITOR === */
+  .content-empty{padding:80px 20px;text-align:center;font-style:italic;font-family:'Cormorant Garamond',serif;
+    font-size:16px;color:#9a6730;opacity:0.6}
+  #content-editor{overflow-y:auto;padding:24px clamp(24px,4vw,48px) 48px}
+  #content-form{display:flex;flex-direction:column;gap:24px;max-width:780px;margin:0 auto}
+  .content-section{background:rgba(20,12,6,0.4);border:1px solid rgba(217,180,120,0.15);
+    border-radius:6px;padding:18px 22px}
+  .content-section h3{font-size:9px;letter-spacing:0.4em;text-transform:uppercase;color:#9a6730;
+    font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(217,180,120,0.15)}
+  .field-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:12px}
+  .field-row:last-child{margin-bottom:0}
+  .field-row label{display:flex;flex-direction:column;gap:5px;font-size:9px;letter-spacing:0.22em;
+    text-transform:uppercase;color:#9a6730;font-weight:600}
+  .field-row input[type=text],
+  .field-row textarea{width:100%;padding:9px 12px;background:rgba(8,4,2,0.6);
+    border:1px solid rgba(217,180,120,0.22);border-radius:3px;color:#efddb0;font-size:13px;
+    letter-spacing:0.01em;font-family:'Inter',sans-serif;line-height:1.55}
+  .field-row textarea{resize:vertical;min-height:60px;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px}
+  .field-row input[type=text]:focus,
+  .field-row textarea:focus{outline:none;border-color:rgba(217,180,120,0.55);background:rgba(8,4,2,0.85)}
+  .field-row input.locked,
+  .field-row textarea.locked{opacity:0.45;pointer-events:none;background:rgba(8,4,2,0.3)}
+  .field-lock{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:0.18em;
+    color:#9a6730;cursor:pointer;padding-bottom:9px}
+  .field-lock input[type=checkbox]{accent-color:#9a6730;width:14px;height:14px;cursor:pointer}
+
+  .photo-preview{margin-top:14px;padding:14px;background:#000;border:1px solid rgba(217,180,120,0.18);
+    border-radius:3px;min-height:120px;display:flex;align-items:center;justify-content:center}
+  .photo-preview img{max-width:100%;max-height:200px;display:block;border:1px solid rgba(217,180,120,0.2)}
+  .photo-preview .empty-img{color:#9a6730;font-style:italic;font-size:12px;opacity:0.5}
+
+  .audio-preview{margin-top:10px;padding:10px;background:rgba(8,4,2,0.55);border:1px solid rgba(217,180,120,0.15);border-radius:3px}
+  .audio-preview audio{width:100%;height:32px}
+  .audio-preview .empty-audio{color:#9a6730;font-style:italic;font-size:11px;opacity:0.5;padding:5px}
+
+  /* Page list (sidebar in Content view) */
+  .page-item{padding:11px 18px;border-bottom:1px solid rgba(217,180,120,0.07);cursor:pointer;
+    display:flex;align-items:center;gap:10px;transition:background 0.2s}
+  .page-item:hover{background:rgba(217,180,120,0.06)}
+  .page-item.active{background:rgba(154,103,48,0.18);border-left:2px solid #efddb0;padding-left:16px}
+  .page-item .num{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:#9a6730;width:22px;flex-shrink:0}
+  .page-item.active .num{color:#efddb0}
+  .page-item .meta{flex:1;min-width:0}
+  .page-item .meta .title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:#efddb0;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .page-item .meta .sub{font-size:8px;letter-spacing:0.18em;opacity:0.5;text-transform:uppercase;margin-top:2px}
+  .page-item .edited-dot{width:5px;height:5px;border-radius:50%;background:#efddb0;flex-shrink:0;opacity:0}
+  .page-item.edited .edited-dot{opacity:1;box-shadow:0 0 6px rgba(255,220,150,0.6)}
 
   /* === SIDEBAR === */
   aside{border-right:1px solid rgba(217,180,120,0.15);overflow-y:auto;background:rgba(6,3,1,0.4)}
@@ -176,7 +237,11 @@
 <!-- ============================================================ -->
 <div id="app" class="hidden">
   <header>
-    <h1>Ἅγιος Ἀνδρέας <span class="tag">CMS · animations</span></h1>
+    <h1>Ἅγιος Ἀνδρέας <span class="tag">CMS · διαχείρισις</span></h1>
+    <div class="tabs">
+      <button class="tab active" data-tab="content">σελίδες</button>
+      <button class="tab"        data-tab="animations">animations</button>
+    </div>
     <button class="toolbtn" id="undo-btn" title="Ctrl/Cmd + Z" disabled>↶ undo</button>
     <button class="toolbtn" id="redo-btn" title="Ctrl/Cmd + Shift + Z" disabled>↷ redo</button>
     <button class="toolbtn" id="reset-btn" title="Επαναφορὰ προεπιλογῶν">↺ reset</button>
@@ -186,14 +251,112 @@
     <button class="toolbtn danger" id="logout-btn">↪ logout</button>
   </header>
 
-  <main>
-    <!-- ANIMATION LIST SIDEBAR -->
+  <!-- ============================================================ -->
+  <!--  CONTENT TAB — edit per-page texts, photos, audio              -->
+  <!-- ============================================================ -->
+  <main class="view view-content" id="view-content">
+    <aside>
+      <h2>Σελίδες</h2>
+      <div id="pages-list"></div>
+    </aside>
+
+    <section id="content-editor">
+      <div id="content-empty" class="content-empty">— ἐπίλεξε σελίδα ἀπὸ τὴν λίστα —</div>
+      <div id="content-form" class="hidden">
+        <div class="content-section">
+          <h3>Κεφαλίδα</h3>
+          <div class="field-row">
+            <label>Eyebrow (κεφάλαιο)
+              <input type="text" id="ce-eyebrow" data-field="eyebrow">
+            </label>
+            <label class="field-lock">
+              <input type="checkbox" data-lock="eyebrow"> 🔒 lock
+            </label>
+          </div>
+          <div class="field-row">
+            <label>Τίτλος <input type="text" id="ce-title" data-field="title"></label>
+            <label class="field-lock"><input type="checkbox" data-lock="title"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Ἡμερομηνία <input type="text" id="ce-date" data-field="date" placeholder="π.χ. 1ᾳ Ἰουνίου 1908"></label>
+            <label class="field-lock"><input type="checkbox" data-lock="date"> 🔒</label>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h3>Σῶμα κειμένου</h3>
+          <div class="field-row">
+            <label>Lead (εἰσαγωγή)
+              <textarea id="ce-lead" data-field="lead" rows="3"></textarea>
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="lead"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Παράγραφος
+              <textarea id="ce-body" data-field="body" rows="4"></textarea>
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="body"> 🔒</label>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h3>Φωτογραφία</h3>
+          <div class="field-row">
+            <label>Path εἰκόνας
+              <input type="text" id="ce-photo-src" data-field="photoSrc" placeholder="/photos/...">
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoSrc"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Τίτλος φωτογραφίας <input type="text" id="ce-photo-title" data-field="photoTitle"></label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoTitle"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Λεζάντα <input type="text" id="ce-photo-cap" data-field="photoCap"></label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoCap"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Περιγραφή
+              <textarea id="ce-photo-desc" data-field="photoDesc" rows="3"></textarea>
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoDesc"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Italic note <input type="text" id="ce-photo-italic" data-field="photoItalic"></label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoItalic"> 🔒</label>
+          </div>
+          <div class="photo-preview" id="ce-photo-preview"></div>
+        </div>
+
+        <div class="content-section">
+          <h3>Ἀφήγησις</h3>
+          <div class="field-row">
+            <label>Page audio (mp3)
+              <input type="text" id="ce-narration" data-field="narration" placeholder="/audio/narration_pN.mp3">
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="narration"> 🔒</label>
+          </div>
+          <div class="field-row">
+            <label>Photo audio (mp3)
+              <input type="text" id="ce-photo-audio" data-field="photoAudio" placeholder="/audio/photo_x.mp3">
+            </label>
+            <label class="field-lock"><input type="checkbox" data-lock="photoAudio"> 🔒</label>
+          </div>
+          <div class="audio-preview" id="ce-audio-preview"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================ -->
+  <!--  ANIMATIONS TAB — keyframe timeline editor                      -->
+  <!-- ============================================================ -->
+  <main class="view view-animations hidden" id="view-animations">
     <aside>
       <h2>Animations</h2>
       <div id="anim-list"></div>
     </aside>
 
-    <!-- TIMELINE EDITOR -->
     <section id="editor">
       <div id="anim-meta">
         <h2 id="anim-name">— ἐπίλεξε animation —</h2>
@@ -214,7 +377,6 @@
       </div>
     </section>
 
-    <!-- INSPECTOR -->
     <div id="inspector">
       <h3>Inspector</h3>
       <div id="inspector-body">
@@ -312,49 +474,64 @@ const KNOWN_BINDINGS = [];
 
 const State = {
   animations: deepClone(DEFAULT_ANIMATIONS),
-  locks: {},                   // key: 'animName:trackIdx' → boolean
-  selected: { anim: null, trackIdx: -1, prop: null, kfIdx: -1 },
-  history: [],                 // undo stack of snapshots
+  content:    {},              // pageId → { field → value }   (per-page text/photo/audio overrides)
+  contentLocks: {},            // pageId → { field → bool }    (per-field lock flags)
+  locks: {},                   // key: 'animName:trackIdx' → bool (animation track locks)
+  selected:       { anim: null, trackIdx: -1, prop: null, kfIdx: -1 },
+  selectedPageId: null,        // currently-edited page id (content tab)
+  activeTab:      'content',
+  history: [],                 // undo stack — each entry { animations, content }
   redoStack: [],
   dirty: false,
-  // playback simulation
   playing: false,
   playStart: 0,
   playTime: 0,
+  _editingField: null,         // throttle history pushes per field-edit session
 };
 
 // =====================================================================
 //   PERSISTENCE
 // =====================================================================
+const CONTENT_KEY       = 'church.content';
+const CONTENT_LOCKS_KEY = 'church.content.locks';
+
 function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) State.animations = JSON.parse(raw);
-  } catch (e) { console.warn('[CMS] failed to load animations', e); }
-  try {
-    const rawLocks = localStorage.getItem(LOCKS_KEY);
-    if (rawLocks) State.locks = JSON.parse(rawLocks);
-  } catch (e) { /* ignore */ }
+  try { const raw = localStorage.getItem(STORAGE_KEY);       if (raw) State.animations    = JSON.parse(raw); } catch (e) {}
+  try { const raw = localStorage.getItem(LOCKS_KEY);         if (raw) State.locks         = JSON.parse(raw); } catch (e) {}
+  try { const raw = localStorage.getItem(CONTENT_KEY);       if (raw) State.content       = JSON.parse(raw); } catch (e) {}
+  try { const raw = localStorage.getItem(CONTENT_LOCKS_KEY); if (raw) State.contentLocks  = JSON.parse(raw); } catch (e) {}
 }
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(State.animations));
-  localStorage.setItem(LOCKS_KEY,   JSON.stringify(State.locks));
+  localStorage.setItem(STORAGE_KEY,        JSON.stringify(State.animations));
+  localStorage.setItem(LOCKS_KEY,          JSON.stringify(State.locks));
+  localStorage.setItem(CONTENT_KEY,        JSON.stringify(State.content));
+  localStorage.setItem(CONTENT_LOCKS_KEY,  JSON.stringify(State.contentLocks));
   State.dirty = false;
   toast('Ἀποθηκεύθηκε ✓');
   refreshSaveBtn();
+  if (typeof renderPagesList === 'function') renderPagesList();   // refresh edited-dots
 }
 function exportJson() {
-  const blob = new Blob([JSON.stringify(State.animations, null, 2)], { type: 'application/json' });
+  const payload = {
+    animations:   State.animations,
+    content:      State.content,
+    contentLocks: State.contentLocks,
+    locks:        State.locks,
+    exportedAt:   new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'animations.json'; a.click();
+  a.href = url; a.download = 'church-cms.json'; a.click();
   URL.revokeObjectURL(url);
-  toast('Ἐξήχθη animations.json');
+  toast('Ἐξήχθη church-cms.json');
 }
 function resetDefaults() {
-  if (!confirm('Ἐπαναφορὰ ὅλων τῶν animations στὶς προεπιλογὲς;')) return;
+  if (!confirm('Ἐπαναφορὰ ὅλων (animations + κειμένων) στὶς προεπιλογὲς;')) return;
   pushHistory();
-  State.animations = deepClone(DEFAULT_ANIMATIONS);
+  State.animations   = deepClone(DEFAULT_ANIMATIONS);
+  State.content      = {};
+  State.contentLocks = {};
   markDirty();
   renderAll();
   toast('Ἐπαναφορὰ προεπιλογῶν');
@@ -364,16 +541,24 @@ function resetDefaults() {
 //   UNDO / REDO via JSON snapshots
 // =====================================================================
 function deepClone(v) { return JSON.parse(JSON.stringify(v)); }
+function _snap() {
+  return { animations: deepClone(State.animations), content: deepClone(State.content), contentLocks: deepClone(State.contentLocks) };
+}
+function _restore(s) {
+  State.animations   = s.animations;
+  State.content      = s.content;
+  State.contentLocks = s.contentLocks;
+}
 function pushHistory() {
-  State.history.push(deepClone(State.animations));
+  State.history.push(_snap());
   if (State.history.length > 60) State.history.shift();
   State.redoStack.length = 0;
   refreshUndoBtns();
 }
 function undo() {
   if (!State.history.length) return;
-  State.redoStack.push(deepClone(State.animations));
-  State.animations = State.history.pop();
+  State.redoStack.push(_snap());
+  _restore(State.history.pop());
   selectClear();
   markDirty();
   renderAll();
@@ -382,8 +567,8 @@ function undo() {
 }
 function redo() {
   if (!State.redoStack.length) return;
-  State.history.push(deepClone(State.animations));
-  State.animations = State.redoStack.pop();
+  State.history.push(_snap());
+  _restore(State.redoStack.pop());
   selectClear();
   markDirty();
   renderAll();
@@ -871,15 +1056,182 @@ window.addEventListener('beforeunload', e => {
 });
 
 // =====================================================================
-//   INIT
+//   CONTENT EDITOR — texts / photos / audio per page (the "σελίδες" tab)
 // =====================================================================
+// 16 logical pages = 8 sheets × 2 sides (front + back). Each side is editable.
+const PAGES_DEFAULT = [
+  { id: 'p0',  bookIndex: 0, side: 'front', label: 'Ἐξώφυλλο',          hint: 'cover' },
+  { id: 'p1',  bookIndex: 0, side: 'back',  label: 'Πρόλογος',          hint: 'πολιοῦχος τῶν Πατρῶν' },
+  { id: 'p2',  bookIndex: 1, side: 'front', label: 'Περιεχόμενα',       hint: 'toc' },
+  { id: 'p3',  bookIndex: 1, side: 'back',  label: 'α´ Μελέτη',         hint: '1902' },
+  { id: 'p4',  bookIndex: 2, side: 'front', label: 'α´ Ἀντιδράσεις',    hint: '1907' },
+  { id: 'p5',  bookIndex: 2, side: 'back',  label: 'β´ Θεμέλιος λίθος', hint: '1908' },
+  { id: 'p6',  bookIndex: 3, side: 'front', label: 'β´ Διακοπές',       hint: 'πόλεμοι · σεισμός' },
+  { id: 'p7',  bookIndex: 3, side: 'back',  label: 'γ´ Ἀνοικοδόμησις',  hint: '1932 — 1937' },
+  { id: 'p8',  bookIndex: 4, side: 'front', label: 'δ´ Ἐγκαίνια',       hint: '1974' },
+  { id: 'p9',  bookIndex: 4, side: 'back',  label: 'δ´ Ἐσωτερικός',     hint: 'ἁγιογραφία' },
+  { id: 'p10', bookIndex: 5, side: 'front', label: 'ε´ Στοιχεῖα',       hint: 'τὰ νούμερα τοῦ ναοῦ' },
+  { id: 'p11', bookIndex: 5, side: 'back',  label: 'ϛ´ Ὁ Σταυρός',      hint: '1980' },
+  { id: 'p12', bookIndex: 6, side: 'front', label: 'ζ´ Χρυσόστομος',    hint: '2005' },
+  { id: 'p13', bookIndex: 6, side: 'back',  label: 'ζ´ Ἀνακαινίσεις',   hint: 'παλαιός ναός' },
+  { id: 'p14', bookIndex: 7, side: 'front', label: 'τέλος',             hint: 'πνευματικὸν κέντρον' },
+  { id: 'p15', bookIndex: 7, side: 'back',  label: 'Ὀπισθόφυλλο',       hint: 'πρωτόκλητος' },
+];
+const CONTENT_FIELDS = ['eyebrow','title','date','lead','body','photoSrc','photoTitle','photoCap','photoDesc','photoItalic','narration','photoAudio'];
+
+function ensurePageState(pageId) {
+  if (!State.content[pageId])      State.content[pageId]      = {};
+  if (!State.contentLocks[pageId]) State.contentLocks[pageId] = {};
+}
+
+function renderPagesList() {
+  const list = document.getElementById('pages-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const p of PAGES_DEFAULT) {
+    const div = document.createElement('div');
+    div.className = 'page-item' + (State.selectedPageId === p.id ? ' active' : '');
+    const overrides = State.content[p.id] || {};
+    const hasEdits = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
+    if (hasEdits) div.classList.add('edited');
+    const numIdx = parseInt(p.id.slice(1)) + 1;
+    div.innerHTML = `
+      <div class="num">${numIdx}</div>
+      <div class="meta">
+        <div class="title">${p.label}</div>
+        <div class="sub">${p.hint}</div>
+      </div>
+      <div class="edited-dot" title="ἔχει ἀλλαγὲς"></div>
+    `;
+    div.addEventListener('click', () => selectPage(p.id));
+    list.appendChild(div);
+  }
+}
+
+function selectPage(pageId) {
+  State.selectedPageId = pageId;
+  renderPagesList();
+  renderContentForm();
+}
+
+function renderContentForm() {
+  const emptyEl = document.getElementById('content-empty');
+  const formEl  = document.getElementById('content-form');
+  if (!emptyEl || !formEl) return;
+  if (!State.selectedPageId) {
+    emptyEl.classList.remove('hidden');
+    formEl.classList.add('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+  formEl.classList.remove('hidden');
+
+  ensurePageState(State.selectedPageId);
+  const overrides = State.content[State.selectedPageId];
+  const locks     = State.contentLocks[State.selectedPageId];
+
+  for (const field of CONTENT_FIELDS) {
+    document.querySelectorAll(`[data-field="${field}"]`).forEach(input => {
+      input.value = overrides[field] ?? '';
+      input.classList.toggle('locked', !!locks[field]);
+    });
+    document.querySelectorAll(`[data-lock="${field}"]`).forEach(box => {
+      box.checked = !!locks[field];
+    });
+  }
+  updatePhotoPreview();
+  updateAudioPreview();
+}
+
+function updatePhotoPreview() {
+  const wrap = document.getElementById('ce-photo-preview');
+  if (!wrap) return;
+  const src = document.getElementById('ce-photo-src').value.trim();
+  if (src) {
+    const img = document.createElement('img');
+    img.src = src; img.alt = 'preview';
+    img.onerror = () => {
+      wrap.innerHTML = '<div class="empty-img">⚠ δὲν φορτώθηκε</div>';
+    };
+    wrap.innerHTML = '';
+    wrap.appendChild(img);
+  } else {
+    wrap.innerHTML = '<div class="empty-img">— δὲν ὁρίστηκε εἰκόνα —</div>';
+  }
+}
+function updateAudioPreview() {
+  const wrap = document.getElementById('ce-audio-preview');
+  if (!wrap) return;
+  const pageAudio  = document.getElementById('ce-narration').value.trim();
+  const photoAudio = document.getElementById('ce-photo-audio').value.trim();
+  let html = '';
+  if (pageAudio)  html += `<div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#9a6730;margin-bottom:3px">σελίδα</div><audio controls preload="none" src="${pageAudio}"></audio>`;
+  if (photoAudio) html += `<div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#9a6730;margin:8px 0 3px">φωτογραφία</div><audio controls preload="none" src="${photoAudio}"></audio>`;
+  wrap.innerHTML = html || '<div class="empty-audio">— δὲν ὁρίστηκε ἦχος —</div>';
+}
+
+function wireContentFields() {
+  for (const field of CONTENT_FIELDS) {
+    document.querySelectorAll(`[data-field="${field}"]`).forEach(input => {
+      input.addEventListener('input', () => {
+        if (!State.selectedPageId) return;
+        ensurePageState(State.selectedPageId);
+        if (State.contentLocks[State.selectedPageId][field]) { input.value = State.content[State.selectedPageId][field] || ''; return; }
+        const key = State.selectedPageId + ':' + field;
+        if (State._editingField !== key) { pushHistory(); State._editingField = key; }
+        State.content[State.selectedPageId][field] = input.value;
+        markDirty();
+        if (field === 'photoSrc')                            updatePhotoPreview();
+        if (field === 'narration' || field === 'photoAudio') updateAudioPreview();
+        renderPagesList();
+      });
+      input.addEventListener('blur', () => { State._editingField = null; });
+    });
+    document.querySelectorAll(`[data-lock="${field}"]`).forEach(box => {
+      box.addEventListener('change', () => {
+        if (!State.selectedPageId) return;
+        ensurePageState(State.selectedPageId);
+        pushHistory();
+        State.contentLocks[State.selectedPageId][field] = box.checked;
+        renderContentForm();
+        markDirty();
+      });
+    });
+  }
+}
+
+// =====================================================================
+//   TAB SWITCHING
+// =====================================================================
+function setActiveTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('view-content').classList.toggle('hidden',    tab !== 'content');
+  document.getElementById('view-animations').classList.toggle('hidden', tab !== 'animations');
+  State.activeTab = tab;
+}
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+});
+
+// =====================================================================
+//   INIT — extend renderAll to refresh both views, set up content wiring
+// =====================================================================
+const _origRenderAll = renderAll;
+renderAll = function () {
+  _origRenderAll();
+  renderPagesList();
+  renderContentForm();
+};
+
 function init() {
   load();
-  // Pre-select first animation
   const first = Object.keys(State.animations)[0];
   if (first) State.selected.anim = first;
+  if (PAGES_DEFAULT[0]) State.selectedPageId = PAGES_DEFAULT[0].id;
+  wireContentFields();
   refreshSaveBtn();
   refreshUndoBtns();
+  setActiveTab('content');
   renderAll();
 }
 
