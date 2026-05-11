@@ -22,6 +22,36 @@ create_collection() {
 }
 
 # ---------------------------------------------------------------------------
+# 0) church_admins — auth collection for CMS users (NOT the superuser)
+#    The /admin route authenticates against THIS collection.
+#    Users are created by you via the PocketBase admin UI at /_/.
+# ---------------------------------------------------------------------------
+if exists church_admins; then
+  echo "• church_admins already exists — skipping"
+else
+  echo "• creating church_admins"
+  create_collection "$(cat <<'JSON'
+{
+  "name": "church_admins",
+  "type": "auth",
+  "fields": [
+    { "name": "name", "type": "text", "max": 100 }
+  ],
+  "passwordAuth":   { "enabled": true,  "identityFields": ["email"] },
+  "oauth2":         { "enabled": false },
+  "verified":       false,
+  "listRule":   "id = @request.auth.id",
+  "viewRule":   "id = @request.auth.id",
+  "createRule": null,
+  "updateRule": "id = @request.auth.id",
+  "deleteRule": null,
+  "authRule":   ""
+}
+JSON
+)"
+fi
+
+# ---------------------------------------------------------------------------
 # 1) church_pages — content per logical page (16 entries; 2 sides × 8 sheets)
 # ---------------------------------------------------------------------------
 if exists church_pages; then
@@ -53,9 +83,9 @@ else
   ],
   "listRule":   "",
   "viewRule":   "",
-  "createRule": "@request.auth.id != ''",
-  "updateRule": "@request.auth.id != ''",
-  "deleteRule": "@request.auth.id != ''"
+  "createRule": "@request.auth.collectionName = 'church_admins'",
+  "updateRule": "@request.auth.collectionName = 'church_admins'",
+  "deleteRule": "@request.auth.collectionName = 'church_admins'"
 }
 JSON
 )"
@@ -85,9 +115,9 @@ else
   ],
   "listRule":   "",
   "viewRule":   "",
-  "createRule": "@request.auth.id != ''",
-  "updateRule": "@request.auth.id != ''",
-  "deleteRule": "@request.auth.id != ''"
+  "createRule": "@request.auth.collectionName = 'church_admins'",
+  "updateRule": "@request.auth.collectionName = 'church_admins'",
+  "deleteRule": "@request.auth.collectionName = 'church_admins'"
 }
 JSON
 )"

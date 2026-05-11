@@ -85,8 +85,10 @@ export function pagePhotoAudioUrl(p: ChurchPage):  string | null { return p.phot
 //  AUTH (used by /admin)
 // =============================================================================
 
-export async function loginAsSuperuser(email: string, password: string) {
-  return pb.collection('_superusers').authWithPassword(email, password);
+/** Authenticates against the dedicated `church_admins` auth collection
+ *  (NOT _superusers — that's for the PB admin UI only). */
+export async function loginAsAdmin(email: string, password: string) {
+  return pb.collection('church_admins').authWithPassword(email, password);
 }
 
 export function logout() { pb.authStore.clear(); }

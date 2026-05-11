@@ -119,6 +119,42 @@ cd android && ./gradlew assembleRelease
 
 ---
 
+## Backend · PocketBase
+
+The CMS data lives on a PocketBase instance at `https://yms.galerra.art`.
+
+### Collections (additive — coexists with other apps on the same PB)
+
+| Collection         | Purpose                                            |
+|--------------------|----------------------------------------------------|
+| `church_pages`     | 16 records — content per logical page (8 sheets × 2 sides) |
+| `church_animations`| 2 records — keyframe animation definitions         |
+| `church_admins`    | Auth collection — **CMS editors log in here**      |
+
+### One-time setup (already executed on the hosted instance)
+
+```bash
+export PB_TOKEN="<superuser auth token from PB admin UI>"
+bash tools/pb-setup.sh        # creates the three collections (idempotent)
+python3 tools/pb-seed.py      # seeds 16 pages + 2 animations
+```
+
+### Creating a CMS user
+
+1. Open `https://yms.galerra.art/_/` and log in with your **superuser** credentials
+2. Navigate to the `church_admins` collection
+3. Click **+ New record**, set `email` + `password` (+ optional `name`)
+4. Save
+
+That user can now log in at `/admin` in this app.
+
+### Security model
+
+- `church_pages` / `church_animations`: **public read** (so `/book` works without auth) · **write only by `church_admins`**
+- The PB `_superusers` account is **never used by the app at runtime** — it's only for backend administration via `/_/`
+
+---
+
 ## Animation system (keyframe runtime)
 
 The book uses a custom JSON-driven runtime defined in `src/data/animations.ts` and executed by `src/lib/keyframe-player.js`.

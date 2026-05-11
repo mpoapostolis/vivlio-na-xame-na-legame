@@ -247,11 +247,11 @@
   <form id="login-form">
     <h1>Ἅγιος Ἀνδρέας</h1>
     <div class="sub">CMS · διαχείρισις</div>
-    <input type="email" id="login-user" placeholder="email · superuser" autocomplete="username" autofocus>
+    <input type="email" id="login-user" placeholder="email" autocomplete="username" autofocus>
     <input type="password" id="login-pass" placeholder="κωδικός" autocomplete="current-password">
     <button type="submit">Εἴσοδος</button>
     <div id="login-error"></div>
-    <div class="hint">PocketBase · superuser credentials</div>
+    <div class="hint">church_admins · PocketBase</div>
   </form>
 </div>
 
@@ -781,11 +781,13 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 }
+// /admin authenticates against the dedicated `church_admins` collection,
+// NOT the PocketBase _superusers. Create users via the PB admin UI at /_/.
 async function login(email, pass) {
   const errEl = document.getElementById('login-error');
   errEl.textContent = '⌛ σύνδεση…';
   try {
-    const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+    const res = await fetch(`${PB_URL}/api/collections/church_admins/auth-with-password`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ identity: email, password: pass }),
