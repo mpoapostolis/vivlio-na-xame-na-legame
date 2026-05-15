@@ -946,51 +946,59 @@ function _recordToContent(rec) {
 }
 
 async function load() {
+  // GET on church_pages is public — sending Authorization triggers a CORS
+  // preflight (OPTIONS) that the proxy in front of PocketBase doesn't always
+  // handle, so we read anonymously. Writes still send the token.
+  let pages = [];
   try {
-    // GET on church_pages is public — sending Authorization triggers a CORS
-    // preflight (OPTIONS) that the proxy in front of PocketBase doesn't
-    // always handle, so the response can fail. Do anonymous reads here;
-    // writes still send the token.
-    const pagesRes = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`);
-    if (!pagesRes.ok) throw new Error('PB pages HTTP ' + pagesRes.status);
-    const pages = (await pagesRes.json()).items || [];
-    const anims = [];   // animations live in code, not in the backend
+    const res = await fetch(`${PB_URL}/api/collections/church_pages/records?sort=order&perPage=100`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    // Robust JSON parse: some PB editor fields contain raw newlines that
+    // can occasionally trip a strict parser. Read as text, then try once;
+    // on failure escape literal control characters and try again.
+    let raw = await res.text();
+    try { pages = (JSON.parse(raw).items) || []; }
+    catch (_) {
+      const safe = raw.replace(/[ -]/g, m => '\\u' + m.charCodeAt(0).toString(16).padStart(4, '0'));
+      pages = (JSON.parse(safe).items) || [];
+    }
     console.info('[admin] loaded', pages.length, 'page records');
-
-    State.content      = {};
-    State.contentLocks = {};
-    for (const rec of pages) {
-      const id = 'p' + rec.order;
-      State.content[id]      = _recordToContent(rec);
-      const locks = Array.isArray(rec.locked_fields) ? rec.locked_fields : [];
-      State.contentLocks[id] = Object.fromEntries(locks.map(f => [f, true]));
-    }
-
-    // Rebuild the sidebar from live PB records — supports any slide count.
-    PAGES_DEFAULT = pages.map(rec => ({
-      id:    'p' + rec.order,
-      label: rec.label || ('Σελίδα ' + (rec.order + 1)),
-      hint:  rec.type  || 'page',
-    }));
-
-    State.animations    = {};
-    State.animRecordId  = {};
-    for (const rec of anims) {
-      State.animations[rec.anim_name] = {
-        duration: rec.duration,
-        loop:     !!rec.loop,
-        tracks:   rec.tracks || [],
-      };
-      State.animRecordId[rec.anim_name] = rec.id;
-    }
-    if (!Object.keys(State.animations).length) {
-      State.animations = deepClone(DEFAULT_ANIMATIONS);
-    }
-    toast(`Φορτώθηκαν ${pages.length} σελίδες ✓`);
   } catch (e) {
-    console.error('[CMS] load failed', e);
-    toast('✕ ἀδυναμία φορτώματος', 'error');
+    console.error('[admin] PB load failed:', e);
+    toast('✕ ἀδυναμία φορτώματος — χρήση τοπικῶν προεπιλογῶν', 'error');
+    // Keep the fallback PAGES_DEFAULT untouched so the sidebar isn't blank.
+    return;
   }
+
+  // If PB returned zero records (e.g. all deleted), keep the inline fallback
+  // — better than showing an empty editor with no way to recover.
+  if (pages.length === 0) {
+    console.warn('[admin] PB returned 0 records — keeping inline defaults');
+    toast('PB ἄδειο — προεπιλογές', 'error');
+    return;
+  }
+
+  State.content      = {};
+  State.contentLocks = {};
+  for (const rec of pages) {
+    const id = 'p' + rec.order;
+    State.content[id]      = _recordToContent(rec);
+    const locks = Array.isArray(rec.locked_fields) ? rec.locked_fields : [];
+    State.contentLocks[id] = Object.fromEntries(locks.map(f => [f, true]));
+  }
+
+  // Rebuild the sidebar from live PB records — supports any slide count.
+  PAGES_DEFAULT = pages.map(rec => ({
+    id:    'p' + rec.order,
+    label: rec.label || ('Σελίδα ' + (rec.order + 1)),
+    hint:  rec.type  || 'page',
+  }));
+
+  // Animations live inline in book.astro now — no PB collection.
+  State.animations   = deepClone(DEFAULT_ANIMATIONS);
+  State.animRecordId = {};
+
+  toast(`Φορτώθηκαν ${pages.length} σελίδες ✓`);
 }
 
 // Map UI field name → PB column name.
