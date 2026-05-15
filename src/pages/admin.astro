@@ -244,6 +244,275 @@
   .page-item.drop-below { box-shadow: inset 0 -2px 0 0 #efddb0; }
 
   /* ============================================================ */
+  /*  Tab switcher — Περιεχόμενο ↔ Animations                       */
+  /* ============================================================ */
+  .tab {
+    padding: 6px 18px;
+    border-radius: 4px;
+    background: transparent;
+    color: #9a6730;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: 1px solid rgba(217,180,120,0.18);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab:hover  { background: rgba(217,180,120,0.08); color: #efddb0; border-color: rgba(217,180,120,0.4); }
+  .tab.active {
+    background: linear-gradient(180deg, rgba(154,103,48,0.5), rgba(154,103,48,0.3));
+    color: #efddb0;
+    border-color: rgba(217,180,120,0.5);
+  }
+
+  /* ============================================================ */
+  /*  Animations editor                                             */
+  /* ============================================================ */
+  .anim-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(217,180,120,0.07);
+    cursor: pointer;
+    transition: background 0.2s, padding-left 0.2s;
+  }
+  .anim-item:hover  { background: rgba(217,180,120,0.06); }
+  .anim-item.active {
+    background: linear-gradient(90deg, rgba(154,103,48,0.22) 0%, rgba(154,103,48,0.04) 100%);
+    border-left: 2px solid #efddb0;
+    padding-left: 16px;
+  }
+  .anim-item .name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    color: #efddb0;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .anim-item .meta {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    opacity: 0.55;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .anim-item .loop-badge {
+    color: #efddb0;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* Time ruler */
+  .ruler {
+    position: relative;
+    height: 28px;
+    background: rgba(8,4,2,0.4);
+    border-bottom: 1px solid rgba(217,180,120,0.15);
+  }
+  .ruler .tick {
+    position: absolute;
+    top: 0; bottom: 14px;
+    width: 1px;
+    background: rgba(217,180,120,0.18);
+  }
+  .ruler .tick:nth-child(odd) { background: rgba(217,180,120,0.32); }
+  .ruler .tick-label {
+    position: absolute;
+    bottom: 2px;
+    transform: translateX(-50%);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: rgba(217,180,120,0.55);
+    font-variant-numeric: tabular-nums;
+  }
+  .ruler .playhead-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: #efddb0;
+    box-shadow: 0 0 4px rgba(239,221,176,0.6);
+    pointer-events: none;
+    left: 0%;
+  }
+
+  /* Track rows */
+  .tracks-area { background: rgba(8,4,2,0.25); }
+  .track-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 28px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(217,180,120,0.06);
+    transition: background 0.15s;
+  }
+  .track-row:hover { background: rgba(217,180,120,0.03); }
+  .track-row.locked .track-bar { opacity: 0.5; }
+
+  .track-row .track-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px;
+    color: #9a6730;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .track-row .track-label .target {
+    color: #efddb0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+  }
+  .track-row .track-label .prop {
+    text-transform: lowercase;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+  }
+  .track-row .lock-btn {
+    width: 22px; height: 22px;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.25);
+    color: rgba(217,180,120,0.6);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .track-row .lock-btn.locked { color: #efddb0; border-color: rgba(217,180,120,0.55); background: rgba(154,103,48,0.18); }
+  .track-row .track-bar {
+    position: relative;
+    height: 30px;
+    background: rgba(217,180,120,0.04);
+    border: 1px solid rgba(217,180,120,0.08);
+    border-radius: 4px;
+    cursor: crosshair;
+  }
+  .track-row .track-bar:hover { background: rgba(217,180,120,0.06); }
+  .track-row .kf {
+    position: absolute;
+    top: 50%; transform: translate(-50%, -50%);
+    width: 10px; height: 10px;
+    background: #d9b478;
+    border: 1px solid #6b4a22;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    transition: transform 0.1s, background 0.15s;
+  }
+  .track-row .kf:hover { background: #efddb0; transform: translate(-50%, -50%) scale(1.25); }
+  .track-row .kf.active {
+    background: #efddb0;
+    border-color: #efddb0;
+    box-shadow: 0 0 8px rgba(239,221,176,0.8);
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  .track-row .kf.dragging { cursor: grabbing; opacity: 0.75; }
+  .track-row .kf.has-audio {
+    /* Subtle ring when this keyframe triggers an audio file on enter. */
+    box-shadow: 0 0 0 2px rgba(127, 200, 255, 0.45);
+  }
+  .track-row .kf.has-audio.active {
+    box-shadow: 0 0 0 2px rgba(127, 200, 255, 0.75), 0 0 8px rgba(239,221,176,0.8);
+  }
+  .track-row .kf-add-btn {
+    width: 22px; height: 22px;
+    background: transparent;
+    border: 1px dashed rgba(217,180,120,0.35);
+    color: rgba(217,180,120,0.75);
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 0;
+    cursor: pointer;
+  }
+  .track-row .kf-add-btn:hover { background: rgba(217,180,120,0.1); color: #efddb0; }
+
+  /* Inspector — keyframe edit panel */
+  #inspector-body .empty {
+    font-style: italic;
+    color: rgba(217,180,120,0.45);
+    text-align: center;
+    padding: 20px 10px;
+    line-height: 1.6;
+  }
+  #inspector-body .target-prop {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
+    color: #efddb0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: rgba(154,103,48,0.18);
+    margin-bottom: 10px;
+  }
+  #inspector-body .target-prop .target { color: #efddb0; }
+  #inspector-body .target-prop .prop   { color: #d9b478; }
+  #inspector-body .ins-row { margin-bottom: 10px; }
+  #inspector-body .ins-row label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: #9a6730;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  #inspector-body .ins-row input,
+  #inspector-body .ins-row textarea,
+  #inspector-body .ins-row select {
+    width: 100%;
+    padding: 6px 8px;
+    background: rgba(8,4,2,0.5);
+    border: 1px solid rgba(217,180,120,0.25);
+    border-radius: 4px;
+    color: #efddb0;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  #inspector-body .ins-row textarea {
+    font-family: 'JetBrains Mono', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    resize: vertical;
+  }
+  #inspector-body .ins-row input:focus,
+  #inspector-body .ins-row textarea:focus,
+  #inspector-body .ins-row select:focus {
+    border-color: rgba(217,180,120,0.7);
+    outline: none;
+  }
+  #inspector-body .bindings {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-top: 5px;
+  }
+  #inspector-body .binding-chip {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(154,103,48,0.18);
+    border: 1px solid rgba(217,180,120,0.2);
+    color: #d9b478;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #inspector-body .binding-chip:hover { background: rgba(154,103,48,0.35); color: #efddb0; }
+  #inspector-body .toolbtn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.3);
+    color: #d9b478;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #inspector-body .toolbtn:hover { background: rgba(217,180,120,0.1); color: #efddb0; }
+  #inspector-body .toolbtn.danger { color: #f29a8a; border-color: rgba(245,80,80,0.4); }
+  #inspector-body .toolbtn.danger:hover { background: rgba(220,40,40,0.2); color: white; border-color: #d44; }
+
+  /* ============================================================ */
   /*  Save button — JS toggles `.primary` for dirty state           */
   /* ============================================================ */
   #save-btn.primary {
@@ -337,11 +606,16 @@
 <div id="app" class="hidden grid grid-rows-[58px_1fr] h-screen">
   <header class="flex items-center gap-3 px-5
                  border-b border-gold-mid/20 bg-bg-deep/75 backdrop-blur-md shadow-panel">
-    <h1 class="font-serif italic font-medium text-[21px] text-gold-bright flex-1 tracking-[0.01em]">
+    <h1 class="font-serif italic font-medium text-[21px] text-gold-bright tracking-[0.01em]">
       Ἅγιος Ἀνδρέας
       <span class="font-sans not-italic text-[9px] tracking-[0.4em] text-gold-deep uppercase
-                   ml-4 font-semibold align-middle">διαχείρισις περιεχομένου</span>
+                   ml-4 font-semibold align-middle">διαχείρισις</span>
     </h1>
+    <!-- Tab switcher: page content editor ↔ animations editor -->
+    <nav class="flex-1 flex justify-center gap-1">
+      <button class="tab active" data-tab="content">Περιεχόμενο</button>
+      <button class="tab"        data-tab="animations">Animations</button>
+    </nav>
     <button id="undo-btn" title="Ctrl/Cmd + Z" disabled
             class="px-3.5 py-1.5 rounded bg-transparent text-gold-mid
                    text-[10px] tracking-[0.22em] uppercase font-medium
@@ -386,6 +660,7 @@
   <!-- ============================================================ -->
   <!--  CONTENT TAB — edit per-page texts, photos, audio              -->
   <!-- ============================================================ -->
+  <div id="view-content">
   <main class="grid h-[calc(100vh-58px)] overflow-hidden
                grid-cols-[220px_minmax(420px,1fr)_minmax(440px,1fr)]
                max-[1100px]:grid-cols-[220px_1fr]">
@@ -811,6 +1086,83 @@
       </div>
     </aside>
   </main>
+  </div><!-- /view-content -->
+
+  <!-- ============================================================ -->
+  <!--  ANIMATIONS TAB — keyframe timeline editor                     -->
+  <!-- ============================================================ -->
+  <div id="view-animations" class="hidden">
+    <main class="grid h-[calc(100vh-58px)] overflow-hidden
+                 grid-cols-[220px_minmax(540px,1fr)_320px]
+                 max-[1100px]:grid-cols-[220px_1fr]">
+      <!-- Left: list of animations -->
+      <aside class="border-r border-gold-mid/15 overflow-y-auto bg-bg-deep/45
+                    flex flex-col shadow-[2px_0_12px_-4px_rgba(0,0,0,0.6)]">
+        <h2 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                   px-5 pt-5 pb-2.5 border-b border-gold-mid/15">Animations</h2>
+        <div id="anim-list" class="flex-1 overflow-y-auto"></div>
+        <button id="add-anim-btn" type="button"
+                class="block w-[calc(100%-28px)] mx-3.5 my-3.5 px-3.5 py-3 rounded
+                       bg-gradient-to-b from-gold-deep/45 to-gold-darkest/45
+                       hover:from-gold-deep/70 hover:to-gold-darkest/70
+                       border border-dashed border-gold-mid/40 text-gold-bright
+                       text-[10px] tracking-[0.3em] uppercase font-semibold
+                       transition-all duration-250">
+          + νέο animation
+        </button>
+      </aside>
+
+      <!-- Middle: timeline + ruler + tracks -->
+      <section class="anim-stage flex flex-col overflow-hidden bg-bg-near/40">
+        <!-- Top toolbar: name + duration + loop + actions -->
+        <div id="anim-meta" class="flex items-center gap-3 px-5 py-3
+                                    border-b border-gold-mid/15 bg-bg-deep/40">
+          <span id="anim-name" class="font-serif italic text-[17px] text-gold-bright flex-1">— ἐπίλεξε animation —</span>
+          <label class="flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-gold-mid">
+            διάρκεια
+            <input id="anim-duration" type="number" min="0.05" max="30" step="0.05" value="0.7" disabled
+                   class="w-20 bg-bg-deep/60 border border-gold-mid/30 rounded px-2 py-1
+                          text-gold-bright text-[12px] focus:border-gold-mid/70">
+            <span>s</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-gold-mid">
+            <input id="anim-loop" type="checkbox" disabled
+                   class="accent-gold-mid">
+            loop
+          </label>
+          <span class="text-[9px] tracking-[0.3em] uppercase text-gold-deep">
+            τώρα <span id="dur-readout">0.00</span>s
+          </span>
+          <button id="anim-duplicate-btn" disabled
+                  class="px-2.5 py-1 rounded bg-transparent text-gold-mid
+                         text-[10px] tracking-[0.18em] uppercase font-medium
+                         border border-gold-mid/25 hover:bg-gold-mid/10 hover:text-gold-bright
+                         disabled:opacity-30">⎘ ἀντίγραφο</button>
+          <button id="anim-delete-btn" disabled
+                  class="px-2.5 py-1 rounded bg-transparent text-red-300
+                         text-[10px] tracking-[0.18em] uppercase font-medium
+                         border border-red-500/25 hover:bg-red-900/30 hover:text-white
+                         disabled:opacity-30">🗑 διαγραφή</button>
+        </div>
+
+        <!-- Time ruler (ticks + playhead line) -->
+        <div id="ruler" class="ruler"></div>
+
+        <!-- Track rows (one per target/property) -->
+        <div id="tracks-area" class="tracks-area flex-1 overflow-y-auto"></div>
+      </section>
+
+      <!-- Right: keyframe inspector -->
+      <aside class="border-l border-gold-mid/15 overflow-y-auto bg-bg-deep/40
+                    flex flex-col">
+        <h2 class="text-[9px] tracking-[0.4em] uppercase text-gold-deep font-bold
+                   px-5 pt-5 pb-2.5 border-b border-gold-mid/15">Keyframe</h2>
+        <div id="inspector-body" class="flex-1 overflow-y-auto p-4 text-[12px]">
+          <div class="empty">ἐπίλεξε animation ἀπὸ τὴν λίστα</div>
+        </div>
+      </aside>
+    </main>
+  </div><!-- /view-animations -->
 </div>
 
 <div id="toast"
@@ -1036,9 +1388,20 @@ async function load() {
     State.selectedPageId = null;
   }
 
-  // Animations live inline in book.astro now — no PB collection.
+  // Animations live in localStorage (one JSON blob keyed by ANIMATIONS_KEY).
+  // Start from the inline defaults, then merge in anything the editor has
+  // saved previously so the user's keyframe work survives reloads.
   State.animations   = deepClone(DEFAULT_ANIMATIONS);
   State.animRecordId = {};
+  try {
+    const raw = localStorage.getItem(ANIMATIONS_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved && typeof saved === 'object') State.animations = saved;
+    }
+  } catch (e) {
+    console.warn('[admin] failed to parse saved animations, falling back to defaults:', e);
+  }
 
   toast(`Φορτώθηκαν ${pages.length} σελίδες ✓`);
 }
@@ -1083,15 +1446,24 @@ async function _savePage(pageId) {
   return true;
 }
 
+// Animations live in localStorage (key: ANIMATIONS_KEY). The dedicated PB
+// collection was removed because keyframe data is small + always edited as
+// a unit — localStorage is simpler and gives instant reads to /book on the
+// same origin. The dirtyAnims set still drives the save flow so we get the
+// same undo / dirty-button UX.
+const ANIMATIONS_KEY = 'church_animations_v1';
+
 async function _saveAnim(name) {
-  const recId = State.animRecordId[name]; if (!recId) return false;
-  const a = State.animations[name];
-  const res = await fetch(`${PB_URL}/api/collections/church_animations/records/${recId}`, {
-    method: 'PATCH',
-    headers: authHeader({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ duration: a.duration, loop: !!a.loop, tracks: a.tracks }),
-  });
-  return res.ok;
+  // For localStorage we save the entire animations object on any single
+  // dirty mark — cheaper than chasing individual keys, and the whole blob
+  // is well under any size limit.
+  try {
+    localStorage.setItem(ANIMATIONS_KEY, JSON.stringify(State.animations));
+    return true;
+  } catch (e) {
+    console.warn('[admin] save animations failed:', e);
+    return false;
+  }
 }
 
 async function save() {
@@ -1390,6 +1762,7 @@ function renderEditor() {
         if (State.selected.trackIdx === trackIdx && State.selected.prop === prop && State.selected.kfIdx === kfIdx) {
           dot.classList.add('active');
         }
+        if (kf.playAudio) dot.classList.add('has-audio');
         dot.style.left = (kf.t * 100) + '%';
         dot.dataset.track = trackIdx;
         dot.dataset.prop  = prop;
@@ -1557,6 +1930,15 @@ function renderInspector() {
           `<option value="${name}" ${(kf.ease || 'linear') === name ? 'selected' : ''}>${name}</option>`).join('')}
       </select>
     </div>
+    <div class="ins-row">
+      <label>ἀρχεῖο ἤχου κατὰ τὴν μετάβαση (προαιρετικό)</label>
+      <input type="text" id="ins-audio" placeholder="https://… ἢ /path/to/audio.mp3"
+             value="${(kf.playAudio || '').replace(/"/g, '&quot;')}">
+      <div class="bindings" style="margin-top:6px">
+        <span class="binding-chip" data-audio-action="test">▶ δοκιμή</span>
+        <span class="binding-chip" data-audio-action="clear">✕ καθαρισμός</span>
+      </div>
+    </div>
     <button class="toolbtn danger" id="ins-delete" style="width:100%;margin-top:8px">🗑 διαγραφή keyframe</button>
   `;
 
@@ -1586,9 +1968,37 @@ function renderInspector() {
   });
   document.getElementById('ins-delete').addEventListener('click', deleteSelectedKeyframe);
 
+  // playAudio field — keyframe-triggered audio playback during transitions.
+  const audioInput = document.getElementById('ins-audio');
+  audioInput.addEventListener('change', e => {
+    pushHistory();
+    const v = (e.target.value || '').trim();
+    if (v) kf.playAudio = v;
+    else   delete kf.playAudio;
+    markDirty();
+    renderEditor();          // refresh the keyframe dot's .has-audio class
+  });
+
   for (const chip of body.querySelectorAll('.binding-chip')) {
     chip.addEventListener('click', () => {
+      if (chip.dataset.audioAction === 'test') {
+        const url = audioInput.value.trim();
+        if (!url) { toast('— ἄδειο πεδίο ἤχου —', 'error'); return; }
+        try { new Audio(url).play().catch(() => toast('✕ ἤχος ἀνεπαρκής', 'error')); }
+        catch (_) { toast('✕ μὴ ἔγκυρη διεύθυνσις', 'error'); }
+        return;
+      }
+      if (chip.dataset.audioAction === 'clear') {
+        pushHistory();
+        delete kf.playAudio;
+        audioInput.value = '';
+        markDirty();
+        renderEditor();
+        return;
+      }
+      // Default: a JSON-value binding chip (number, {x,y,z}, etc.)
       const v = chip.dataset.binding;
+      if (v === undefined) return;
       pushHistory();
       kf.value = v;
       document.getElementById('ins-value').value = JSON.stringify(v);
@@ -2511,8 +2921,11 @@ function setActiveTab(tab) {
   document.getElementById('view-content').classList.toggle('hidden',    tab !== 'content');
   document.getElementById('view-animations').classList.toggle('hidden', tab !== 'animations');
   State.activeTab = tab;
+  if (tab === 'animations') { renderSidebar(); renderEditor(); }
 }
-// (tabs removed — single content view)
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+});
 
 // =====================================================================
 //   INIT — extend renderAll to refresh both views, set up content wiring

@@ -1503,6 +1503,18 @@ function _flushTransform(target, t) {
   target.style.transform = parts.length ? parts.join(' ') : '';
 }
 
+// Tiny cache so an audio URL referenced from many keyframes loads once.
+const _kfAudioCache = new Map();
+function _fireKeyframeAudio(url) {
+  if (!url) return;
+  let aud = _kfAudioCache.get(url);
+  if (!aud) {
+    try { aud = new Audio(url); aud.preload = 'auto'; _kfAudioCache.set(url, aud); }
+    catch (_) { return; }
+  }
+  try { aud.currentTime = 0; aud.play().catch(() => {}); } catch (_) {}
+}
+
 class KeyframePlayer {
   constructor(animations) {
     this.animations = animations;
@@ -1517,6 +1529,9 @@ class KeyframePlayer {
       targets: opts.targets || {},
       onComplete: opts.onComplete || null,
       done: false,
+      // Index of next-to-fire audio keyframe per (trackIdx:prop) — lets us
+      // play each playAudio exactly once as the playhead crosses its t.
+      audioCursor: new Map(),
     };
     this.activeClips.push(clip);
     return clip;
@@ -1525,22 +1540,41 @@ class KeyframePlayer {
   update(dt) {
     for (let i = this.activeClips.length - 1; i >= 0; i--) {
       const clip = this.activeClips[i];
+      const prevT01 = clip.duration > 0 ? clip.time / clip.duration : 1;
       clip.time = Math.min(clip.time + dt, clip.duration);
       const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
 
-      for (const track of clip.anim.tracks) {
+      clip.anim.tracks.forEach((track, trackIdx) => {
         const target = clip.targets[track.target];
-        if (!target) continue;
         const isDom = target instanceof HTMLElement;
         const transformAccum = {};
 
         for (const prop in track.properties) {
-          const value = _sampleNumber(track.properties[prop], t01);
-          if (value === null) continue;
-          if (isDom) _applyDom(target, prop, value, transformAccum);
+          const keyframes = track.properties[prop];
+
+          // 1. Apply the numeric value at the current playhead — only if
+          //    we actually have a target to apply it to.
+          if (target) {
+            const value = _sampleNumber(keyframes, t01);
+            if (value !== null && isDom) _applyDom(target, prop, value, transformAccum);
+          }
+
+          // 2. Fire playAudio for any keyframe the playhead just crossed.
+          //    Audio cues fire regardless of whether the visual target exists,
+          //    so a sound cue can sit on an "abstract" track.
+          const cursorKey = trackIdx + ':' + prop;
+          let cursor = clip.audioCursor.get(cursorKey);
+          if (cursor === undefined) cursor = 0;
+          while (cursor < keyframes.length) {
+            const kf = keyframes[cursor];
+            if (kf.t > t01) break;
+            if (kf.playAudio && kf.t >= prevT01) _fireKeyframeAudio(kf.playAudio);
+            cursor++;
+          }
+          clip.audioCursor.set(cursorKey, cursor);
         }
         if (isDom) _flushTransform(target, transformAccum);
-      }
+      });
 
       if (clip.time >= clip.duration && !clip.done) {
         clip.done = true;
@@ -1585,9 +1619,24 @@ const _DEFAULT_ANIMATIONS = {
   },
 };
 let ANIMATIONS = _DEFAULT_ANIMATIONS;
+// Try loading editor-modified animations from localStorage (admin saves them
+// there). Falls back to the inline defaults if nothing is stored or the data
+// is malformed.
+try {
+  const raw = localStorage.getItem('church_animations_v1');
+  if (raw) {
+    const saved = JSON.parse(raw);
+    if (saved && typeof saved === 'object' && Object.keys(saved).length) {
+      ANIMATIONS = saved;
+      console.info('[keyframe] loaded', Object.keys(saved).length, 'animation(s) from editor');
+    }
+  }
+} catch (e) {
+  console.warn('[keyframe] could not parse saved animations, using defaults:', e);
+}
 const keyframePlayer = new KeyframePlayer(ANIMATIONS);
-// Async fetch PB animations and swap into the player. Defaults stay live until
-// the network reply lands, so the modal never blocks on a slow PB.
+// Legacy async PB fetch — left in but the collection is gone, so this just
+// silently fails through to defaults. Keeping for future re-enablement.
 (async () => {
   _syncPill.begin();
   try {
@@ -1610,7 +1659,7 @@ const keyframePlayer = new KeyframePlayer(ANIMATIONS);
     }
     _syncPill.end(true);
   } catch (e) {
-    console.info('[keyframe] PB animations unavailable — using defaults');
+    console.info('[keyframe] PB animations unavailable — using defaults/saved');
     _syncPill.end(false);
   }
 })();
