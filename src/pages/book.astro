@@ -742,8 +742,8 @@ scene.fog = new THREE.FogExp2(0x060302, 0.045);
 // ≈7.45, plenty of room around the lectern. Looking at the book centre
 // at its new higher reading position.
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 3.15, 4.7);
-camera.lookAt(0, 2.50, 0);
+camera.position.set(0, 3.30, 5.4);
+camera.lookAt(0, 3.10, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1364,46 +1364,36 @@ const cathedral = (() => {
   // (dust motes — handled by the global makeDust() system below; no
   // need for a second particle layer inside the cathedral group.)
 
-  // ── Wooden lectern (ἀναλόγιον) under the book ─────────────────────
-  // Walnut lectern: square base + tapered central post + broad top
-  // platform. Post is taller than the previous build so the book rests
-  // at a comfortable reading height (book bottom at y ≈ 0.35 world).
-  const lecternMat = new THREE.MeshStandardMaterial({
-    color: 0x5a3014, roughness: 0.62, metalness: 0.04, envMapIntensity: 0.8,
-  });
+  // ── Floating-book halo (replaces the lectern) ─────────────────────
+  // The book hovers mid-air over a luminous gold disc on the marble
+  // floor — like a divine relic levitating above its altar.
   const lectern = new THREE.Group();
   lectern.name = 'cathedral.lectern';
-  // Top platform — broader than the book footprint when closed.
-  const lectTop = new THREE.Mesh(
-    new THREE.BoxGeometry(1.65, 0.06, 2.10),
-    lecternMat,
+  // Floor halo: bright emissive ring + soft inner disc.
+  const haloRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.85, 1.00, 64),
+    new THREE.MeshStandardMaterial({
+      color: 0xe0bf6b, roughness: 0.3, metalness: 0.85,
+      emissive: 0xc89a4c, emissiveIntensity: 1.5,
+    }),
   );
-  lectTop.position.y = 2.17;
-  lectTop.castShadow = !IS_LOW_PERF;
-  lectern.add(lectTop);
-  // Decorative gold trim band under the platform.
-  const lectTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(1.60, 0.020, 2.05),
-    MAT.gold,
+  haloRing.rotation.x = -Math.PI / 2;
+  haloRing.position.y = -0.61;
+  lectern.add(haloRing);
+  const haloDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(0.85, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0xfff0c0, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }),
   );
-  lectTrim.position.y = 2.13;
-  lectern.add(lectTrim);
-  // Central tapered post — pulpit / ambon proportions.
-  const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.26, 2.05, 20),
-    lecternMat,
-  );
-  lectPost.position.y = 1.075;
-  lectern.add(lectPost);
-  // Square base.
-  const lectBase = new THREE.Mesh(
-    new THREE.BoxGeometry(0.96, 0.10, 0.96),
-    lecternMat,
-  );
-  lectBase.position.y = 0.05;
-  lectBase.receiveShadow = !IS_LOW_PERF;
-  lectern.add(lectBase);
-  lectern.position.y = -0.62;
+  haloDisc.rotation.x = -Math.PI / 2;
+  haloDisc.position.y = -0.605;
+  lectern.add(haloDisc);
+  // Bright warm light underneath the floating book.
+  const beamLight = new THREE.PointLight(0xffd49a, 2.8, 8, 1.3);
+  beamLight.position.set(0, 1.2, 0);
+  lectern.add(beamLight);
   group.add(lectern);
 
   // ── 12 stone walls between the columns, each with a stained-glass
@@ -1858,7 +1848,7 @@ bookGroup.position.x = -PAGE_WIDTH / 2;
 // surface sits at world y ≈ 1.48 (-0.62 + lectTop_local 2.07 + height/2).
 // Book half-height is PAGE_HEIGHT/2 ≈ 0.855, plus a ~6 cm clearance so
 // the book never clips into the wood.
-bookGroup.position.y = 2.50;
+bookGroup.position.y = 3.10;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
