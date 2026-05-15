@@ -739,10 +739,11 @@ scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
 // Camera lives INSIDE the (now much larger) cathedral. Walls at radius
-// ≈7.45, plenty of room around the lectern. Looking at the book centre.
+// ≈7.45, plenty of room around the lectern. Looking at the book centre
+// at its new higher reading position.
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 2.2, 4.5);
-camera.lookAt(0, 1.45, 0);
+camera.position.set(0, 2.4, 4.5);
+camera.lookAt(0, 1.70, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1375,7 +1376,7 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.65, 0.06, 2.10),
     lecternMat,
   );
-  lectTop.position.y = 1.22;
+  lectTop.position.y = 1.47;
   lectTop.castShadow = !IS_LOW_PERF;
   lectern.add(lectTop);
   // Decorative gold trim band under the platform.
@@ -1383,14 +1384,15 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.60, 0.020, 2.05),
     MAT.gold,
   );
-  lectTrim.position.y = 1.18;
+  lectTrim.position.y = 1.43;
   lectern.add(lectTrim);
-  // Central tapered post (taller).
+  // Central tapered post — taller now to hold the book at a higher
+  // reading height (user asked for "λίγο πιὸ ψηλά").
   const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.26, 1.10, 20),
+    new THREE.CylinderGeometry(0.16, 0.26, 1.35, 20),
     lecternMat,
   );
-  lectPost.position.y = 0.60;
+  lectPost.position.y = 0.73;
   lectern.add(lectPost);
   // Square base.
   const lectBase = new THREE.Mesh(
@@ -1521,10 +1523,37 @@ const cathedral = (() => {
     return tex;
   })();
 
+  // ── Roof shoulder — annular ceiling between wall top and drum base.
+  // Without this there's an open ring of sky visible between the columns'
+  // wall top and the central drum, which makes the satellite domes look
+  // like they're floating in the air. The shoulder closes the gap and
+  // gives the satellites something to "sit on" when seen from outside.
+  const SHOULDER_Y = COL_HEIGHT + 0.55;     // a touch above the column abacus
+  const shoulderGeo = new THREE.RingGeometry(DRUM_RADIUS, COL_RADIUS + 0.15, 64, 1);
+  const shoulderMat = new THREE.MeshStandardMaterial({
+    color: 0xd4c5a2, roughness: 0.6, metalness: 0.05,
+    side: THREE.DoubleSide, envMapIntensity: 0.75,
+  });
+  const shoulderInside = new THREE.Mesh(shoulderGeo, shoulderMat);
+  shoulderInside.rotation.x = -Math.PI / 2;
+  shoulderInside.position.y = SHOULDER_Y;
+  shoulderInside.receiveShadow = !IS_LOW_PERF;
+  group.add(shoulderInside);
+  // Outer cylindrical skirt — wraps the shoulder edge so when the user
+  // flies above the cathedral they see a clean roof, not the underside.
+  const skirtH = 0.30;
+  const skirtGeo = new THREE.CylinderGeometry(COL_RADIUS + 0.15, COL_RADIUS + 0.15, skirtH, 64, 1, true);
+  const skirt = new THREE.Mesh(skirtGeo, shoulderMat);
+  skirt.position.y = SHOULDER_Y - skirtH / 2;
+  group.add(skirt);
+
   const WALL_RADIUS = COL_RADIUS - 0.05;   // walls just inside the columns
   const segAngle = (Math.PI * 2) / COL_COUNT;
   const wallChord = 2 * WALL_RADIUS * Math.sin(segAngle / 2);
-  const wallGeo = new THREE.PlaneGeometry(wallChord * 1.02, COL_HEIGHT + 0.4);
+  // Walls extend up to the column abacus / shoulder ring, so the
+  // perimeter masonry reads as one continuous height rather than a
+  // short curtain wall with a column sticking up past it.
+  const wallGeo = new THREE.PlaneGeometry(wallChord * 1.02, COL_HEIGHT + 1.15);
   // transparent:true so the per-pixel alpha in the wall texture is
   // honoured — stone stays opaque (alpha=1), stained-glass cells
   // render at alpha≈0.62 so the equirect sky shows through tinted by
@@ -1544,7 +1573,7 @@ const cathedral = (() => {
     const wx = Math.cos(mid) * WALL_RADIUS * cosHalf;
     const wz = Math.sin(mid) * WALL_RADIUS * cosHalf;
     const wall = new THREE.Mesh(wallGeo, wallMat);
-    wall.position.set(wx, -0.62 + (COL_HEIGHT + 0.4) / 2, wz);
+    wall.position.set(wx, -0.62 + (COL_HEIGHT + 1.15) / 2, wz);
     // Face inward (toward the center)
     wall.lookAt(0, wall.position.y, 0);
     wall.receiveShadow = !IS_LOW_PERF;
@@ -1800,8 +1829,8 @@ bookGroup.rotation.y = -Math.PI / 2;
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
 // Lift the book onto the lectern's top platform. With the taller lectern
-// the top sits at world y ≈ 0.60, so book centre = 0.60 + 0.855 ≈ 1.45.
-bookGroup.position.y = 1.45;
+// the top sits at world y ≈ 0.85, so book centre = 0.85 + 0.855 ≈ 1.70.
+bookGroup.position.y = 1.70;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
