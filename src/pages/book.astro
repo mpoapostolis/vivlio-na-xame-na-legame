@@ -817,110 +817,291 @@ if (candle2) { candle2.position.set( 3.2, 0.3, -4.0); scene.add(candle2); }
 //   element is exposed on `cathedral.{floor,columns,dome}` so the keyframe
 //   editor can animate them by target name (e.g. `cathedral.dome` → scale).
 // =====================================================================
+// =====================================================================
+//   CATHEDRAL OF SAINT ANDREW — Byzantine interior modelled on the real
+//   Patras cathedral. Per the educational PDF:
+//
+//     "Ὁ κεντρικὸς τροῦλος περιστοιχίζεται ἀπὸ 12 ἄλλους χαμηλοτέρους
+//      τρούλους-κωδωνοστάσια οἱ ὁποῖοι συμβολίζουν τὸν Ἰησοῦν Χριστὸν
+//      μὲ τοὺς 12 Ἀποστόλους Του. Ὁ ἀρχικὸς σχεδιασμὸς προέβλεπε τὴν
+//      ἐπικάλυψη ὅλων τῶν τρούλων μὲ φύλλα χαλκοῦ."
+//
+//   So we have a central dome on a drum + 12 satellite domes around it,
+//   all in copper-bronze tones. 12 marble columns hold the perimeter,
+//   each topped by a satellite dome. Twelve tall arched windows in the
+//   drum (alpha-cut on a textured cylinder) admit a warm gold light from
+//   the outside — the interior reads as bathed in candle + sunset light.
+// =====================================================================
 const cathedral = (() => {
   const group = new THREE.Group();
   group.name = 'cathedral';
 
-  // Soften the fog so the columns and dome are still legible at distance.
-  scene.fog.density = 0.028;
+  // Wider visibility — fog softened so the dome reads at distance.
+  scene.fog.density = 0.022;
 
-  // Marble floor — large enough to extend past the columns but stops short
-  // of the camera's near plane so we don't get z-fight at the camera origin.
-  const FLOOR_RADIUS = 14;
-  const floorGeo = new THREE.CircleGeometry(FLOOR_RADIUS, 64);
-  const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x3a2f24, roughness: 0.78, metalness: 0.05,
-    envMapIntensity: 0.6,
-  });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
+  // ── Materials (shared across all geometry) ─────────────────────────
+  const MAT = {
+    // Cream marble for floor, columns, drum walls.
+    marble: new THREE.MeshStandardMaterial({
+      color: 0xe6dac0, roughness: 0.52, metalness: 0.03, envMapIntensity: 1.0,
+    }),
+    // Darker marble for floor (more matte, less glare).
+    floorMarble: new THREE.MeshStandardMaterial({
+      color: 0x4a3826, roughness: 0.82, metalness: 0.04, envMapIntensity: 0.55,
+    }),
+    // Copper dome — the spec calls for copper sheets due to sea air.
+    copper: new THREE.MeshStandardMaterial({
+      color: 0x9a5e2a, roughness: 0.38, metalness: 0.78, envMapIntensity: 1.1,
+    }),
+    // Gold accents for cross + inlaid floor ring.
+    gold: new THREE.MeshStandardMaterial({
+      color: 0xc89a4c, roughness: 0.32, metalness: 0.92, envMapIntensity: 1.2,
+    }),
+    // Dark night sky visible through arched windows — looks like dusk.
+    skyGlow: new THREE.MeshBasicMaterial({
+      color: 0x18120a, side: THREE.BackSide,
+    }),
+  };
+
+  // ── Marble floor disc (radius 16) ──────────────────────────────────
+  const FLOOR_RADIUS = 16;
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(FLOOR_RADIUS, 64),
+    MAT.floorMarble,
+  );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.62;
   floor.receiveShadow = !IS_LOW_PERF;
   floor.name = 'cathedral.floor';
   group.add(floor);
 
-  // Inlaid concentric ring on the floor — Pater Symbol of the place, also
-  // visually grounds the camera position.
-  const ringGeo  = new THREE.RingGeometry(1.4, 1.46, 64);
-  const ringMat  = new THREE.MeshStandardMaterial({ color: 0x8a6a3a, roughness: 0.55, metalness: 0.18 });
-  const ring     = new THREE.Mesh(ringGeo, ringMat);
+  // Concentric gold ring (~Greek-cross intersection size).
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.4, 1.48, 96),
+    MAT.gold,
+  );
   ring.rotation.x = -Math.PI / 2;
-  ring.position.y = -0.61;
+  ring.position.y = -0.612;
   group.add(ring);
 
-  // Eight columns around the book in an octagon.
-  const COL_COUNT  = 8;
-  const COL_RADIUS = 4.0;
-  const COL_HEIGHT = 6.5;
+  // Inner radial cross inlay (4 thin gold bars from center → 1.4 m).
+  const inlayMat = MAT.gold;
+  for (let i = 0; i < 4; i++) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.005, 0.06),
+      inlayMat,
+    );
+    bar.rotation.y = i * Math.PI / 2;
+    bar.position.set(Math.cos(i * Math.PI / 2) * 0.7, -0.613, Math.sin(i * Math.PI / 2) * 0.7);
+    group.add(bar);
+  }
+
+  // ── 12 columns in a regular dodecagon (Christ + 12 Apostles) ──────
+  const COL_COUNT  = 12;
+  const COL_RADIUS = 4.6;
+  const COL_HEIGHT = 6.2;
   const colShaftGeo = new THREE.CylinderGeometry(0.20, 0.24, COL_HEIGHT, 32, 1);
-  const colCapGeo   = new THREE.CylinderGeometry(0.34, 0.20, 0.4,        32, 1);
-  const colBaseGeo  = new THREE.CylinderGeometry(0.30, 0.34, 0.25,       32, 1);
-  const colMat = new THREE.MeshStandardMaterial({
-    color: 0xc4b599, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.9,
-  });
+  const colCapGeo   = new THREE.CylinderGeometry(0.36, 0.20, 0.45,       32, 1);
+  const colCapAbacus= new THREE.BoxGeometry(0.88, 0.10, 0.88);
+  const colBaseGeo  = new THREE.CylinderGeometry(0.32, 0.36, 0.30,       32, 1);
+  const colBaseSocl = new THREE.BoxGeometry(0.78, 0.12, 0.78);
   const columns = [];
   for (let i = 0; i < COL_COUNT; i++) {
-    const angle = (i / COL_COUNT) * Math.PI * 2 + Math.PI / 8;
+    const angle = (i / COL_COUNT) * Math.PI * 2;
     const x = Math.cos(angle) * COL_RADIUS;
     const z = Math.sin(angle) * COL_RADIUS;
     const col = new THREE.Group();
     col.position.set(x, -0.62, z);
     col.name = 'cathedral.column.' + i;
-    const shaft = new THREE.Mesh(colShaftGeo, colMat);
-    shaft.position.y = COL_HEIGHT / 2 + 0.25;
+    // Shaft
+    const shaft = new THREE.Mesh(colShaftGeo, MAT.marble);
+    shaft.position.y = COL_HEIGHT / 2 + 0.30;
     shaft.castShadow = !IS_LOW_PERF;
-    shaft.receiveShadow = !IS_LOW_PERF;
     col.add(shaft);
-    const cap = new THREE.Mesh(colCapGeo, colMat);
-    cap.position.y = COL_HEIGHT + 0.45;
+    // Capital — a fluted cone with a square abacus on top.
+    const cap = new THREE.Mesh(colCapGeo, MAT.marble);
+    cap.position.y = COL_HEIGHT + 0.55;
     col.add(cap);
-    const base = new THREE.Mesh(colBaseGeo, colMat);
-    base.position.y = 0.12;
+    const abacus = new THREE.Mesh(colCapAbacus, MAT.marble);
+    abacus.position.y = COL_HEIGHT + 0.80;
+    col.add(abacus);
+    // Base — a square plinth with a rounded torus on top.
+    const socle = new THREE.Mesh(colBaseSocl, MAT.marble);
+    socle.position.y = 0.06;
+    col.add(socle);
+    const base = new THREE.Mesh(colBaseGeo, MAT.marble);
+    base.position.y = 0.27;
     col.add(base);
     group.add(col);
     columns.push(col);
   }
 
-  // Dome above. SphereGeometry quarter cut, back-side rendered so we see
-  // the inner surface from below.
-  const DOME_RADIUS = 5.4;
-  const domeGeo = new THREE.SphereGeometry(DOME_RADIUS, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
-  const domeMat = new THREE.MeshStandardMaterial({
-    color: 0x4d3a22, roughness: 0.72, metalness: 0.10,
-    side: THREE.BackSide, envMapIntensity: 0.8,
+  // ── Twelve satellite domes (Apostles) — one above each column ─────
+  const SAT_DOME_RADIUS = 0.55;
+  const satDomeGeo = new THREE.SphereGeometry(SAT_DOME_RADIUS, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+  const satDrumGeo = new THREE.CylinderGeometry(SAT_DOME_RADIUS, SAT_DOME_RADIUS, 0.5, 16, 1);
+  const satCrossV  = new THREE.BoxGeometry(0.02, 0.18, 0.02);
+  const satCrossH  = new THREE.BoxGeometry(0.10, 0.02, 0.02);
+  const satellites = [];
+  for (let i = 0; i < COL_COUNT; i++) {
+    const angle = (i / COL_COUNT) * Math.PI * 2;
+    const x = Math.cos(angle) * COL_RADIUS;
+    const z = Math.sin(angle) * COL_RADIUS;
+    const sat = new THREE.Group();
+    sat.position.set(x, COL_HEIGHT + 0.90, z);
+    sat.name = 'cathedral.satellite.' + i;
+    const drum = new THREE.Mesh(satDrumGeo, MAT.marble);
+    drum.position.y = 0.25;
+    sat.add(drum);
+    const dome = new THREE.Mesh(satDomeGeo, MAT.copper);
+    dome.position.y = 0.50;
+    sat.add(dome);
+    // Tiny gold cross on each satellite dome.
+    const cv = new THREE.Mesh(satCrossV, MAT.gold);
+    cv.position.y = 0.50 + SAT_DOME_RADIUS + 0.09;
+    sat.add(cv);
+    const ch = new THREE.Mesh(satCrossH, MAT.gold);
+    ch.position.y = 0.50 + SAT_DOME_RADIUS + 0.13;
+    sat.add(ch);
+    group.add(sat);
+    satellites.push(sat);
+  }
+
+  // ── Central drum + dome (Christ) ──────────────────────────────────
+  // Drum is a cylinder of marble + 12 arched windows. Implement the
+  // arches as alpha-cutout via a canvas texture so we get the look
+  // without per-vertex window geometry.
+  const DRUM_RADIUS = 3.4;
+  const DRUM_HEIGHT = 2.2;
+  const DRUM_Y = COL_HEIGHT + 1.7;
+
+  // Procedural arch-window alpha map (12 tall arches around a cylinder).
+  const drumTex = (() => {
+    const cv = document.createElement('canvas');
+    cv.width = 2048; cv.height = 512;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#e6dac0';            // marble base
+    g.fillRect(0, 0, cv.width, cv.height);
+    const arches = 12;
+    const slot = cv.width / arches;
+    const archW = slot * 0.34;
+    const archH = cv.height * 0.62;
+    const archTop = cv.height * 0.18;
+    for (let i = 0; i < arches; i++) {
+      const cx = i * slot + slot / 2;
+      // Gold frame
+      g.fillStyle = '#c89a4c';
+      g.beginPath();
+      g.roundRect(cx - archW/2 - 6, archTop - 6, archW + 12, archH + 12, archW/2 + 6);
+      g.fill();
+      // Window glass — warm gold for sunset glow.
+      const grad = g.createLinearGradient(0, archTop, 0, archTop + archH);
+      grad.addColorStop(0, '#f0c870');
+      grad.addColorStop(1, '#7a4a18');
+      g.fillStyle = grad;
+      g.beginPath();
+      g.roundRect(cx - archW/2, archTop, archW, archH, archW/2);
+      g.fill();
+      // Mullion (vertical divider).
+      g.fillStyle = '#3a2410';
+      g.fillRect(cx - 2, archTop + archW/2, 4, archH - archW/2);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.anisotropy = 8;
+    return tex;
+  })();
+
+  const drumMat = new THREE.MeshStandardMaterial({
+    map: drumTex, roughness: 0.55, metalness: 0.08,
+    side: THREE.DoubleSide,
+    emissive: 0x6a4a18, emissiveIntensity: 0.35,
+    envMapIntensity: 0.9,
   });
-  const dome = new THREE.Mesh(domeGeo, domeMat);
-  dome.position.y = COL_HEIGHT;
+  const drum = new THREE.Mesh(
+    new THREE.CylinderGeometry(DRUM_RADIUS, DRUM_RADIUS, DRUM_HEIGHT, 64, 1, true),
+    drumMat,
+  );
+  drum.position.y = DRUM_Y;
+  drum.name = 'cathedral.drum';
+  group.add(drum);
+
+  // Stone lintel under the drum + on top (a clean transition collar).
+  const lintelTop = new THREE.Mesh(
+    new THREE.TorusGeometry(DRUM_RADIUS + 0.05, 0.10, 16, 96),
+    MAT.marble,
+  );
+  lintelTop.rotation.x = Math.PI / 2;
+  lintelTop.position.y = DRUM_Y + DRUM_HEIGHT / 2;
+  group.add(lintelTop);
+  const lintelBot = lintelTop.clone();
+  lintelBot.position.y = DRUM_Y - DRUM_HEIGHT / 2;
+  group.add(lintelBot);
+
+  // Central dome — copper, BackSide so we see the interior surface.
+  const DOME_RADIUS = DRUM_RADIUS;
+  const domeGeo = new THREE.SphereGeometry(DOME_RADIUS, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const domeIntMat = new THREE.MeshStandardMaterial({
+    color: 0x5a4220, roughness: 0.55, metalness: 0.30,
+    side: THREE.BackSide, envMapIntensity: 0.95,
+    emissive: 0x2a1a08, emissiveIntensity: 0.4,
+  });
+  const dome = new THREE.Mesh(domeGeo, domeIntMat);
+  dome.position.y = DRUM_Y + DRUM_HEIGHT / 2;
   dome.name = 'cathedral.dome';
   group.add(dome);
 
-  // A subtle ring lintel where the dome meets the column tops — feels like
-  // a stone collar between drum and dome.
-  const lintelGeo = new THREE.TorusGeometry(DOME_RADIUS - 0.05, 0.08, 16, 64);
-  const lintelMat = new THREE.MeshStandardMaterial({ color: 0xd6c4a0, roughness: 0.55, metalness: 0.15 });
-  const lintel = new THREE.Mesh(lintelGeo, lintelMat);
-  lintel.rotation.x = Math.PI / 2;
-  lintel.position.y = COL_HEIGHT;
-  group.add(lintel);
+  // Outer dome shell — copper exterior, visible if user flies above the drum.
+  const domeExtGeo = new THREE.SphereGeometry(DOME_RADIUS + 0.04, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const domeExt = new THREE.Mesh(domeExtGeo, MAT.copper);
+  domeExt.position.y = DRUM_Y + DRUM_HEIGHT / 2;
+  group.add(domeExt);
 
-  // Warm dim glow under the dome — feels like an oil lamp hung from above.
+  // Central cross above the dome.
+  const cross = new THREE.Group();
+  const cv1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), MAT.gold);
+  cv1.position.y = 0.4;
+  cross.add(cv1);
+  const ch1 = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.08), MAT.gold);
+  ch1.position.y = 0.55;
+  cross.add(ch1);
+  // Small orb at the base of the cross.
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.10, 16, 12), MAT.gold);
+  orb.position.y = -0.05;
+  cross.add(orb);
+  cross.position.y = DRUM_Y + DRUM_HEIGHT / 2 + DOME_RADIUS;
+  cross.name = 'cathedral.cross';
+  group.add(cross);
+
+  // ── Warm interior lighting ─────────────────────────────────────────
   if (!IS_LOW_PERF) {
-    const domeLight = new THREE.PointLight(0xffd8a0, 1.4, 14, 1.4);
-    domeLight.position.set(0, COL_HEIGHT - 0.4, 0);
-    group.add(domeLight);
+    // Chandelier — soft glow hanging under the central dome.
+    const chandelier = new THREE.PointLight(0xffd49a, 1.6, 18, 1.3);
+    chandelier.position.set(0, DRUM_Y - 0.4, 0);
+    group.add(chandelier);
+    // Twelve dim warm spots over the satellites — subtle accent so the
+    // copper of each apostle dome catches a highlight.
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const sp = new THREE.PointLight(0xffba70, 0.45, 6, 1.4);
+      sp.position.set(Math.cos(angle) * (COL_RADIUS - 0.5), COL_HEIGHT + 0.6, Math.sin(angle) * (COL_RADIUS - 0.5));
+      group.add(sp);
+    }
   }
 
   scene.add(group);
-  return { group, floor, dome, columns };
+  return { group, floor, dome, drum, cross, columns, satellites };
 })();
 
-// Register the cathedral pieces so keyframe tracks can target them by name.
-// The book mesh registers later (after pages build) so playing animations
-// like `bookHover` becomes possible from the editor.
+// Register cathedral pieces so the editor can animate any of them by name.
 register3DTarget('cathedral.group',  cathedral.group);
 register3DTarget('cathedral.floor',  cathedral.floor);
 register3DTarget('cathedral.dome',   cathedral.dome);
-cathedral.columns.forEach((c, i) => register3DTarget('cathedral.column.' + i, c));
+register3DTarget('cathedral.drum',   cathedral.drum);
+register3DTarget('cathedral.cross',  cathedral.cross);
+cathedral.columns   .forEach((c, i) => register3DTarget('cathedral.column.' + i,    c));
+cathedral.satellites.forEach((s, i) => register3DTarget('cathedral.satellite.' + i, s));
 
 
 // =====================================================================

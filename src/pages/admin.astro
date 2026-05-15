@@ -2817,9 +2817,11 @@ document.getElementById('delete-page-btn')?.addEventListener('click', deleteSele
 // register3DTarget() calls in src/pages/book.astro. Surfaced in the
 // "add track" prompt so editors don't have to memorise names.
 const KNOWN_3D_TARGETS = [
-  'cathedral.group', 'cathedral.dome', 'cathedral.floor',
-  'cathedral.column.0', 'cathedral.column.1', 'cathedral.column.2', 'cathedral.column.3',
-  'cathedral.column.4', 'cathedral.column.5', 'cathedral.column.6', 'cathedral.column.7',
+  'cathedral.group', 'cathedral.dome', 'cathedral.drum', 'cathedral.cross', 'cathedral.floor',
+  // 12 columns (Christ + 12 Apostles)
+  ...Array.from({ length: 12 }, (_, i) => 'cathedral.column.' + i),
+  // 12 satellite domes (one per Apostle, atop each column)
+  ...Array.from({ length: 12 }, (_, i) => 'cathedral.satellite.' + i),
   'book.group',
 ];
 // Known DOM targets — used inside the photo-modal animations.
