@@ -738,12 +738,11 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
-// Camera lives INSIDE the cathedral now (walls at radius 5.45). Higher
-// seat so book + lectern + lower walls + satellite domes fit the frame
-// at default load; full central dome is reached by dragging up.
-const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 1.9, 4.0);
-camera.lookAt(0, 1.2, 0);
+// Camera lives INSIDE the (now much larger) cathedral. Walls at radius
+// ≈7.45, plenty of room around the lectern. Looking at the book centre.
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 2.2, 4.5);
+camera.lookAt(0, 1.45, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -960,7 +959,37 @@ const cathedral = (() => {
     return tex;
   })();
 
-  const FLOOR_RADIUS = 22;
+  // ── Ground + podium so the cathedral doesn't float in the void ────
+  // The cathedral floor disc was hovering at y=-0.62 with nothing below.
+  // A large terrain plane far down + a stone podium connecting it to the
+  // cathedral floor grounds the whole structure visually.
+  const groundGeo = new THREE.PlaneGeometry(220, 220, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x35291b, roughness: 0.95, metalness: 0.02, envMapIntensity: 0.4,
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -1.80;
+  ground.receiveShadow = !IS_LOW_PERF;
+  group.add(ground);
+
+  const FLOOR_RADIUS = 24;
+  // Cylindrical stone podium — slight outward batter (wider at bottom).
+  const podiumGeo = new THREE.CylinderGeometry(FLOOR_RADIUS + 0.8, FLOOR_RADIUS + 1.2, 1.18, 64, 1);
+  const podiumMat = new THREE.MeshStandardMaterial({
+    color: 0xa89478, roughness: 0.66, metalness: 0.05,
+    envMapIntensity: 0.7,
+  });
+  const podium = new THREE.Mesh(podiumGeo, podiumMat);
+  podium.position.y = -1.21;
+  podium.receiveShadow = !IS_LOW_PERF;
+  group.add(podium);
+  // A flat marble step around the cathedral floor edge — the "stylobate".
+  const stepGeo = new THREE.RingGeometry(FLOOR_RADIUS, FLOOR_RADIUS + 1.0, 96);
+  const step = new THREE.Mesh(stepGeo, MAT.marble);
+  step.rotation.x = -Math.PI / 2;
+  step.position.y = -0.625;
+  group.add(step);
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(FLOOR_RADIUS, 96),
     new THREE.MeshStandardMaterial({
@@ -978,11 +1007,11 @@ const cathedral = (() => {
   // texture above, so we don't need extra ring/bar meshes any more.)
 
   // ── 12 columns in a regular dodecagon (Christ + 12 Apostles) ──────
-  // 1.5× radius of the previous build so the camera has room to roam
-  // between book, columns, and walls.
+  // Cathedral scaled up again so the camera has plenty of room to roam
+  // between the lectern, the columns, and the walls.
   const COL_COUNT  = 12;
-  const COL_RADIUS = 5.5;
-  const COL_HEIGHT = 5.0;
+  const COL_RADIUS = 7.5;
+  const COL_HEIGHT = 6.5;
   const colShaftGeo = new THREE.CylinderGeometry(0.20, 0.24, COL_HEIGHT, 32, 1);
   const colCapGeo   = new THREE.CylinderGeometry(0.36, 0.20, 0.45,       32, 1);
   const colCapAbacus= new THREE.BoxGeometry(0.88, 0.10, 0.88);
@@ -1340,7 +1369,7 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.65, 0.06, 2.10),
     lecternMat,
   );
-  lectTop.position.y = 0.96;
+  lectTop.position.y = 1.22;
   lectTop.castShadow = !IS_LOW_PERF;
   lectern.add(lectTop);
   // Decorative gold trim band under the platform.
@@ -1348,18 +1377,18 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.60, 0.020, 2.05),
     MAT.gold,
   );
-  lectTrim.position.y = 0.92;
+  lectTrim.position.y = 1.18;
   lectern.add(lectTrim);
   // Central tapered post (taller).
   const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.24, 0.85, 20),
+    new THREE.CylinderGeometry(0.16, 0.26, 1.10, 20),
     lecternMat,
   );
-  lectPost.position.y = 0.48;
+  lectPost.position.y = 0.60;
   lectern.add(lectPost);
   // Square base.
   const lectBase = new THREE.Mesh(
-    new THREE.BoxGeometry(0.92, 0.10, 0.92),
+    new THREE.BoxGeometry(0.96, 0.10, 0.96),
     lecternMat,
   );
   lectBase.position.y = 0.05;
@@ -1737,10 +1766,9 @@ bookGroup.rotation.y = -Math.PI / 2;
 // Offset the whole group so the closed book is centered on the camera's lookAt.
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
-// Lift the book onto the lectern's top platform. Lectern top sits at
-// world y = -0.62 + 0.96 ≈ 0.34; book is centred at PAGE_HEIGHT/2 above
-// that → 0.34 + 0.855 ≈ 1.20.
-bookGroup.position.y = 1.20;
+// Lift the book onto the lectern's top platform. With the taller lectern
+// the top sits at world y ≈ 0.60, so book centre = 0.60 + 0.855 ≈ 1.45.
+bookGroup.position.y = 1.45;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
@@ -2768,25 +2796,17 @@ function animate() {
     _pendingGoTo = null;
   }
 
-  // Hold the loading curtain for a minimum beat so the dome / columns /
-  // cover all have a moment to settle in the user's eye before the book
-  // opens. If buildBook took longer than the minimum, no extra wait.
-  const MIN_LOADING_MS = 2400;
+  // Hold the loading curtain for a minimum beat so the cathedral has a
+  // moment to settle in the user's eye before the book becomes visible.
+  // Shorter than before — buildBook is the dominant cost anyway.
+  const MIN_LOADING_MS = 1500;
   const elapsed = performance.now() - bootStart;
   const wait = Math.max(0, MIN_LOADING_MS - elapsed);
-  // Skip auto-open when /book is embedded as the admin preview iframe —
-  // the admin sidebar drives page selection there, and an automatic
-  // goToPage(1) would race with the editor's first goToSheet message.
-  const embedded = window.parent !== window;
   setTimeout(() => {
     document.getElementById('loading').classList.add('hidden');
-    if (!embedded) {
-      // Standalone /book: open to the first inside spread so visitors
-      // land on a "story-in-progress" frame, not a closed cover. The
-      // inaugural flip is silent (browser autoplay policy needs a user
-      // gesture); subsequent flips ring normally.
-      setTimeout(() => goToPage(1), 700);
-    }
+    // Book starts CLOSED on the cover, both standalone and embedded.
+    // The user opens it themselves via ΕΠΟΜΕΝΗ / Arrow keys / a click
+    // on the right-hand cover face.
   }, wait);
 })();
 </script>
