@@ -960,9 +960,12 @@ const cathedral = (() => {
   })();
 
   // ── Ground + podium so the cathedral doesn't float in the void ────
-  // The cathedral floor disc was hovering at y=-0.62 with nothing below.
-  // A large terrain plane far down + a stone podium connecting it to the
-  // cathedral floor grounds the whole structure visually.
+  // Three distinct vertical layers with proper Y separation so nothing
+  // co-planar fights for depth pixels:
+  //   y = -1.80  outdoor terrain plane
+  //   y = -0.78  podium top (visible as a stone shelf around the floor)
+  //   y = -0.70  stylobate step (1 ring outside the floor disc)
+  //   y = -0.62  cathedral marble floor (interior)
   const groundGeo = new THREE.PlaneGeometry(220, 220, 1, 1);
   const groundMat = new THREE.MeshStandardMaterial({
     color: 0x35291b, roughness: 0.95, metalness: 0.02, envMapIntensity: 0.4,
@@ -974,21 +977,24 @@ const cathedral = (() => {
   group.add(ground);
 
   const FLOOR_RADIUS = 24;
-  // Cylindrical stone podium — slight outward batter (wider at bottom).
-  const podiumGeo = new THREE.CylinderGeometry(FLOOR_RADIUS + 0.8, FLOOR_RADIUS + 1.2, 1.18, 64, 1);
+  // Cylindrical stone podium — top at y=-0.78 (well below the floor),
+  // bottom at y=-1.80 (touching the ground). Slight outward batter.
+  const podiumH   = 1.02;
+  const podiumGeo = new THREE.CylinderGeometry(FLOOR_RADIUS + 1.0, FLOOR_RADIUS + 1.5, podiumH, 64, 1);
   const podiumMat = new THREE.MeshStandardMaterial({
     color: 0xa89478, roughness: 0.66, metalness: 0.05,
     envMapIntensity: 0.7,
   });
   const podium = new THREE.Mesh(podiumGeo, podiumMat);
-  podium.position.y = -1.21;
+  podium.position.y = -1.80 + podiumH / 2;       // → top at -1.29 + 1.02 = -1.29 + 1.02 → -0.78
   podium.receiveShadow = !IS_LOW_PERF;
   group.add(podium);
-  // A flat marble step around the cathedral floor edge — the "stylobate".
-  const stepGeo = new THREE.RingGeometry(FLOOR_RADIUS, FLOOR_RADIUS + 1.0, 96);
+  // Stylobate — short cylinder forming the step between podium top and
+  // cathedral floor. Sits OUTSIDE the floor disc so the marble pattern
+  // stays unobstructed and there's no co-planar fight.
+  const stepGeo = new THREE.CylinderGeometry(FLOOR_RADIUS + 1.0, FLOOR_RADIUS + 1.0, 0.10, 96, 1);
   const step = new THREE.Mesh(stepGeo, MAT.marble);
-  step.rotation.x = -Math.PI / 2;
-  step.position.y = -0.625;
+  step.position.y = -0.73;                       // 0.05 above the podium top, 0.11 below floor
   group.add(step);
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(FLOOR_RADIUS, 96),
@@ -1406,6 +1412,7 @@ const cathedral = (() => {
     cv.width = 1024; cv.height = 2048;
     const g = cv.getContext('2d');
     // Stone base — same cream marble as the columns, with subtle veining.
+    // Drawn fully opaque (alpha 1) so the wall blocks vision elsewhere.
     g.fillStyle = '#d4c5a2'; g.fillRect(0, 0, cv.width, cv.height);
     for (let i = 0; i < 20; i++) {
       g.strokeStyle = `rgba(80,60,30,${0.04 + Math.random() * 0.05})`;
@@ -1425,7 +1432,7 @@ const cathedral = (() => {
     const winH  = cv.height * 0.50;
     const winX  = (cv.width - winW) / 2;
     const winY  = cv.height * 0.18;
-    // Gold thick frame around window.
+    // Gold thick frame around window (still opaque — defines the silhouette).
     g.fillStyle = '#a07d3e';
     g.beginPath();
     g.roundRect(winX - 18, winY - 18, winW + 36, winH + 36, [winW/2 + 18, winW/2 + 18, 0, 0]);
@@ -1434,16 +1441,31 @@ const cathedral = (() => {
     g.beginPath();
     g.roundRect(winX - 6, winY - 6, winW + 12, winH + 12, [winW/2 + 6, winW/2 + 6, 0, 0]);
     g.fill();
-    // Stained-glass pane: Byzantine rose-window-style geometric pattern.
-    // Dark lead lines + colored cells in a radial design.
+
+    // Punch a hole at the window — pixels there go to alpha=0 so the
+    // skybox shows through. We then paint the stained-glass colours back
+    // on top at reduced alpha so each cell tints the sky instead of
+    // hiding it.
     const cx = winX + winW / 2;
-    const cy = winY + winW / 2;        // center of the rose part (top arch)
+    const cy = winY + winW / 2;        // centre of the rose part (top arch)
     const R  = winW / 2 - 8;
-    // Background colored cells
+    const lancetTop = cy;
+    const lancetH   = winH - winW / 2;
+
+    g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = 'rgba(0,0,0,1)';
+    g.beginPath();
+    g.arc(cx, cy, R, Math.PI, Math.PI * 2);
+    g.closePath(); g.fill();
+    g.fillRect(winX + 4, lancetTop, winW - 8, lancetH);
+    g.globalCompositeOperation = 'source-over';
+
+    // Stained-glass colours painted with alpha so the sky tints through.
+    g.globalAlpha = 0.62;
     const palette = ['#b0301a', '#1c3a82', '#0c6a30', '#caa044', '#7a1a5a', '#d04a18'];
-    // 12 radial sectors
+    // 12 radial sectors in the rose
     for (let k = 0; k < 12; k++) {
-      const a0 = Math.PI + (k / 12) * Math.PI;          // upper half of circle
+      const a0 = Math.PI + (k / 12) * Math.PI;
       const a1 = Math.PI + ((k + 1) / 12) * Math.PI;
       g.fillStyle = palette[k % palette.length];
       g.beginPath();
@@ -1452,9 +1474,7 @@ const cathedral = (() => {
       g.closePath();
       g.fill();
     }
-    // Lower (rectangular) part of the window — vertical lancet stripes.
-    const lancetTop = cy;
-    const lancetH   = winH - winW / 2;
+    // 5 vertical lancets in the lower rectangular section
     const lancets = 5;
     for (let k = 0; k < lancets; k++) {
       const lx = winX + (k + 0.05) * (winW / lancets);
@@ -1462,7 +1482,10 @@ const cathedral = (() => {
       g.fillStyle = palette[(k + 2) % palette.length];
       g.fillRect(lx, lancetTop, lw, lancetH);
     }
-    // Lead lines (dark) — radial spokes + concentric rings + lancet dividers
+    g.globalAlpha = 1;
+
+    // Lead lines (full opacity) over the translucent panes — the dark
+    // came reads as the lead structure between glass cells.
     g.strokeStyle = '#1a0a05';
     g.lineWidth = 6;
     for (let k = 0; k <= 12; k++) {
@@ -1475,7 +1498,8 @@ const cathedral = (() => {
     [R * 0.45, R * 0.75].forEach(r => {
       g.beginPath(); g.arc(cx, cy, r, Math.PI, Math.PI * 2); g.stroke();
     });
-    // Central small disc with a tiny gold cross.
+    // Central small disc with a tiny gold cross (full opacity — the
+    // boss at the centre of the rose).
     g.fillStyle = '#e0bf6b'; g.beginPath(); g.arc(cx, cy, R * 0.16, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#1a0a05';
     g.fillRect(cx - 2, cy - R * 0.12, 4, R * 0.24);
@@ -1485,8 +1509,11 @@ const cathedral = (() => {
       const lx = winX + k * (winW / lancets);
       g.beginPath(); g.moveTo(lx, lancetTop); g.lineTo(lx, lancetTop + lancetH); g.stroke();
     }
-    // Horizontal lancet ties.
-    g.beginPath(); g.moveTo(winX, lancetTop + lancetH * 0.5); g.lineTo(winX + winW, lancetTop + lancetH * 0.5); g.stroke();
+    // Horizontal lancet tie.
+    g.beginPath();
+    g.moveTo(winX, lancetTop + lancetH * 0.5);
+    g.lineTo(winX + winW, lancetTop + lancetH * 0.5);
+    g.stroke();
 
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -1498,9 +1525,15 @@ const cathedral = (() => {
   const segAngle = (Math.PI * 2) / COL_COUNT;
   const wallChord = 2 * WALL_RADIUS * Math.sin(segAngle / 2);
   const wallGeo = new THREE.PlaneGeometry(wallChord * 1.02, COL_HEIGHT + 0.4);
+  // transparent:true so the per-pixel alpha in the wall texture is
+  // honoured — stone stays opaque (alpha=1), stained-glass cells
+  // render at alpha≈0.62 so the equirect sky shows through tinted by
+  // the cell colour. depthWrite stays on; window cells are sparse and
+  // we'd rather have correct sky bleed than perfect transparency sort.
   const wallMat = new THREE.MeshStandardMaterial({
-    map: wallTex, roughness: 0.55, metalness: 0.06,
-    emissive: 0x5a4020, emissiveIntensity: 0.22,
+    map: wallTex, transparent: true,
+    roughness: 0.55, metalness: 0.06,
+    emissive: 0x5a4020, emissiveIntensity: 0.16,
     side: THREE.DoubleSide,
     envMapIntensity: 0.8,
   });
