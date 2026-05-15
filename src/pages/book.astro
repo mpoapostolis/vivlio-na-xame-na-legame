@@ -2858,10 +2858,20 @@ function animate() {
     _pendingGoTo = null;
   }
 
-  // Hold the loading curtain for a minimum beat so the cathedral has a
-  // moment to settle in the user's eye before the book becomes visible.
-  // Shorter than before — buildBook is the dominant cost anyway.
-  const MIN_LOADING_MS = 1500;
+  // Warm up the wawa rig — pages start with bones at zero rotation and
+  // need many frames of dampAngle() to converge to the closed-cover
+  // pose. Without this the user saw all the sheets flutter for ~0.7 s
+  // after the loader hid. Run ~120 simulated frames now (∼2 s of
+  // settling at 60 fps) so the book is already in its final pose by
+  // the time the curtain lifts.
+  for (let warm = 0; warm < 120; warm++) {
+    for (const p of pages) p.update(1 / 60, 0, true);
+  }
+
+  // Hold the loading curtain a little longer (the user wanted a 2-3 s
+  // pause) AND make sure the book has fully settled before we reveal
+  // the scene.
+  const MIN_LOADING_MS = 2200;
   const elapsed = performance.now() - bootStart;
   const wait = Math.max(0, MIN_LOADING_MS - elapsed);
   setTimeout(() => {
