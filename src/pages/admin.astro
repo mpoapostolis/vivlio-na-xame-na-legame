@@ -1854,6 +1854,16 @@ function selectPage(pageId) {
   State.selectedPageId = pageId;
   renderPagesList();
   renderContentForm();
+
+  // Flip the live preview iframe to the matching sheet. Sheets pair two
+  // consecutive records, so PAGES_DEFAULT index i → sheet floor(i/2).
+  const idx = PAGES_DEFAULT.findIndex(p => p.id === pageId);
+  if (idx < 0) return;
+  const sheetIdx = Math.floor(idx / 2);
+  const iframe = document.getElementById('book-preview-iframe');
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.postMessage({ type: 'goToSheet', sheet: sheetIdx }, '*');
+  }
 }
 
 function renderContentForm() {

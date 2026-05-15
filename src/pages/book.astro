@@ -1370,6 +1370,19 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeModal(); stopNarration(); }
 });
 
+// ---------------------------------------------------------------------------
+// Admin-preview bridge — when /book is embedded in the admin's preview iframe,
+// clicking a page in the sidebar posts {type:'goToSheet', sheet:N}. We jump
+// straight there (no audio, no flip sound — it's a preview).
+// ---------------------------------------------------------------------------
+window.addEventListener('message', (e) => {
+  const data = e.data;
+  if (!data || data.type !== 'goToSheet') return;
+  const n = Number(data.sheet);
+  if (!Number.isFinite(n)) return;
+  goToPage(n);
+});
+
 // =====================================================================
 //   KEYFRAME RUNTIME — JSON-driven animation player.
 //   Targets can be DOM HTMLElements (transform/opacity) or three.js Object3Ds
