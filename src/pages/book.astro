@@ -1371,17 +1371,70 @@ window.addEventListener('keydown', e => {
 });
 
 // ---------------------------------------------------------------------------
-// Admin-preview bridge — when /book is embedded in the admin's preview iframe,
-// clicking a page in the sidebar posts {type:'goToSheet', sheet:N}. We jump
-// straight there (no audio, no flip sound — it's a preview).
+// Admin-preview bridge — when /book is embedded in the admin's preview iframe.
+//   { type:'goToSheet',   sheet:N }                → flip to sheet N
+//   { type:'previewRecord', listIndex:N, record:R } → live re-render one side
 // ---------------------------------------------------------------------------
 window.addEventListener('message', (e) => {
   const data = e.data;
-  if (!data || data.type !== 'goToSheet') return;
-  const n = Number(data.sheet);
-  if (!Number.isFinite(n)) return;
-  goToPage(n);
+  if (!data) return;
+  if (data.type === 'goToSheet') {
+    const n = Number(data.sheet);
+    if (Number.isFinite(n)) goToPage(n);
+    return;
+  }
+  if (data.type === 'previewRecord') {
+    _previewLiveRecord(data.listIndex, data.record);
+  }
 });
+
+// Live single-side re-render. Builds a fresh DOM for the affected side,
+// rasterises it, and swaps the texture on the right Page mesh. Coalesces
+// concurrent calls so a fast typist gets the latest input, not a backlog.
+let _previewBusy = false;
+let _previewQueued = null;
+async function _previewLiveRecord(listIndex, rec) {
+  if (!Number.isFinite(Number(listIndex)) || !rec) return;
+  if (_previewBusy) { _previewQueued = { listIndex, rec }; return; }
+  _previewBusy = true;
+  try {
+    const sheetIdx = Math.floor(listIndex / 2);
+    const sideName = (listIndex % 2 === 0) ? 'front' : 'back';
+    const pageInst = pages[sheetIdx];
+    if (!pageInst) return;
+
+    const isCover = rec.type === 'cover' || rec.type === 'back-cover';
+    const data    = _pbRecordToPageData(rec, sheetIdx, sideName);
+    const built   = isCover
+      ? cover(rec.title || rec.label || '', _stripHtml(rec.lead || rec.body || ''), rec.eyebrow || '')
+      : page(data);
+
+    const canvas = await renderHtmlToCanvas(built);
+    const newTex = new THREE.CanvasTexture(canvas);
+    newTex.colorSpace = THREE.SRGBColorSpace;
+    newTex.anisotropy = 16;
+    newTex.needsUpdate = true;
+
+    const mat    = (sideName === 'front') ? pageInst.frontMat : pageInst.backMat;
+    const oldTex = mat.map;
+    mat.map = newTex;
+    mat.needsUpdate = true;
+    if (oldTex && oldTex.dispose) oldTex.dispose();
+
+    // Keep the photo bbox cache in sync so click-to-zoom still hits correctly.
+    if (sideName === 'front') pageInst.frontPhotos = built.photos;
+    else                      pageInst.backPhotos  = built.photos;
+    if (PAGES[sheetIdx]) PAGES[sheetIdx][sideName] = built;
+  } catch (err) {
+    console.warn('[preview] live update failed:', err);
+  } finally {
+    _previewBusy = false;
+    if (_previewQueued) {
+      const q = _previewQueued; _previewQueued = null;
+      _previewLiveRecord(q.listIndex, q.rec);
+    }
+  }
+}
 
 // =====================================================================
 //   KEYFRAME RUNTIME — JSON-driven animation player.

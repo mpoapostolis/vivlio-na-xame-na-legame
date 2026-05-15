@@ -224,6 +224,25 @@
   }
   .page-item .re-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
+  /* Drag-handle dots (left-most). Visible on hover; cursor=grab. */
+  .page-item .drag-handle {
+    width: 12px; flex-shrink: 0;
+    color: rgba(217,180,120,0.35);
+    font-size: 13px;
+    line-height: 1;
+    text-align: center;
+    cursor: grab;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .page-item:hover .drag-handle { color: rgba(217,180,120,0.75); }
+  .page-item .drag-handle:active { cursor: grabbing; }
+
+  /* Drag state: source item dims; drop-target gets a top/bottom rule */
+  .page-item.dragging  { opacity: 0.35; }
+  .page-item.drop-above { box-shadow: inset 0 2px 0 0 #efddb0; }
+  .page-item.drop-below { box-shadow: inset 0 -2px 0 0 #efddb0; }
+
   /* ============================================================ */
   /*  Save button — JS toggles `.primary` for dirty state           */
   /* ============================================================ */
@@ -1815,6 +1834,9 @@ function renderPagesList() {
     const p = PAGES_DEFAULT[i];
     const div = document.createElement('div');
     div.className = 'page-item' + (State.selectedPageId === p.id ? ' active' : '');
+    div.draggable = true;
+    div.dataset.pageId = p.id;
+    div.dataset.idx    = String(i);
     const overrides = State.content[p.id] || {};
     const hasEdits = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
     if (hasEdits) div.classList.add('edited');
@@ -1822,6 +1844,7 @@ function renderPagesList() {
     const canUp   = i > 0;
     const canDown = i < PAGES_DEFAULT.length - 1;
     div.innerHTML = `
+      <div class="drag-handle" title="σύρε γιὰ νὰ ἀλλάξεις σειρά">⠿</div>
       <div class="num">${numIdx}</div>
       <div class="meta">
         <div class="title">${p.label}</div>
@@ -1846,6 +1869,43 @@ function renderPagesList() {
       e.stopPropagation();
       reorderPage(p.id, +1);
     });
+
+    // ---------- Drag and drop reorder ----------
+    div.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', p.id);
+      // Use a setTimeout so the dragstart capture happens before opacity drops
+      // (otherwise the drag preview is also semi-transparent).
+      setTimeout(() => div.classList.add('dragging'), 0);
+    });
+    div.addEventListener('dragend',   () => div.classList.remove('dragging'));
+    div.addEventListener('dragover',  (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      // Visual indicator: top vs bottom half of the item determines insertion side
+      const rect = div.getBoundingClientRect();
+      const above = (e.clientY - rect.top) < rect.height / 2;
+      div.classList.toggle('drop-above',  above);
+      div.classList.toggle('drop-below', !above);
+    });
+    div.addEventListener('dragleave', () => {
+      div.classList.remove('drop-above', 'drop-below');
+    });
+    div.addEventListener('drop', (e) => {
+      e.preventDefault();
+      div.classList.remove('drop-above', 'drop-below');
+      const fromId = e.dataTransfer.getData('text/plain');
+      if (!fromId || fromId === p.id) return;
+      const rect = div.getBoundingClientRect();
+      const above = (e.clientY - rect.top) < rect.height / 2;
+      // Drop-above → insert at i; drop-below → insert at i+1. Then if the moved
+      // item was previously above the target, the post-splice index drops by 1.
+      let toIdx = above ? i : i + 1;
+      const fromIdx = PAGES_DEFAULT.findIndex(q => q.id === fromId);
+      if (fromIdx < toIdx) toIdx -= 1;
+      moveToIndex(fromId, toIdx);
+    });
+
     list.appendChild(div);
   }
 }
@@ -1864,6 +1924,55 @@ function selectPage(pageId) {
   if (iframe && iframe.contentWindow) {
     iframe.contentWindow.postMessage({ type: 'goToSheet', sheet: sheetIdx }, '*');
   }
+}
+
+// ---------------------------------------------------------------------------
+//   LIVE PREVIEW BRIDGE — debounced postMessage to /book on every edit
+// ---------------------------------------------------------------------------
+// Rebuilds the PB-shape record from the flat in-memory State and pushes it
+// to the preview iframe. The iframe rebuilds just that one side's DOM and
+// swaps the canvas texture — no full reload, no flash.
+function _contentToPBPreviewRecord(pageId) {
+  const c = State.content[pageId] || {};
+  const filenameOf = (url) => url ? String(url).split('/').pop() : '';
+  const meta = PAGES_DEFAULT.find(p => p.id === pageId) || {};
+  return {
+    id:           c._recordId || '',
+    collectionId: c._collId   || '',
+    type:         c.type         || 'page',
+    label:        meta.label     || '',
+    eyebrow:      c.eyebrow      || '',
+    title:        c.title        || '',
+    date:         c.date         || '',
+    lead:         c.lead         || '',
+    body:         c.body         || '',
+    photo:        filenameOf(c.photoSrc),
+    photo_title:  c.photoTitle   || '',
+    photo_cap:    c.photoCap     || '',
+    photo_desc:   c.photoDesc    || '',
+    photo_italic: c.photoItalic  || '',
+    photo_audio:  filenameOf(c.photoAudio),
+    narration:    filenameOf(c.narration),
+    order:        0, // book ignores order for live preview; pairing comes from listIndex
+  };
+}
+
+let _previewTimer = null;
+function _schedulePreviewUpdate() {
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(_postPreviewUpdate, 320);
+}
+function _postPreviewUpdate() {
+  if (!State.selectedPageId) return;
+  const idx = PAGES_DEFAULT.findIndex(p => p.id === State.selectedPageId);
+  if (idx < 0) return;
+  const iframe = document.getElementById('book-preview-iframe');
+  if (!iframe || !iframe.contentWindow) return;
+  iframe.contentWindow.postMessage({
+    type:      'previewRecord',
+    listIndex: idx,
+    record:    _contentToPBPreviewRecord(State.selectedPageId),
+  }, '*');
 }
 
 function renderContentForm() {
@@ -1947,6 +2056,7 @@ function wireContentFields() {
         if (field === 'narration' || field === 'photoAudio') updateAudioPreview();
         if (MD_FIELDS.includes(field))                       updateMdPreview(field);
         renderPagesList();
+        _schedulePreviewUpdate();
       });
       input.addEventListener('blur', () => { State._editingField = null; });
     });
@@ -2059,6 +2169,63 @@ document.getElementById('add-page-btn').addEventListener('click', addNewPage);
 // =====================================================================
 //   REORDER / DELETE PAGE — server-side mutations on church_pages
 // =====================================================================
+
+/**
+ * Drop-anywhere reorder: drag any sidebar page to any other position.
+ * Strategy: optimistic local reorder of PAGES_DEFAULT (instant feedback),
+ * then a 2-phase batch PATCH to PocketBase:
+ *
+ *   Phase 1  — every record's `order` ← TMP_BASE + originalIdx
+ *              (unique high values, no collision with anything in 0..N-1)
+ *   Phase 2  — every record's `order` ← desiredOrder  (0..N-1, no gaps)
+ *
+ * Promise.all in each phase. After commit, reload from server to keep
+ * the local view 100 % in sync and refresh the preview iframe.
+ */
+async function moveToIndex(fromId, toIdx) {
+  if (!State.token) { toast('μη συνδεδεμένος', 'error'); return; }
+  const fromIdx = PAGES_DEFAULT.findIndex(p => p.id === fromId);
+  if (fromIdx < 0 || toIdx === fromIdx || toIdx < 0 || toIdx >= PAGES_DEFAULT.length) return;
+
+  // Optimistic local move
+  const [moved] = PAGES_DEFAULT.splice(fromIdx, 1);
+  PAGES_DEFAULT.splice(toIdx, 0, moved);
+  renderPagesList();
+
+  // Build the desired sequence: position i in PAGES_DEFAULT → PB order i
+  const records = [];
+  for (let i = 0; i < PAGES_DEFAULT.length; i++) {
+    const p   = PAGES_DEFAULT[i];
+    const rec = State.content[p.id];
+    if (rec && rec._recordId) records.push({ id: rec._recordId, newOrder: i });
+  }
+  const TMP_BASE = 90000;
+  const H = authHeader({ 'Content-Type': 'application/json' });
+  try {
+    await Promise.all(records.map((r, i) =>
+      fetch(`${PB_URL}/api/collections/church_pages/records/${r.id}`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ order: TMP_BASE + i }),
+      })
+    ));
+    await Promise.all(records.map(r =>
+      fetch(`${PB_URL}/api/collections/church_pages/records/${r.id}`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ order: r.newOrder }),
+      })
+    ));
+  } catch (e) {
+    toast('✕ ἀποτυχία ἀλλαγῆς σειρᾶς', 'error');
+    return;
+  }
+
+  await load();
+  renderAll();
+  // The iframe still has the pre-reorder state cached — force a fresh fetch.
+  const iframe = document.getElementById('book-preview-iframe');
+  if (iframe) iframe.src = iframe.src;
+  toast('✓ ἀλλαγὴ σειρᾶς');
+}
 
 /**
  * Swap the `order` value of two records: the page with `pageId` and its
