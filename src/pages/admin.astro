@@ -959,7 +959,7 @@ async function load() {
     let raw = await res.text();
     try { pages = (JSON.parse(raw).items) || []; }
     catch (_) {
-      const safe = raw.replace(/[ -]/g, m => '\\u' + m.charCodeAt(0).toString(16).padStart(4, '0'));
+      const safe = raw.replace(/[\u0000-\u001F]/g, m => '\\u' + m.charCodeAt(0).toString(16).padStart(4, '0'));
       pages = (JSON.parse(safe).items) || [];
     }
     console.info('[admin] loaded', pages.length, 'page records');
