@@ -794,6 +794,15 @@ const rimLight = new THREE.DirectionalLight(0xffd4a8, 0.6);
 rimLight.position.set(0, 3, -4);
 scene.add(rimLight);
 
+// Global registry of named 3D targets the keyframe editor can drive. Lets
+// any animation stored in localStorage reference e.g. `cathedral.dome` and
+// have it resolve to the real Object3D at play time. Declared here (before
+// any register3DTarget() call site) to dodge the TDZ on the const.
+const _3D_TARGET_REGISTRY = {};
+function register3DTarget(name, obj) {
+  if (name && obj && obj.isObject3D) _3D_TARGET_REGISTRY[name] = obj;
+}
+
 // Two warm candle point lights — kept (cheap; they give the book its candle-lit feel).
 // Skipped entirely on low-perf devices to save fragment work.
 const candle1 = !IS_LOW_PERF ? new THREE.PointLight(0xff9648, 4, 5, 2.0) : null;
@@ -1643,15 +1652,6 @@ function _applyObject3D(target, prop, value) {
       }
       break;
   }
-}
-
-// Global registry of named 3D targets the keyframe editor can drive. Lets
-// any animation in localStorage reference e.g. `cathedral.dome` and have it
-// resolve to the real Object3D at play time, without each play() call
-// having to enumerate every possible target.
-const _3D_TARGET_REGISTRY = {};
-function register3DTarget(name, obj) {
-  if (name && obj && obj.isObject3D) _3D_TARGET_REGISTRY[name] = obj;
 }
 
 // Tiny cache so an audio URL referenced from many keyframes loads once.
