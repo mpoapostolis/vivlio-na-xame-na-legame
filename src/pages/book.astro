@@ -736,10 +736,11 @@ scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
 // Wider FOV + higher seat so the cathedral dome + columns fit the frame
-// at default load. Fly cam derives its initial yaw/pitch from this pose.
+// at default load. Book now sits on a lectern at y≈0.85, so the camera
+// looks slightly higher than the geometric origin.
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 1.2, 4.6);
-camera.lookAt(0, 0.4, 0);
+camera.position.set(0, 1.9, 5.0);
+camera.lookAt(0, 1.0, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1322,8 +1323,173 @@ const cathedral = (() => {
   // (dust motes — handled by the global makeDust() system below; no
   // need for a second particle layer inside the cathedral group.)
 
+  // ── Wooden lectern (ἀναλόγιον) under the book ─────────────────────
+  // The book's bottom was clipping into the floor. A walnut lectern with
+  // a top platform, central post, and square base fills the gap and
+  // grounds the book visually — it now sits where it would in a church.
+  const lecternMat = new THREE.MeshStandardMaterial({
+    color: 0x5a3014, roughness: 0.62, metalness: 0.04, envMapIntensity: 0.8,
+  });
+  const lectern = new THREE.Group();
+  lectern.name = 'cathedral.lectern';
+  // Top platform — broader than the book footprint when closed.
+  const lectTop = new THREE.Mesh(
+    new THREE.BoxGeometry(1.55, 0.06, 1.95),
+    lecternMat,
+  );
+  lectTop.position.y = 0.62;
+  lectTop.castShadow = !IS_LOW_PERF;
+  lectern.add(lectTop);
+  // Decorative gold trim band under the platform.
+  const lectTrim = new THREE.Mesh(
+    new THREE.BoxGeometry(1.50, 0.018, 1.90),
+    MAT.gold,
+  );
+  lectTrim.position.y = 0.58;
+  lectern.add(lectTrim);
+  // Central tapered post.
+  const lectPost = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.14, 0.22, 0.55, 20),
+    lecternMat,
+  );
+  lectPost.position.y = 0.28;
+  lectern.add(lectPost);
+  // Square base.
+  const lectBase = new THREE.Mesh(
+    new THREE.BoxGeometry(0.82, 0.08, 0.82),
+    lecternMat,
+  );
+  lectBase.position.y = 0.02;
+  lectBase.receiveShadow = !IS_LOW_PERF;
+  lectern.add(lectBase);
+  lectern.position.y = -0.62;
+  group.add(lectern);
+
+  // ── 12 stone walls between the columns, each with a stained-glass
+  //    window painted in a Byzantine rose-window style. Walls sit on a
+  //    slightly smaller radius than the column ring so the columns
+  //    visibly stand IN FRONT of the masonry — typical Byzantine plan.
+  const wallTex = (() => {
+    const cv = document.createElement('canvas');
+    cv.width = 1024; cv.height = 2048;
+    const g = cv.getContext('2d');
+    // Stone base — same cream marble as the columns, with subtle veining.
+    g.fillStyle = '#d4c5a2'; g.fillRect(0, 0, cv.width, cv.height);
+    for (let i = 0; i < 20; i++) {
+      g.strokeStyle = `rgba(80,60,30,${0.04 + Math.random() * 0.05})`;
+      g.lineWidth = 0.7 + Math.random() * 1.4;
+      g.beginPath();
+      let x = Math.random() * cv.width, y = Math.random() * cv.height;
+      g.moveTo(x, y);
+      for (let s = 0; s < 50; s++) {
+        x += (Math.random() - 0.5) * 60;
+        y += (Math.random() - 0.5) * 90;
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    // Single big arched window centered in the upper portion of the wall.
+    const winW  = cv.width * 0.62;
+    const winH  = cv.height * 0.50;
+    const winX  = (cv.width - winW) / 2;
+    const winY  = cv.height * 0.18;
+    // Gold thick frame around window.
+    g.fillStyle = '#a07d3e';
+    g.beginPath();
+    g.roundRect(winX - 18, winY - 18, winW + 36, winH + 36, [winW/2 + 18, winW/2 + 18, 0, 0]);
+    g.fill();
+    g.fillStyle = '#3a2410';
+    g.beginPath();
+    g.roundRect(winX - 6, winY - 6, winW + 12, winH + 12, [winW/2 + 6, winW/2 + 6, 0, 0]);
+    g.fill();
+    // Stained-glass pane: Byzantine rose-window-style geometric pattern.
+    // Dark lead lines + colored cells in a radial design.
+    const cx = winX + winW / 2;
+    const cy = winY + winW / 2;        // center of the rose part (top arch)
+    const R  = winW / 2 - 8;
+    // Background colored cells
+    const palette = ['#b0301a', '#1c3a82', '#0c6a30', '#caa044', '#7a1a5a', '#d04a18'];
+    // 12 radial sectors
+    for (let k = 0; k < 12; k++) {
+      const a0 = Math.PI + (k / 12) * Math.PI;          // upper half of circle
+      const a1 = Math.PI + ((k + 1) / 12) * Math.PI;
+      g.fillStyle = palette[k % palette.length];
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.arc(cx, cy, R, a0, a1, false);
+      g.closePath();
+      g.fill();
+    }
+    // Lower (rectangular) part of the window — vertical lancet stripes.
+    const lancetTop = cy;
+    const lancetH   = winH - winW / 2;
+    const lancets = 5;
+    for (let k = 0; k < lancets; k++) {
+      const lx = winX + (k + 0.05) * (winW / lancets);
+      const lw = winW / lancets * 0.9;
+      g.fillStyle = palette[(k + 2) % palette.length];
+      g.fillRect(lx, lancetTop, lw, lancetH);
+    }
+    // Lead lines (dark) — radial spokes + concentric rings + lancet dividers
+    g.strokeStyle = '#1a0a05';
+    g.lineWidth = 6;
+    for (let k = 0; k <= 12; k++) {
+      const a = Math.PI + (k / 12) * Math.PI;
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+      g.stroke();
+    }
+    [R * 0.45, R * 0.75].forEach(r => {
+      g.beginPath(); g.arc(cx, cy, r, Math.PI, Math.PI * 2); g.stroke();
+    });
+    // Central small disc with a tiny gold cross.
+    g.fillStyle = '#e0bf6b'; g.beginPath(); g.arc(cx, cy, R * 0.16, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1a0a05';
+    g.fillRect(cx - 2, cy - R * 0.12, 4, R * 0.24);
+    g.fillRect(cx - R * 0.10, cy - 2, R * 0.20, 4);
+    // Vertical lancet dividers
+    for (let k = 1; k < lancets; k++) {
+      const lx = winX + k * (winW / lancets);
+      g.beginPath(); g.moveTo(lx, lancetTop); g.lineTo(lx, lancetTop + lancetH); g.stroke();
+    }
+    // Horizontal lancet ties.
+    g.beginPath(); g.moveTo(winX, lancetTop + lancetH * 0.5); g.lineTo(winX + winW, lancetTop + lancetH * 0.5); g.stroke();
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 16;
+    return tex;
+  })();
+
+  const WALL_RADIUS = COL_RADIUS - 0.05;   // walls just inside the columns
+  const segAngle = (Math.PI * 2) / COL_COUNT;
+  const wallChord = 2 * WALL_RADIUS * Math.sin(segAngle / 2);
+  const wallGeo = new THREE.PlaneGeometry(wallChord * 1.02, COL_HEIGHT + 0.4);
+  const wallMat = new THREE.MeshStandardMaterial({
+    map: wallTex, roughness: 0.55, metalness: 0.06,
+    emissive: 0x5a4020, emissiveIntensity: 0.22,
+    side: THREE.DoubleSide,
+    envMapIntensity: 0.8,
+  });
+  const walls = [];
+  const cosHalf = Math.cos(segAngle / 2);
+  for (let i = 0; i < COL_COUNT; i++) {
+    const mid = (i / COL_COUNT) * Math.PI * 2 + segAngle / 2;
+    const wx = Math.cos(mid) * WALL_RADIUS * cosHalf;
+    const wz = Math.sin(mid) * WALL_RADIUS * cosHalf;
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.position.set(wx, -0.62 + (COL_HEIGHT + 0.4) / 2, wz);
+    // Face inward (toward the center)
+    wall.lookAt(0, wall.position.y, 0);
+    wall.receiveShadow = !IS_LOW_PERF;
+    wall.name = 'cathedral.wall.' + i;
+    group.add(wall);
+    walls.push(wall);
+  }
+
   scene.add(group);
-  return { group, floor, dome, drum, cross, columns, satellites };
+  return { group, floor, dome, drum, cross, columns, satellites, walls, lectern };
 })();
 
 // Register cathedral pieces so the editor can animate any of them by name.
@@ -1568,6 +1734,10 @@ bookGroup.rotation.y = -Math.PI / 2;
 // Offset the whole group so the closed book is centered on the camera's lookAt.
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
+// Lift the book onto the lectern's top platform (lectern top at y≈0.0,
+// so book bottom needs to be just above that — book is centred at 0,
+// half-height = PAGE_HEIGHT/2 = 0.855).
+bookGroup.position.y = 0.85;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
