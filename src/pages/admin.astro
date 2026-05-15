@@ -1219,7 +1219,11 @@ function renderAll() {
   renderEditor();
 }
 function renderSidebar() {
+  // Animations tab removed from the admin UI — bail out if the list is gone,
+  // otherwise the null deref blows up renderAll() and the pages sidebar never
+  // gets rendered.
   const list = document.getElementById('anim-list');
+  if (!list) return;
   list.innerHTML = '';
   for (const name of Object.keys(State.animations)) {
     const a = State.animations[name];
