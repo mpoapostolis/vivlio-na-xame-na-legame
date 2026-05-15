@@ -742,8 +742,8 @@ scene.fog = new THREE.FogExp2(0x060302, 0.045);
 // ≈7.45, plenty of room around the lectern. Looking at the book centre
 // at its new higher reading position.
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 2.4, 4.5);
-camera.lookAt(0, 1.70, 0);
+camera.position.set(0, 2.6, 4.6);
+camera.lookAt(0, 1.95, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -967,15 +967,15 @@ const cathedral = (() => {
   //   y = -0.78  podium top (visible as a stone shelf around the floor)
   //   y = -0.70  stylobate step (1 ring outside the floor disc)
   //   y = -0.62  cathedral marble floor (interior)
-  const groundGeo = new THREE.PlaneGeometry(220, 220, 1, 1);
-  const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x35291b, roughness: 0.95, metalness: 0.02, envMapIntensity: 0.4,
-  });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.80;
-  ground.receiveShadow = !IS_LOW_PERF;
-  group.add(ground);
+  // const groundGeo = new THREE.PlaneGeometry(50, 50, 1, 1);
+  // const groundMat = new THREE.MeshStandardMaterial({
+  //   color: 0x35291b, roughness: 0.95, metalness: 0.02, envMapIntensity: 0.4,
+  // });
+  // const ground = new THREE.Mesh(groundGeo, groundMat);
+  // ground.rotation.x = -Math.PI / 2;
+  // ground.position.y = -1.80;
+  // ground.receiveShadow = !IS_LOW_PERF;
+  // group.add(ground);
 
   const FLOOR_RADIUS = 24;
   // Cylindrical stone podium — top at y=-0.78 (well below the floor),
@@ -1376,7 +1376,7 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.65, 0.06, 2.10),
     lecternMat,
   );
-  lectTop.position.y = 1.47;
+  lectTop.position.y = 1.72;
   lectTop.castShadow = !IS_LOW_PERF;
   lectern.add(lectTop);
   // Decorative gold trim band under the platform.
@@ -1384,15 +1384,15 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.60, 0.020, 2.05),
     MAT.gold,
   );
-  lectTrim.position.y = 1.43;
+  lectTrim.position.y = 1.68;
   lectern.add(lectTrim);
-  // Central tapered post — taller now to hold the book at a higher
-  // reading height (user asked for "λίγο πιὸ ψηλά").
+  // Central tapered post — even taller so the book sits at a true
+  // pulpit reading height.
   const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.26, 1.35, 20),
+    new THREE.CylinderGeometry(0.16, 0.26, 1.60, 20),
     lecternMat,
   );
-  lectPost.position.y = 0.73;
+  lectPost.position.y = 0.85;
   lectern.add(lectPost);
   // Square base.
   const lectBase = new THREE.Mesh(
@@ -1828,9 +1828,9 @@ bookGroup.rotation.y = -Math.PI / 2;
 // Offset the whole group so the closed book is centered on the camera's lookAt.
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
-// Lift the book onto the lectern's top platform. With the taller lectern
-// the top sits at world y ≈ 0.85, so book centre = 0.85 + 0.855 ≈ 1.70.
-bookGroup.position.y = 1.70;
+// Lift the book onto the lectern's top platform. Lectern top now at
+// world y ≈ 1.10, so book centre = 1.10 + 0.855 ≈ 1.95.
+bookGroup.position.y = 1.95;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
