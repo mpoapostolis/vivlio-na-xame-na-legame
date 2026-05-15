@@ -801,6 +801,118 @@ const candle2 = !IS_LOW_PERF ? new THREE.PointLight(0xffaa55, 3, 4.5, 2.0) : nul
 if (candle1) { candle1.position.set(-3.0, 0.0, -3.5); scene.add(candle1); }
 if (candle2) { candle2.position.set( 3.2, 0.3, -4.0); scene.add(candle2); }
 
+// =====================================================================
+//   CATHEDRAL INTERIOR — circular peristyle + dome + marble floor.
+//   No walls (so the fly cam can roam freely between the columns); the
+//   ring of columns + the dome overhead reads as a sacred interior. Each
+//   element is exposed on `cathedral.{floor,columns,dome}` so the keyframe
+//   editor can animate them by target name (e.g. `cathedral.dome` → scale).
+// =====================================================================
+const cathedral = (() => {
+  const group = new THREE.Group();
+  group.name = 'cathedral';
+
+  // Soften the fog so the columns and dome are still legible at distance.
+  scene.fog.density = 0.028;
+
+  // Marble floor — large enough to extend past the columns but stops short
+  // of the camera's near plane so we don't get z-fight at the camera origin.
+  const FLOOR_RADIUS = 14;
+  const floorGeo = new THREE.CircleGeometry(FLOOR_RADIUS, 64);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x3a2f24, roughness: 0.78, metalness: 0.05,
+    envMapIntensity: 0.6,
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -0.62;
+  floor.receiveShadow = !IS_LOW_PERF;
+  floor.name = 'cathedral.floor';
+  group.add(floor);
+
+  // Inlaid concentric ring on the floor — Pater Symbol of the place, also
+  // visually grounds the camera position.
+  const ringGeo  = new THREE.RingGeometry(1.4, 1.46, 64);
+  const ringMat  = new THREE.MeshStandardMaterial({ color: 0x8a6a3a, roughness: 0.55, metalness: 0.18 });
+  const ring     = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = -0.61;
+  group.add(ring);
+
+  // Eight columns around the book in an octagon.
+  const COL_COUNT  = 8;
+  const COL_RADIUS = 4.0;
+  const COL_HEIGHT = 6.5;
+  const colShaftGeo = new THREE.CylinderGeometry(0.20, 0.24, COL_HEIGHT, 32, 1);
+  const colCapGeo   = new THREE.CylinderGeometry(0.34, 0.20, 0.4,        32, 1);
+  const colBaseGeo  = new THREE.CylinderGeometry(0.30, 0.34, 0.25,       32, 1);
+  const colMat = new THREE.MeshStandardMaterial({
+    color: 0xc4b599, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.9,
+  });
+  const columns = [];
+  for (let i = 0; i < COL_COUNT; i++) {
+    const angle = (i / COL_COUNT) * Math.PI * 2 + Math.PI / 8;
+    const x = Math.cos(angle) * COL_RADIUS;
+    const z = Math.sin(angle) * COL_RADIUS;
+    const col = new THREE.Group();
+    col.position.set(x, -0.62, z);
+    col.name = 'cathedral.column.' + i;
+    const shaft = new THREE.Mesh(colShaftGeo, colMat);
+    shaft.position.y = COL_HEIGHT / 2 + 0.25;
+    shaft.castShadow = !IS_LOW_PERF;
+    shaft.receiveShadow = !IS_LOW_PERF;
+    col.add(shaft);
+    const cap = new THREE.Mesh(colCapGeo, colMat);
+    cap.position.y = COL_HEIGHT + 0.45;
+    col.add(cap);
+    const base = new THREE.Mesh(colBaseGeo, colMat);
+    base.position.y = 0.12;
+    col.add(base);
+    group.add(col);
+    columns.push(col);
+  }
+
+  // Dome above. SphereGeometry quarter cut, back-side rendered so we see
+  // the inner surface from below.
+  const DOME_RADIUS = 5.4;
+  const domeGeo = new THREE.SphereGeometry(DOME_RADIUS, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const domeMat = new THREE.MeshStandardMaterial({
+    color: 0x4d3a22, roughness: 0.72, metalness: 0.10,
+    side: THREE.BackSide, envMapIntensity: 0.8,
+  });
+  const dome = new THREE.Mesh(domeGeo, domeMat);
+  dome.position.y = COL_HEIGHT;
+  dome.name = 'cathedral.dome';
+  group.add(dome);
+
+  // A subtle ring lintel where the dome meets the column tops — feels like
+  // a stone collar between drum and dome.
+  const lintelGeo = new THREE.TorusGeometry(DOME_RADIUS - 0.05, 0.08, 16, 64);
+  const lintelMat = new THREE.MeshStandardMaterial({ color: 0xd6c4a0, roughness: 0.55, metalness: 0.15 });
+  const lintel = new THREE.Mesh(lintelGeo, lintelMat);
+  lintel.rotation.x = Math.PI / 2;
+  lintel.position.y = COL_HEIGHT;
+  group.add(lintel);
+
+  // Warm dim glow under the dome — feels like an oil lamp hung from above.
+  if (!IS_LOW_PERF) {
+    const domeLight = new THREE.PointLight(0xffd8a0, 1.4, 14, 1.4);
+    domeLight.position.set(0, COL_HEIGHT - 0.4, 0);
+    group.add(domeLight);
+  }
+
+  scene.add(group);
+  return { group, floor, dome, columns };
+})();
+
+// Register the cathedral pieces so keyframe tracks can target them by name.
+// The book mesh registers later (after pages build) so playing animations
+// like `bookHover` becomes possible from the editor.
+register3DTarget('cathedral.group',  cathedral.group);
+register3DTarget('cathedral.floor',  cathedral.floor);
+register3DTarget('cathedral.dome',   cathedral.dome);
+cathedral.columns.forEach((c, i) => register3DTarget('cathedral.column.' + i, c));
+
 
 // =====================================================================
 //   ENVIRONMENT — single dark floor plane (just to catch the book's shadow).
@@ -1035,6 +1147,9 @@ bookGroup.rotation.y = -Math.PI / 2;
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
 scene.add(bookGroup);
+// Expose to the keyframe editor — `book.group` can be animated (hover, spin
+// on intro, etc.) from the admin's animations panel.
+register3DTarget('book.group', bookGroup);
 
 const pages = [];
 
@@ -1503,6 +1618,42 @@ function _flushTransform(target, t) {
   target.style.transform = parts.length ? parts.join(' ') : '';
 }
 
+// Apply a single property frame onto a three.js Object3D. The keyframe
+// editor can target any registered 3D object (see `register3DTarget`) by
+// name and animate its position / scale / rotation / opacity. All values
+// are absolute — the runtime assigns directly so the order of multiple
+// tracks doesn't matter.
+function _applyObject3D(target, prop, value) {
+  switch (prop) {
+    case 'positionX': target.position.x = value; break;
+    case 'positionY': target.position.y = value; break;
+    case 'positionZ': target.position.z = value; break;
+    case 'scale':     target.scale.setScalar(value); break;
+    case 'scaleX':    target.scale.x = value; break;
+    case 'scaleY':    target.scale.y = value; break;
+    case 'scaleZ':    target.scale.z = value; break;
+    case 'rotationX': target.rotation.x = value; break;
+    case 'rotationY': target.rotation.y = value; break;
+    case 'rotationZ': target.rotation.z = value; break;
+    case 'opacity':
+      if (target.material) {
+        // Materials default to opaque; flag once when fading.
+        if (!target.material.transparent && value < 1) target.material.transparent = true;
+        target.material.opacity = value;
+      }
+      break;
+  }
+}
+
+// Global registry of named 3D targets the keyframe editor can drive. Lets
+// any animation in localStorage reference e.g. `cathedral.dome` and have it
+// resolve to the real Object3D at play time, without each play() call
+// having to enumerate every possible target.
+const _3D_TARGET_REGISTRY = {};
+function register3DTarget(name, obj) {
+  if (name && obj && obj.isObject3D) _3D_TARGET_REGISTRY[name] = obj;
+}
+
 // Tiny cache so an audio URL referenced from many keyframes loads once.
 const _kfAudioCache = new Map();
 function _fireKeyframeAudio(url) {
@@ -1545,8 +1696,11 @@ class KeyframePlayer {
       const t01 = clip.duration > 0 ? clip.time / clip.duration : 1;
 
       clip.anim.tracks.forEach((track, trackIdx) => {
-        const target = clip.targets[track.target];
-        const isDom = target instanceof HTMLElement;
+        // Resolve target: explicit per-call (clip.targets) wins, then the
+        // global 3D registry (cathedral.dome, etc.), then nothing.
+        const target = clip.targets[track.target] || _3D_TARGET_REGISTRY[track.target] || null;
+        const isDom  = target instanceof HTMLElement;
+        const is3D   = !isDom && target && target.isObject3D;
         const transformAccum = {};
 
         for (const prop in track.properties) {
@@ -1556,7 +1710,10 @@ class KeyframePlayer {
           //    we actually have a target to apply it to.
           if (target) {
             const value = _sampleNumber(keyframes, t01);
-            if (value !== null && isDom) _applyDom(target, prop, value, transformAccum);
+            if (value !== null) {
+              if (isDom)     _applyDom(target, prop, value, transformAccum);
+              else if (is3D) _applyObject3D(target, prop, value);
+            }
           }
 
           // 2. Fire playAudio for any keyframe the playhead just crossed.

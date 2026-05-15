@@ -1133,6 +1133,11 @@
           <span class="text-[9px] tracking-[0.3em] uppercase text-gold-deep">
             τώρα <span id="dur-readout">0.00</span>s
           </span>
+          <button id="anim-addtrack-btn" disabled
+                  class="px-2.5 py-1 rounded bg-transparent text-gold-mid
+                         text-[10px] tracking-[0.18em] uppercase font-medium
+                         border border-gold-mid/25 hover:bg-gold-mid/10 hover:text-gold-bright
+                         disabled:opacity-30">+ track</button>
           <button id="anim-duplicate-btn" disabled
                   class="px-2.5 py-1 rounded bg-transparent text-gold-mid
                          text-[10px] tracking-[0.18em] uppercase font-medium
@@ -1697,11 +1702,13 @@ function renderEditor() {
 
   const delBtn = document.getElementById('anim-delete-btn');
   const dupBtn = document.getElementById('anim-duplicate-btn');
+  const addTrackBtn = document.getElementById('anim-addtrack-btn');
   if (!animName || !State.animations[animName]) {
     nameEl.textContent = '— ἐπίλεξε animation —';
     durInput.disabled = true; loopInput.disabled = true;
-    if (delBtn) delBtn.disabled = true;
-    if (dupBtn) dupBtn.disabled = true;
+    if (delBtn)      delBtn.disabled = true;
+    if (dupBtn)      dupBtn.disabled = true;
+    if (addTrackBtn) addTrackBtn.disabled = true;
     tracksArea.innerHTML = '';
     ruler.innerHTML = '';
     document.getElementById('inspector-body').innerHTML = '<div class="empty">ἐπίλεξε animation ἀπὸ τὴν λίστα</div>';
@@ -1712,8 +1719,9 @@ function renderEditor() {
   nameEl.textContent = animName;
   durInput.disabled = false; durInput.value = anim.duration;
   loopInput.disabled = false; loopInput.checked = !!anim.loop;
-  if (delBtn) delBtn.disabled = false;
-  if (dupBtn) dupBtn.disabled = false;
+  if (delBtn)      delBtn.disabled = false;
+  if (dupBtn)      dupBtn.disabled = false;
+  if (addTrackBtn) addTrackBtn.disabled = false;
   document.getElementById('dur-readout').textContent = anim.duration.toFixed(2);
 
   // Ruler
@@ -2794,117 +2802,116 @@ document.getElementById('delete-page-btn')?.addEventListener('click', deleteSele
 // =====================================================================
 //   ANIMATION CRUD — create / duplicate / delete in church_animations
 // =====================================================================
-async function addNewAnimation() {
+// Known 3D targets the /book scene exposes — kept in lockstep with
+// register3DTarget() calls in src/pages/book.astro. Surfaced in the
+// "add track" prompt so editors don't have to memorise names.
+const KNOWN_3D_TARGETS = [
+  'cathedral.group', 'cathedral.dome', 'cathedral.floor',
+  'cathedral.column.0', 'cathedral.column.1', 'cathedral.column.2', 'cathedral.column.3',
+  'cathedral.column.4', 'cathedral.column.5', 'cathedral.column.6', 'cathedral.column.7',
+  'book.group',
+];
+// Known DOM targets — used inside the photo-modal animations.
+const KNOWN_DOM_TARGETS = ['modalImg', 'modalInfo'];
+// Per-type property menus.
+const PROPS_3D  = ['positionX','positionY','positionZ','scale','rotationX','rotationY','rotationZ','opacity'];
+const PROPS_DOM = ['translateX','translateY','scale','rotation','opacity'];
+
+function addNewAnimation() {
   if (!State.token) return toast('μη συνδεδεμένος', 'error');
   const rawName = prompt('Ὄνομα animation (μοναδικό):');
   if (!rawName) return;
   const name = rawName.trim();
   if (!name) { toast('✕ κενὸ ὄνομα', 'error'); return; }
   if (State.animations[name]) { toast('✕ ὑπάρχει ἤδη', 'error'); return; }
-  const btn = document.getElementById('add-anim-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⌛ δημιουργία…'; }
-  try {
-    const res = await fetch(`${PB_URL}/api/collections/church_animations/records`, {
-      method:  'POST',
-      headers: authHeader({ 'Content-Type': 'application/json' }),
-      body:    JSON.stringify({
-        anim_name:   name,
-        duration:    0.5,
-        loop:        false,
-        tracks:      [],
-        description: '',
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      console.warn('add-anim failed:', err);
-      toast('✕ ἀποτυχία δημιουργίας', 'error');
-      return;
-    }
-    const rec = await res.json();
-    State.animations[rec.anim_name] = {
-      duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks || [],
-    };
-    State.animRecordId[rec.anim_name] = rec.id;
-    State.selected = { anim: rec.anim_name, trackIdx: -1, prop: null, kfIdx: -1 };
-    renderAll();
-    toast(`✓ νέα animation · ${rec.anim_name}`);
-  } catch (e) {
-    console.warn(e);
-    toast('✕ δίκτυο: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '+ νέα animation'; }
-  }
+  pushHistory();
+  State.animations[name] = { duration: 1.0, loop: false, tracks: [] };
+  State.selected = { anim: name, trackIdx: -1, prop: null, kfIdx: -1 };
+  State.dirty = true;
+  State.dirtyAnims.add(name);
+  refreshSaveBtn();
+  renderAll();
+  toast(`✓ νέα animation · ${name}`);
 }
 
-async function deleteSelectedAnimation() {
-  const name = State.selected.anim;
-  if (!name) return;
-  const recId = State.animRecordId[name];
-  if (!recId) { toast('✕ λείπει record id', 'error'); return; }
-  if (!confirm(`Διαγραφὴ animation "${name}";\nἈμετάκλητο.`)) return;
-  try {
-    const res = await fetch(`${PB_URL}/api/collections/church_animations/records/${recId}`, {
-      method: 'DELETE', headers: authHeader(),
-    });
-    if (!res.ok && res.status !== 204) {
-      const err = await res.text();
-      console.warn('delete-anim failed:', err);
-      toast('✕ ἀποτυχία διαγραφῆς', 'error');
-      return;
-    }
-    delete State.animations[name];
-    delete State.animRecordId[name];
-    State.dirtyAnims.delete(name);
-    // Pick another animation (or none) and refresh
-    const next = Object.keys(State.animations)[0] || null;
-    State.selected = { anim: next, trackIdx: -1, prop: null, kfIdx: -1 };
-    renderAll();
-    toast(`✓ διαγράφηκε · ${name}`);
-  } catch (e) {
-    console.warn(e);
-    toast('✕ δίκτυο: ' + e.message, 'error');
-  }
-}
-
-async function duplicateSelectedAnimation() {
+function deleteSelectedAnimation() {
   const name = State.selected.anim;
   if (!name || !State.animations[name]) return;
-  // Find an available "-copy" name (append a numeric suffix if needed)
+  if (!confirm(`Διαγραφὴ animation "${name}";\nἈμετάκλητο.`)) return;
+  pushHistory();
+  delete State.animations[name];
+  State.dirtyAnims.add('__deleted__');   // forces save flow to persist
+  const next = Object.keys(State.animations)[0] || null;
+  State.selected = { anim: next, trackIdx: -1, prop: null, kfIdx: -1 };
+  refreshSaveBtn();
+  renderAll();
+  toast(`✓ διαγράφηκε · ${name}`);
+}
+
+function duplicateSelectedAnimation() {
+  const name = State.selected.anim;
+  if (!name || !State.animations[name]) return;
   let dupName = name + '-copy';
   let n = 2;
   while (State.animations[dupName]) { dupName = name + '-copy-' + n; n++; }
   const src = State.animations[name];
-  try {
-    const res = await fetch(`${PB_URL}/api/collections/church_animations/records`, {
-      method:  'POST',
-      headers: authHeader({ 'Content-Type': 'application/json' }),
-      body:    JSON.stringify({
-        anim_name:   dupName,
-        duration:    src.duration,
-        loop:        !!src.loop,
-        tracks:      deepClone(src.tracks || []),
-        description: '',
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      console.warn('duplicate-anim failed:', err);
-      toast('✕ ἀποτυχία ἀντιγραφῆς', 'error');
-      return;
-    }
-    const rec = await res.json();
-    State.animations[rec.anim_name] = {
-      duration: rec.duration, loop: !!rec.loop, tracks: rec.tracks || [],
-    };
-    State.animRecordId[rec.anim_name] = rec.id;
-    State.selected = { anim: rec.anim_name, trackIdx: -1, prop: null, kfIdx: -1 };
-    renderAll();
-    toast(`✓ ἀντίγραφο · ${rec.anim_name}`);
-  } catch (e) {
-    console.warn(e);
-    toast('✕ δίκτυο: ' + e.message, 'error');
+  pushHistory();
+  State.animations[dupName] = {
+    duration: src.duration, loop: !!src.loop, tracks: deepClone(src.tracks || []),
+  };
+  State.selected = { anim: dupName, trackIdx: -1, prop: null, kfIdx: -1 };
+  State.dirtyAnims.add(dupName);
+  refreshSaveBtn();
+  renderAll();
+  toast(`✓ ἀντίγραφο · ${dupName}`);
+}
+
+// Add a fresh track to the selected animation. Editors choose a target name
+// (any registered DOM/3D one or a custom string) and an initial property,
+// then the function seeds two keyframes at t=0 and t=1 so the timeline isn't
+// empty.
+function addNewTrack() {
+  const animName = State.selected.anim;
+  if (!animName || !State.animations[animName]) {
+    toast('— ἐπίλεξε πρῶτα animation —', 'error');
+    return;
   }
+  const targetOptions = [...KNOWN_3D_TARGETS, ...KNOWN_DOM_TARGETS];
+  const target = prompt(
+    'Στόχος (target name).\n\nΓνωστοί στόχοι:\n  · ' + targetOptions.join('\n  · '),
+    KNOWN_3D_TARGETS[0]
+  );
+  if (!target) return;
+  const t = target.trim();
+  if (!t) { toast('✕ κενὸ ὄνομα', 'error'); return; }
+  const is3D    = KNOWN_3D_TARGETS.includes(t) || t.startsWith('cathedral.') || t.startsWith('book.');
+  const propMenu = is3D ? PROPS_3D : PROPS_DOM;
+  const prop = prompt(
+    'Ἰδιότητα.\n\nΔιαθέσιμες:\n  · ' + propMenu.join('\n  · '),
+    propMenu[0]
+  );
+  if (!prop) return;
+  const p = prop.trim();
+  if (!p) { toast('✕ κενὴ ἰδιότητα', 'error'); return; }
+  pushHistory();
+  const anim = State.animations[animName];
+  // Reuse existing track with same target if present, else create new.
+  let track = anim.tracks.find(tr => tr.target === t);
+  if (!track) { track = { target: t, properties: {} }; anim.tracks.push(track); }
+  if (!track.properties[p]) {
+    // Sensible defaults: opacity 0→1, scale 0.8→1, anything else 0→1.
+    const v0 = (p === 'scale') ? 0.8 : (p === 'opacity') ? 0 : 0;
+    const v1 = (p === 'scale' || p === 'opacity') ? 1 : 1;
+    track.properties[p] = [
+      { t: 0, value: v0, ease: 'easeOutCubic' },
+      { t: 1, value: v1 },
+    ];
+  }
+  State.dirtyAnims.add(animName);
+  refreshSaveBtn();
+  markDirty();
+  renderEditor();
+  toast(`✓ νέο track · ${t} · ${p}`);
 }
 
 // Animation tab UI is gone — these buttons no longer exist in the DOM.
@@ -2912,6 +2919,7 @@ async function duplicateSelectedAnimation() {
 document.getElementById('add-anim-btn')?.addEventListener('click',       addNewAnimation);
 document.getElementById('anim-delete-btn')?.addEventListener('click',    deleteSelectedAnimation);
 document.getElementById('anim-duplicate-btn')?.addEventListener('click', duplicateSelectedAnimation);
+document.getElementById('anim-addtrack-btn')?.addEventListener('click',  addNewTrack);
 
 // =====================================================================
 //   TAB SWITCHING
