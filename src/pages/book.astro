@@ -2173,13 +2173,29 @@ function animate() {
 //   BOOTSTRAP — async (WebGPU needs init)
 // =====================================================================
 (async () => {
+  const bootStart = performance.now();
   if (renderer.init) await renderer.init();
   await setupEnvironment();
   renderer.setAnimationLoop(animate);
   await buildBook();
   updateUI();
-  setTimeout(() => document.getElementById('loading').classList.add('hidden'), 200);
-  // No startup animation — book appears already in its final pose.
+
+  // Hold the loading curtain for a minimum beat so the dome / columns /
+  // cover all have a moment to settle in the user's eye before the book
+  // opens. If buildBook took longer than the minimum, no extra wait.
+  const MIN_LOADING_MS = 2400;
+  const elapsed = performance.now() - bootStart;
+  const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+    // Auto-open: 0.7s after the curtain starts fading, flip to the first
+    // inside spread so visitors land on a "story-in-progress" frame, not
+    // a closed cover. They can flip back via ← / ΠΡΟΗΓΟΥΜΕΝΗ if they want
+    // to admire the cover. ensureAudio() is intentionally skipped — the
+    // flip sound needs a user gesture per browser policy, so the first
+    // auto-open is silent and subsequent flips fire normally.
+    setTimeout(() => goToPage(1), 700);
+  }, wait);
 })();
 </script>
 </ImmersiveLayout>
