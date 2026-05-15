@@ -1736,12 +1736,25 @@ window.addEventListener('keydown', e => {
 //   { type:'goToSheet',   sheet:N }                → flip to sheet N
 //   { type:'previewRecord', listIndex:N, record:R } → live re-render one side
 // ---------------------------------------------------------------------------
+// If a goToSheet message arrives before buildBook has finished — the iframe
+// can load faster than the page textures — we stash the target and replay
+// it from the boot path. Without this the message hits an empty PAGES
+// array and the editor's click silently does nothing.
+let _pendingGoTo = null;
+
 window.addEventListener('message', (e) => {
   const data = e.data;
   if (!data) return;
   if (data.type === 'goToSheet') {
     const n = Number(data.sheet);
-    if (Number.isFinite(n)) goToPage(n);
+    if (!Number.isFinite(n)) return;
+    if (!PAGES.length) { _pendingGoTo = n; return; }
+    goToPage(n);
+    // Snap the delayed page so the iframe doesn't cascade-flip every
+    // sheet on its way to the target. The admin's sidebar wants a hard
+    // jump, not a flipbook reveal — that's a /book-standalone behaviour.
+    delayedPage = targetPage;
+    updateUI();
     return;
   }
   if (data.type === 'previewRecord') {
@@ -2385,6 +2398,13 @@ function animate() {
   renderer.setAnimationLoop(animate);
   await buildBook();
   updateUI();
+  // Drain any goToSheet message that arrived before pages were built.
+  if (_pendingGoTo !== null) {
+    goToPage(_pendingGoTo);
+    delayedPage = targetPage;
+    updateUI();
+    _pendingGoTo = null;
+  }
 
   // Hold the loading curtain for a minimum beat so the dome / columns /
   // cover all have a moment to settle in the user's eye before the book
