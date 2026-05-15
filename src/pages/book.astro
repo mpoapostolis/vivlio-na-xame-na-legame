@@ -742,8 +742,8 @@ scene.fog = new THREE.FogExp2(0x060302, 0.045);
 // ≈7.45, plenty of room around the lectern. Looking at the book centre
 // at its new higher reading position.
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 2.95, 4.7);
-camera.lookAt(0, 2.30, 0);
+camera.position.set(0, 3.05, 4.7);
+camera.lookAt(0, 2.40, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1854,9 +1854,11 @@ bookGroup.rotation.y = -Math.PI / 2;
 // Offset the whole group so the closed book is centered on the camera's lookAt.
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
-// Lift the book onto the lectern's top platform. Lectern top now at
-// world y ≈ 1.45, so book centre = 1.45 + 0.855 ≈ 2.30.
-bookGroup.position.y = 2.30;
+// Lift the book onto the lectern's top platform. Lectern platform top
+// surface sits at world y ≈ 1.48 (-0.62 + lectTop_local 2.07 + height/2).
+// Book half-height is PAGE_HEIGHT/2 ≈ 0.855, plus a ~6 cm clearance so
+// the book never clips into the wood.
+bookGroup.position.y = 2.40;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
