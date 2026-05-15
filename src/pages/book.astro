@@ -893,11 +893,76 @@ const cathedral = (() => {
     }),
   };
 
-  // ── Marble floor disc (radius 16) ──────────────────────────────────
+  // ── Procedural Byzantine floor pattern ─────────────────────────────
+  // Concentric rings + 8-pointed star + radial gold spokes painted onto
+  // a square canvas, mapped onto a CircleGeometry. Looks like a real
+  // marble inlay floor from above.
+  const floorTex = (() => {
+    const cv = document.createElement('canvas');
+    cv.width = 2048; cv.height = 2048;
+    const g = cv.getContext('2d');
+    const cx = cv.width / 2, cy = cv.height / 2, R = cv.width / 2;
+    // Outer marble base
+    g.fillStyle = '#4a3826'; g.fillRect(0, 0, cv.width, cv.height);
+    // Subtle marble veining — thin random curves
+    for (let i = 0; i < 24; i++) {
+      g.strokeStyle = `rgba(${180 + Math.random()*40}, ${150 + Math.random()*30}, ${100 + Math.random()*30}, ${0.04 + Math.random() * 0.05})`;
+      g.lineWidth = 0.5 + Math.random() * 1.5;
+      g.beginPath();
+      let x = Math.random() * cv.width, y = Math.random() * cv.height;
+      g.moveTo(x, y);
+      for (let s = 0; s < 60; s++) {
+        x += (Math.random() - 0.5) * 80;
+        y += (Math.random() - 0.5) * 80;
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    // Outer dark ring border
+    g.strokeStyle = '#2a1a08'; g.lineWidth = 14;
+    g.beginPath(); g.arc(cx, cy, R - 12, 0, Math.PI * 2); g.stroke();
+    // Concentric gold rings
+    [0.85, 0.65, 0.45, 0.30, 0.18].forEach((rRel, idx) => {
+      g.strokeStyle = idx % 2 ? '#a07d3e' : '#c89a4c';
+      g.lineWidth = idx === 0 ? 6 : 4;
+      g.beginPath(); g.arc(cx, cy, R * rRel, 0, Math.PI * 2); g.stroke();
+    });
+    // 12 radial spokes from center to outer ring
+    g.strokeStyle = '#7d5d2a'; g.lineWidth = 2;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      g.beginPath();
+      g.moveTo(cx + Math.cos(a) * R * 0.30, cy + Math.sin(a) * R * 0.30);
+      g.lineTo(cx + Math.cos(a) * R * 0.85, cy + Math.sin(a) * R * 0.85);
+      g.stroke();
+    }
+    // 8-pointed star at center (Greek cross-derived)
+    g.fillStyle = '#c89a4c';
+    g.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 ? R * 0.07 : R * 0.16;
+      const px = cx + Math.cos(a) * r;
+      const py = cy + Math.sin(a) * r;
+      if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.closePath(); g.fill();
+    // Inner gold disc
+    g.fillStyle = '#e0bf6b';
+    g.beginPath(); g.arc(cx, cy, R * 0.045, 0, Math.PI * 2); g.fill();
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 16;
+    return tex;
+  })();
+
   const FLOOR_RADIUS = 16;
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(FLOOR_RADIUS, 64),
-    MAT.floorMarble,
+    new THREE.CircleGeometry(FLOOR_RADIUS, 96),
+    new THREE.MeshStandardMaterial({
+      map: floorTex, roughness: 0.7, metalness: 0.08,
+      envMapIntensity: 0.65,
+    }),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.62;
@@ -905,26 +970,8 @@ const cathedral = (() => {
   floor.name = 'cathedral.floor';
   group.add(floor);
 
-  // Concentric gold ring (~Greek-cross intersection size).
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(1.4, 1.48, 96),
-    MAT.gold,
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = -0.612;
-  group.add(ring);
-
-  // Inner radial cross inlay (4 thin gold bars from center → 1.4 m).
-  const inlayMat = MAT.gold;
-  for (let i = 0; i < 4; i++) {
-    const bar = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.005, 0.06),
-      inlayMat,
-    );
-    bar.rotation.y = i * Math.PI / 2;
-    bar.position.set(Math.cos(i * Math.PI / 2) * 0.7, -0.613, Math.sin(i * Math.PI / 2) * 0.7);
-    group.add(bar);
-  }
+  // (gold ring + radial cross inlay are now painted into the floor
+  // texture above, so we don't need extra ring/bar meshes any more.)
 
   // ── 12 columns in a regular dodecagon (Christ + 12 Apostles) ──────
   // Heights tuned so the entire interior (column tops + drum + dome)
@@ -1092,13 +1139,109 @@ const cathedral = (() => {
   lintelBot.position.y = DRUM_Y - DRUM_HEIGHT / 2;
   group.add(lintelBot);
 
-  // Central dome — copper, BackSide so we see the interior surface.
+  // ── Byzantine fresco on the dome interior ─────────────────────────
+  // Procedural canvas: dark-blue starry field, a frieze of 12 haloed
+  // saints in arched niches near the rim, and a golden Pantocrator
+  // medallion at the apex. Mapped onto the inside of the dome (BackSide),
+  // it reads as a real frescoed cupola when the user looks up.
+  const domeTex = (() => {
+    const cv = document.createElement('canvas');
+    cv.width = 4096; cv.height = 1024;
+    const g = cv.getContext('2d');
+    // Deep ultramarine sky base
+    g.fillStyle = '#10182c'; g.fillRect(0, 0, cv.width, cv.height);
+    // Vertical gradient — darker at the rim (bottom), gold-tinged at the apex (top).
+    const grad = g.createLinearGradient(0, 0, 0, cv.height);
+    grad.addColorStop(0,    'rgba(120,80,30,0.55)');
+    grad.addColorStop(0.30, 'rgba(40,30,55,0.0)');
+    grad.addColorStop(1,    'rgba(8,10,18,0.6)');
+    g.fillStyle = grad; g.fillRect(0, 0, cv.width, cv.height);
+    // Stars + tiny crosses sprinkled in the mid-band
+    for (let i = 0; i < 220; i++) {
+      const x = Math.random() * cv.width;
+      const y = cv.height * 0.18 + Math.random() * cv.height * 0.55;
+      const op = 0.4 + Math.random() * 0.55;
+      const r = 1 + Math.random() * 2.5;
+      g.fillStyle = `rgba(220, 180, 100, ${op})`;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      if (Math.random() > 0.65) {
+        g.fillRect(x - r * 2, y - 0.5, r * 4, 1);
+        g.fillRect(x - 0.5, y - r * 2, 1, r * 4);
+      }
+    }
+    // Apex Pantocrator medallion — a tall narrow band at the top of the
+    // canvas that wraps as a tight cap on the dome's pole.
+    const apexH = cv.height * 0.15;
+    const apexGrad = g.createLinearGradient(0, 0, 0, apexH);
+    apexGrad.addColorStop(0, '#e0bf6b');
+    apexGrad.addColorStop(1, '#a07d3e');
+    g.fillStyle = apexGrad; g.fillRect(0, 0, cv.width, apexH);
+    // Crosses repeated across the apex band
+    g.fillStyle = '#3a2410';
+    for (let i = 0; i < 24; i++) {
+      const cx = (i + 0.5) * (cv.width / 24);
+      const cy = apexH / 2;
+      g.fillRect(cx - 14, cy - 3, 28, 6);
+      g.fillRect(cx - 3, cy - 14, 6, 28);
+    }
+    // Frieze of 12 saint niches near the rim (bottom of canvas)
+    const FRIEZE_Y = cv.height * 0.72;
+    const FRIEZE_H = cv.height * 0.24;
+    // Frieze background (deeper gold)
+    const frGrad = g.createLinearGradient(0, FRIEZE_Y, 0, FRIEZE_Y + FRIEZE_H);
+    frGrad.addColorStop(0, '#7d5d2a');
+    frGrad.addColorStop(1, '#3a2418');
+    g.fillStyle = frGrad; g.fillRect(0, FRIEZE_Y, cv.width, FRIEZE_H);
+    // Borders top & bottom of frieze
+    g.fillStyle = '#c89a4c'; g.fillRect(0, FRIEZE_Y - 4, cv.width, 4);
+    g.fillStyle = '#a07d3e'; g.fillRect(0, FRIEZE_Y + FRIEZE_H - 4, cv.width, 4);
+    // 12 arched niches with stylised haloed saints
+    const niches = 12;
+    const slot = cv.width / niches;
+    for (let i = 0; i < niches; i++) {
+      const ncx = i * slot + slot / 2;
+      const w = slot * 0.7;
+      const h = FRIEZE_H * 0.82;
+      const top = FRIEZE_Y + FRIEZE_H * 0.08;
+      // Niche apse (dark recess with arched top)
+      g.fillStyle = '#1a1208';
+      g.beginPath(); g.roundRect(ncx - w/2, top, w, h, [w/2, w/2, 0, 0]); g.fill();
+      // Saint robe — alternating red & blue
+      g.fillStyle = i % 2 ? '#7a2a1a' : '#1a2a5a';
+      const robeTop = top + h * 0.50;
+      g.beginPath();
+      g.moveTo(ncx - w * 0.30, robeTop);
+      g.lineTo(ncx + w * 0.30, robeTop);
+      g.lineTo(ncx + w * 0.36, top + h * 0.96);
+      g.lineTo(ncx - w * 0.36, top + h * 0.96);
+      g.closePath(); g.fill();
+      // Halo
+      g.fillStyle = '#d4a85a';
+      g.beginPath(); g.arc(ncx, top + h * 0.40, h * 0.16, 0, Math.PI * 2); g.fill();
+      // Face hint
+      g.fillStyle = '#caa088';
+      g.beginPath(); g.arc(ncx, top + h * 0.40, h * 0.11, 0, Math.PI * 2); g.fill();
+      // Tiny gold cross sceptre
+      g.fillStyle = '#e0bf6b';
+      g.fillRect(ncx + w * 0.06, top + h * 0.50, 2, h * 0.30);
+      g.fillRect(ncx + w * 0.04, top + h * 0.55, 6, 2);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.anisotropy = 16;
+    return tex;
+  })();
+
+  // Central dome — interior is the frescoed surface, BackSide so we see
+  // the inside when looking up. Slight emissive so the Pantocrator glows
+  // even when no direct light hits it.
   const DOME_RADIUS = DRUM_RADIUS;
-  const domeGeo = new THREE.SphereGeometry(DOME_RADIUS, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const domeGeo = new THREE.SphereGeometry(DOME_RADIUS, 64, 48, 0, Math.PI * 2, 0, Math.PI / 2);
   const domeIntMat = new THREE.MeshStandardMaterial({
-    color: 0x5a4220, roughness: 0.55, metalness: 0.30,
-    side: THREE.BackSide, envMapIntensity: 0.95,
-    emissive: 0x2a1a08, emissiveIntensity: 0.4,
+    map: domeTex, roughness: 0.62, metalness: 0.06,
+    side: THREE.BackSide, envMapIntensity: 0.55,
+    emissive: 0x6a4818, emissiveIntensity: 0.32,
   });
   const dome = new THREE.Mesh(domeGeo, domeIntMat);
   dome.position.y = DRUM_Y + DRUM_HEIGHT / 2;
@@ -1127,21 +1270,57 @@ const cathedral = (() => {
   cross.name = 'cathedral.cross';
   group.add(cross);
 
-  // ── Warm interior lighting ─────────────────────────────────────────
+  // ── 12 candle stands between the columns ──────────────────────────
+  // Each candle: a marble pedestal (cylinder), a beeswax candle on top,
+  // and an emissive flame mesh. Half of them carry a real PointLight so
+  // the room glows from multiple warm sources without spending 12 lights.
   if (!IS_LOW_PERF) {
-    // Chandelier — soft glow hanging under the central dome.
-    const chandelier = new THREE.PointLight(0xffd49a, 1.6, 18, 1.3);
-    chandelier.position.set(0, DRUM_Y - 0.4, 0);
-    group.add(chandelier);
-    // Twelve dim warm spots over the satellites — subtle accent so the
-    // copper of each apostle dome catches a highlight.
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const sp = new THREE.PointLight(0xffba70, 0.45, 6, 1.4);
-      sp.position.set(Math.cos(angle) * (COL_RADIUS - 0.5), COL_HEIGHT + 0.6, Math.sin(angle) * (COL_RADIUS - 0.5));
-      group.add(sp);
+    const PEDESTAL_R = COL_RADIUS + 0.85;   // outside the column ring
+    const pedGeo  = new THREE.CylinderGeometry(0.10, 0.14, 0.70, 14);
+    const candleGeo = new THREE.CylinderGeometry(0.034, 0.038, 0.30, 10);
+    const flameGeo  = new THREE.ConeGeometry(0.030, 0.10, 8);
+    const candleMat = new THREE.MeshStandardMaterial({
+      color: 0xf4e8c8, roughness: 0.48, metalness: 0.02,
+      emissive: 0x4a2a08, emissiveIntensity: 0.08,
+    });
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffd089 });
+    const flameAux = [];
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2 + Math.PI / 12;
+      const x = Math.cos(angle) * PEDESTAL_R;
+      const z = Math.sin(angle) * PEDESTAL_R;
+      const stand = new THREE.Group();
+      stand.position.set(x, -0.62, z);
+      stand.name = 'cathedral.candle.' + i;
+      const ped = new THREE.Mesh(pedGeo, MAT.marble);
+      ped.position.y = 0.35;
+      stand.add(ped);
+      const cn = new THREE.Mesh(candleGeo, candleMat);
+      cn.position.y = 0.85;
+      stand.add(cn);
+      const fl = new THREE.Mesh(flameGeo, flameMat);
+      fl.position.y = 1.05;
+      stand.add(fl);
+      flameAux.push(fl);
+      // Every 3rd candle gets a real warm PointLight (4 lights total)
+      if (i % 3 === 0) {
+        const lt = new THREE.PointLight(0xffaa55, 1.6, 5.5, 1.8);
+        lt.position.y = 1.05;
+        stand.add(lt);
+      }
+      group.add(stand);
     }
+    // Subtle flicker on flame meshes — pulse emissive scale per frame.
+    group.userData.flameAux = flameAux;
+
+    // Chandelier — soft warm glow hanging under the central dome apex.
+    const chandelier = new THREE.PointLight(0xffd49a, 1.9, 22, 1.2);
+    chandelier.position.set(0, DRUM_Y - 0.2, 0);
+    group.add(chandelier);
   }
+
+  // (dust motes — handled by the global makeDust() system below; no
+  // need for a second particle layer inside the cathedral group.)
 
   scene.add(group);
   return { group, floor, dome, drum, cross, columns, satellites };
@@ -2350,6 +2529,16 @@ function animate() {
   keyLight.intensity = 3.2 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 17.1) * 0.015);
   if (candle1) candle1.intensity = 4 * (1 + Math.sin(t * 5.7 + 0.6) * 0.18 + Math.sin(t * 13.2 + 1.1) * 0.10);
   if (candle2) candle2.intensity = 3 * (1 + Math.sin(t * 4.9 + 1.3) * 0.16 + Math.sin(t * 11.6 + 0.4) * 0.09);
+  // 12 cathedral candle flames flicker independently (size scale + Y-bob)
+  const flameAux = cathedral && cathedral.group && cathedral.group.userData.flameAux;
+  if (flameAux) {
+    for (let i = 0; i < flameAux.length; i++) {
+      const fl = flameAux[i];
+      const f = 0.85 + Math.sin(t * 9.5 + i * 1.3) * 0.10 + Math.sin(t * 18.4 + i) * 0.06;
+      fl.scale.set(f, f, f);
+      fl.position.y = 1.05 + Math.sin(t * 6.2 + i * 0.7) * 0.012;
+    }
+  }
 
   // dust drift — skipped on low-perf (dust is null)
   if (dust && dust.geometry) {
