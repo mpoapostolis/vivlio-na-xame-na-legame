@@ -2396,11 +2396,22 @@ function selectPage(pageId) {
   renderPagesList();
   renderContentForm();
 
-  // Flip the live preview iframe to the matching sheet. Sheets pair two
-  // consecutive records, so PAGES_DEFAULT index i → sheet floor(i/2).
+  // Flip the live preview to the sheet that makes the selected record
+  // visible on either side of the open book.
+  //
+  //   record index i   →  visible at targetPage = ceil(i / 2)
+  //
+  //     i = 0  (cover, front of sheet 0)  → targetPage 0  (closed cover)
+  //     i = 1  (back of sheet 0)          → targetPage 1  (first flip done)
+  //     i = 2  (front of sheet 1)         → targetPage 1  (same spread)
+  //     i = 3  (back of sheet 1)          → targetPage 2
+  //     i = 4  (front of sheet 2)         → targetPage 2  …
+  //
+  // The previous floor(i/2) sent the user back to the cover whenever they
+  // clicked an odd-indexed page (e.g. record 1 / Περιεχόμενα).
   const idx = PAGES_DEFAULT.findIndex(p => p.id === pageId);
   if (idx < 0) return;
-  const sheetIdx = Math.floor(idx / 2);
+  const sheetIdx = Math.ceil(idx / 2);
   const iframe = document.getElementById('book-preview-iframe');
   if (iframe && iframe.contentWindow) {
     iframe.contentWindow.postMessage({ type: 'goToSheet', sheet: sheetIdx }, '*');
