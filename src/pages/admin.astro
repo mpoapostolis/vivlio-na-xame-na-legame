@@ -821,6 +821,20 @@
             opacity-0 pointer-events-none transition-all duration-300
             z-50 shadow-toast"></div>
 
+<!--
+  auto-animate — FLIP-based mutation observer that animates list reorders,
+  inserts, and removes with no per-item bookkeeping. Loaded as a module
+  from esm.sh; runs after the main inline script has rendered the list.
+-->
+<script is:inline type="module">
+  import autoAnimate from 'https://esm.sh/@formkit/auto-animate@0.8.2';
+  // The list element is in the static markup, so it always exists by the
+  // time this module runs. Subsequent renderPagesList() calls reuse DOM
+  // identities, which is exactly what auto-animate needs to detect moves.
+  const list = document.getElementById('pages-list');
+  if (list) autoAnimate(list, { duration: 260, easing: 'ease-out' });
+</script>
+
 <script is:inline>
 'use strict';
 
@@ -1826,88 +1840,116 @@ function applyMdCommand(ta, cmd) {
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+// Build a fresh page-item element from scratch and wire all its listeners.
+// Done once per page record — subsequent renders re-use the same node and
+// only update its classes/text via `_updatePageItemEl`. Keeping DOM identity
+// stable is what lets the auto-animate observer animate moves vs flashing
+// remove→add cycles.
+function _buildPageItemEl(pageId) {
+  const div = document.createElement('div');
+  div.className = 'page-item';
+  div.draggable = true;
+  div.dataset.pageId = pageId;
+  div.innerHTML = `
+    <div class="drag-handle" title="σύρε γιὰ νὰ ἀλλάξεις σειρά">⠿</div>
+    <div class="num"></div>
+    <div class="meta">
+      <div class="title"></div>
+      <div class="sub"></div>
+    </div>
+    <div class="edited-dot" title="ἔχει ἀλλαγὲς"></div>
+    <div class="reorder">
+      <button class="re-btn" data-action="up"   title="ἀνέβα">▲</button>
+      <button class="re-btn" data-action="down" title="κατέβα">▼</button>
+    </div>
+  `;
+  div.addEventListener('click', (e) => {
+    if (e.target.classList.contains('re-btn')) return;
+    selectPage(pageId);
+  });
+  div.querySelector('[data-action="up"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    reorderPage(pageId, -1);
+  });
+  div.querySelector('[data-action="down"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    reorderPage(pageId, +1);
+  });
+  // ---------- Drag and drop reorder ----------
+  div.addEventListener('dragstart', (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', pageId);
+    setTimeout(() => div.classList.add('dragging'), 0);
+  });
+  div.addEventListener('dragend',   () => div.classList.remove('dragging'));
+  div.addEventListener('dragover',  (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = div.getBoundingClientRect();
+    const above = (e.clientY - rect.top) < rect.height / 2;
+    div.classList.toggle('drop-above',  above);
+    div.classList.toggle('drop-below', !above);
+  });
+  div.addEventListener('dragleave', () => div.classList.remove('drop-above', 'drop-below'));
+  div.addEventListener('drop', (e) => {
+    e.preventDefault();
+    div.classList.remove('drop-above', 'drop-below');
+    const fromId = e.dataTransfer.getData('text/plain');
+    if (!fromId || fromId === pageId) return;
+    const rect = div.getBoundingClientRect();
+    const above = (e.clientY - rect.top) < rect.height / 2;
+    const targetIdx = PAGES_DEFAULT.findIndex(q => q.id === pageId);
+    let toIdx = above ? targetIdx : targetIdx + 1;
+    const fromIdx = PAGES_DEFAULT.findIndex(q => q.id === fromId);
+    if (fromIdx < toIdx) toIdx -= 1;
+    moveToIndex(fromId, toIdx);
+  });
+  return div;
+}
+
+// Update mutable bits on an existing page-item — no DOM allocation.
+function _updatePageItemEl(item, p, i) {
+  item.dataset.idx = String(i);
+  item.classList.toggle('active', State.selectedPageId === p.id);
+  const overrides = State.content[p.id] || {};
+  const hasEdits  = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
+  item.classList.toggle('edited', hasEdits);
+  item.querySelector('.num').textContent          = String(i + 1);
+  item.querySelector('.meta .title').textContent  = p.label;
+  item.querySelector('.meta .sub').textContent    = p.hint;
+  item.querySelector('[data-action="up"]').disabled   = (i === 0);
+  item.querySelector('[data-action="down"]').disabled = (i === PAGES_DEFAULT.length - 1);
+}
+
 function renderPagesList() {
   const list = document.getElementById('pages-list');
   if (!list) return;
-  list.innerHTML = '';
+  // Reconcile in place so DOM identities are preserved across renders.
+  // auto-animate (wired on init) observes mutations and animates moves.
+  const existing = new Map();
+  for (const child of Array.from(list.children)) {
+    if (child.dataset && child.dataset.pageId) existing.set(child.dataset.pageId, child);
+  }
   for (let i = 0; i < PAGES_DEFAULT.length; i++) {
     const p = PAGES_DEFAULT[i];
-    const div = document.createElement('div');
-    div.className = 'page-item' + (State.selectedPageId === p.id ? ' active' : '');
-    div.draggable = true;
-    div.dataset.pageId = p.id;
-    div.dataset.idx    = String(i);
-    const overrides = State.content[p.id] || {};
-    const hasEdits = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
-    if (hasEdits) div.classList.add('edited');
-    const numIdx = i + 1;
-    const canUp   = i > 0;
-    const canDown = i < PAGES_DEFAULT.length - 1;
-    div.innerHTML = `
-      <div class="drag-handle" title="σύρε γιὰ νὰ ἀλλάξεις σειρά">⠿</div>
-      <div class="num">${numIdx}</div>
-      <div class="meta">
-        <div class="title">${p.label}</div>
-        <div class="sub">${p.hint}</div>
-      </div>
-      <div class="edited-dot" title="ἔχει ἀλλαγὲς"></div>
-      <div class="reorder">
-        <button class="re-btn" data-action="up"   ${canUp   ? '' : 'disabled'} title="ἀνέβα">▲</button>
-        <button class="re-btn" data-action="down" ${canDown ? '' : 'disabled'} title="κατέβα">▼</button>
-      </div>
-    `;
-    // Page selection on click — but ignore clicks on the reorder buttons themselves
-    div.addEventListener('click', (e) => {
-      if (e.target.classList.contains('re-btn')) return;
-      selectPage(p.id);
-    });
-    div.querySelector('[data-action="up"]')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      reorderPage(p.id, -1);
-    });
-    div.querySelector('[data-action="down"]')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      reorderPage(p.id, +1);
-    });
-
-    // ---------- Drag and drop reorder ----------
-    div.addEventListener('dragstart', (e) => {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', p.id);
-      // Use a setTimeout so the dragstart capture happens before opacity drops
-      // (otherwise the drag preview is also semi-transparent).
-      setTimeout(() => div.classList.add('dragging'), 0);
-    });
-    div.addEventListener('dragend',   () => div.classList.remove('dragging'));
-    div.addEventListener('dragover',  (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      // Visual indicator: top vs bottom half of the item determines insertion side
-      const rect = div.getBoundingClientRect();
-      const above = (e.clientY - rect.top) < rect.height / 2;
-      div.classList.toggle('drop-above',  above);
-      div.classList.toggle('drop-below', !above);
-    });
-    div.addEventListener('dragleave', () => {
-      div.classList.remove('drop-above', 'drop-below');
-    });
-    div.addEventListener('drop', (e) => {
-      e.preventDefault();
-      div.classList.remove('drop-above', 'drop-below');
-      const fromId = e.dataTransfer.getData('text/plain');
-      if (!fromId || fromId === p.id) return;
-      const rect = div.getBoundingClientRect();
-      const above = (e.clientY - rect.top) < rect.height / 2;
-      // Drop-above → insert at i; drop-below → insert at i+1. Then if the moved
-      // item was previously above the target, the post-splice index drops by 1.
-      let toIdx = above ? i : i + 1;
-      const fromIdx = PAGES_DEFAULT.findIndex(q => q.id === fromId);
-      if (fromIdx < toIdx) toIdx -= 1;
-      moveToIndex(fromId, toIdx);
-    });
-
-    list.appendChild(div);
+    let item = existing.get(p.id);
+    if (item) existing.delete(p.id);
+    else      item = _buildPageItemEl(p.id);
+    _updatePageItemEl(item, p, i);
+    const ref = list.children[i];
+    if (ref !== item) list.insertBefore(item, ref || null);
   }
+  for (const dead of existing.values()) dead.remove();
+}
+
+// Cheap path used by the typing handler — flips the .edited class on a single
+// row without rebuilding anything (so auto-animate doesn't fire on every key).
+function _refreshEditedDot(pageId) {
+  const item = document.querySelector(`#pages-list [data-page-id="${pageId}"]`);
+  if (!item) return;
+  const overrides = State.content[pageId] || {};
+  const hasEdits  = CONTENT_FIELDS.some(k => (overrides[k] || '').toString().trim());
+  item.classList.toggle('edited', hasEdits);
 }
 
 function selectPage(pageId) {
@@ -2055,7 +2097,7 @@ function wireContentFields() {
         if (field === 'photoSrc')                            updatePhotoPreview();
         if (field === 'narration' || field === 'photoAudio') updateAudioPreview();
         if (MD_FIELDS.includes(field))                       updateMdPreview(field);
-        renderPagesList();
+        _refreshEditedDot(State.selectedPageId);
         _schedulePreviewUpdate();
       });
       input.addEventListener('blur', () => { State._editingField = null; });

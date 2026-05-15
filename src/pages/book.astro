@@ -281,8 +281,8 @@ import { PHOTO_NARRATIONS } from '../data/animations';
     <button id="next">ἑπόμενη →</button>
   </div>
   <div class="hint">
-    <kbd>←</kbd> <kbd>→</kbd> γύρισμα · <kbd>click</kbd> εἰκόνα = προβολή<br>
-    <kbd>esc</kbd> κλείσιμο · <kbd>drag</kbd> περιήγηση
+    <kbd>←</kbd> <kbd>→</kbd> γύρισμα · <kbd>click</kbd> εἰκόνα = προβολή · <kbd>esc</kbd> κλείσιμο<br>
+    <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> κίνησις · <kbd>E</kbd> ἄνω · <kbd>C</kbd> κάτω · <kbd>drag</kbd> ματιά
   </div>
   <div id="sync-pill" class="sync-pill" role="status" aria-live="polite"></div>
 </div>
@@ -316,7 +316,6 @@ import { PHOTO_NARRATIONS } from '../data/animations';
 
 <script is:inline type="module">
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { domToCanvas } from 'https://esm.sh/modern-screenshot@4.4.39';
@@ -1720,6 +1719,9 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 
 renderer.domElement.addEventListener('click', e => {
+  // Drag-to-look from the fly cam also fires a `click` event on pointerup —
+  // suppress it so dragging the view doesn't accidentally flip pages.
+  if (flyCam.lastWasDrag) { flyCam.lastWasDrag = false; return; }
   // If photo lift-off is active, any click closes it
   if (photoView.active && !photoView.closing) { closeModal(); return; }
 
@@ -1758,17 +1760,113 @@ renderer.domElement.addEventListener('click', e => {
 });
 
 // =====================================================================
-//   ORBIT CONTROLS
+//   FLY CAMERA — WASD/E/C movement + drag-to-look. Replaces OrbitControls.
+//
+//   W/S forward / back     A/D strafe left / right
+//   E   up                 C   down
+//   left-mouse drag        look around (yaw + pitch, clamped to avoid flips)
+//
+//   A short drag below DRAG_PX still fires a click on the underlying mesh
+//   (so clicking a page to flip it still works — `flyCam.lastWasDrag` is
+//   read by the existing click handler to suppress click-after-drag).
 // =====================================================================
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.enablePan = false;
-controls.minDistance = 1.6;          // user can lean in close
-controls.maxDistance = 5.5;
-controls.minPolarAngle = 0.2;
-controls.maxPolarAngle = Math.PI * 0.6;
-controls.target.set(0, 0, 0);
+const flyCam = (() => {
+  const PAN_SPEED  = 0.0035;   // rad per pixel of pointer movement
+  const MOVE_SPEED = 2.5;      // world units per second at full input
+  const DAMP_TC    = 7;        // velocity smoothing — bigger = snappier
+  const DRAG_PX    = 5;        // px before a pointer-down becomes a drag
+
+  // Initialise yaw/pitch from the camera's current orientation so the
+  // first frame doesn't jump (book starts with camera.lookAt(0,0,0)).
+  const e0 = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+  let yaw = e0.y, pitch = e0.x;
+
+  const velocity = new THREE.Vector3();
+  const keys     = new Set();
+  let mouseDown = false, dragging = false;
+  let lastX = 0, lastY = 0, startX = 0, startY = 0;
+  let lastWasDrag = false;
+
+  // Disable browser touch gestures on the canvas so drag-to-look works
+  // cleanly on tablets / trackpads.
+  renderer.domElement.style.touchAction = 'none';
+
+  renderer.domElement.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    mouseDown = true; dragging = false;
+    startX = lastX = e.clientX;
+    startY = lastY = e.clientY;
+    try { renderer.domElement.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (!mouseDown) return;
+    if (!dragging) {
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > DRAG_PX) {
+        dragging = true;
+        document.body.style.cursor = 'grabbing';
+      } else return;
+    }
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    yaw   -= dx * PAN_SPEED;
+    pitch -= dy * PAN_SPEED;
+    // Clamp slightly inside ±90° so the camera never goes upside-down.
+    pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch));
+  });
+  const release = (e) => {
+    if (!mouseDown) return;
+    lastWasDrag = dragging;
+    mouseDown = false; dragging = false;
+    document.body.style.cursor = '';
+    try { renderer.domElement.releasePointerCapture(e.pointerId); } catch (_) {}
+  };
+  renderer.domElement.addEventListener('pointerup',     release);
+  renderer.domElement.addEventListener('pointercancel', release);
+
+  // Track keys at window level so they work even when the canvas isn't focused.
+  // Skip key capture while the user is typing in a form field.
+  window.addEventListener('keydown', e => {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    keys.add(e.code);
+  });
+  window.addEventListener('keyup',   e => keys.delete(e.code));
+  window.addEventListener('blur',    () => keys.clear());
+
+  // Re-used buffers — no per-frame allocations.
+  const fwd  = new THREE.Vector3();
+  const rgt  = new THREE.Vector3();
+  const UP   = new THREE.Vector3(0, 1, 0);
+  const wish = new THREE.Vector3();
+  const tmpEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+  function update(dt) {
+    tmpEuler.set(pitch, yaw, 0);
+    camera.quaternion.setFromEuler(tmpEuler);
+
+    fwd.set(0, 0, -1).applyQuaternion(camera.quaternion);
+    rgt.set(1, 0,  0).applyQuaternion(camera.quaternion);
+
+    wish.set(0, 0, 0);
+    if (keys.has('KeyW')) wish.add(fwd);
+    if (keys.has('KeyS')) wish.sub(fwd);
+    if (keys.has('KeyD')) wish.add(rgt);
+    if (keys.has('KeyA')) wish.sub(rgt);
+    if (keys.has('KeyE')) wish.add(UP);
+    if (keys.has('KeyC')) wish.sub(UP);
+
+    if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(MOVE_SPEED);
+    const alpha = 1 - Math.exp(-DAMP_TC * dt);
+    velocity.lerp(wish, alpha);
+    camera.position.addScaledVector(velocity, dt);
+  }
+
+  return {
+    update,
+    get lastWasDrag()  { return lastWasDrag; },
+    set lastWasDrag(v) { lastWasDrag = v; },
+  };
+})();
 
 // =====================================================================
 //   WEBXR — only mount the entry button if WebXR is actually supported.
@@ -1812,7 +1910,7 @@ const clock = new THREE.Clock();
 function animate() {
   const dt = Math.min(clock.getDelta(), 1 / 30);
   const t = clock.elapsedTime;
-  controls.update();
+  flyCam.update(dt);
 
   // candle flicker — only when candles exist (skipped on low-perf devices)
   keyLight.intensity = 3.2 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 17.1) * 0.015);
