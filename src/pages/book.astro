@@ -763,8 +763,36 @@ let pmrem = null;
 async function setupEnvironment() {
   pmrem = new THREE.PMREMGenerator(renderer);
   if (pmrem.compileEquirectangularShader) pmrem.compileEquirectangularShader();
-  const result = pmrem.fromSceneAsync ? await pmrem.fromSceneAsync(new RoomEnvironment(), 0.04) : pmrem.fromScene(new RoomEnvironment(), 0.04);
-  scene.environment = result.texture;
+
+  // Try a beautiful equirectangular skybox (warm dusk sky, CC0 from
+  // Poly Haven). If it fails for any reason — CORS, network, the asset
+  // moved — we silently fall back to the procedural RoomEnvironment so
+  // the page never blocks on a slow CDN.
+  const SKYBOX_URL = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/jpg/2k/kloppenheim_06_puresky_2k.jpg';
+  let envTex = null;
+  try {
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    const tex = await new Promise((resolve, reject) => {
+      loader.load(SKYBOX_URL, resolve, undefined, () => reject(new Error('skybox load failed')));
+    });
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    scene.background = tex;
+    envTex = pmrem.fromEquirectangular(tex).texture;
+    // The sky's pale highlights wash out the candle-lit interior — drop
+    // the fog so the dusk reads at distance, and ditch the dark scene
+    // colour we set earlier (background is now the sky).
+    scene.fog.density = 0.012;
+    console.info('[env] equirect skybox loaded');
+  } catch (e) {
+    console.info('[env] fallback to RoomEnvironment:', String(e).slice(0, 120));
+    const result = pmrem.fromSceneAsync
+      ? await pmrem.fromSceneAsync(new RoomEnvironment(), 0.04)
+      : pmrem.fromScene(new RoomEnvironment(), 0.04);
+    envTex = result.texture;
+  }
+  scene.environment = envTex;
 }
 
 // =====================================================================
@@ -975,48 +1003,69 @@ const cathedral = (() => {
   const DRUM_HEIGHT = 2.2;
   const DRUM_Y = COL_HEIGHT + 1.7;
 
-  // Procedural arch-window alpha map (12 tall arches around a cylinder).
+  // Procedural arch-window texture — marble base with 12 alpha-cut arches.
+  // The cutouts use globalCompositeOperation='destination-out' so the
+  // window areas become fully transparent; combined with alphaTest on
+  // the material that gives hard-edged window openings the skybox
+  // shows through from any angle. A gold frame is painted just outside
+  // each cutout so the user sees a ring of light, not raw mesh edges.
   const drumTex = (() => {
     const cv = document.createElement('canvas');
-    cv.width = 2048; cv.height = 512;
+    cv.width = 4096; cv.height = 1024;
     const g = cv.getContext('2d');
-    g.fillStyle = '#e6dac0';            // marble base
+    // Marble base — opaque, will become the wall.
+    g.fillStyle = '#e6dac0';
     g.fillRect(0, 0, cv.width, cv.height);
+    // Subtle horizontal banding for stone texture.
+    for (let y = 0; y < cv.height; y += 10) {
+      g.fillStyle = `rgba(60,40,20,${0.012 + 0.018 * Math.sin(y * 0.03)})`;
+      g.fillRect(0, y, cv.width, 4);
+    }
     const arches = 12;
     const slot = cv.width / arches;
-    const archW = slot * 0.34;
-    const archH = cv.height * 0.62;
-    const archTop = cv.height * 0.18;
+    const archW = slot * 0.38;
+    const archH = cv.height * 0.66;
+    const archTop = cv.height * 0.16;
+    // Gold frame (drawn before the cutout so it remains visible as a ring).
     for (let i = 0; i < arches; i++) {
       const cx = i * slot + slot / 2;
-      // Gold frame
       g.fillStyle = '#c89a4c';
+      g.beginPath();
+      g.roundRect(cx - archW/2 - 14, archTop - 14, archW + 28, archH + 28, archW/2 + 14);
+      g.fill();
+      g.fillStyle = '#a87a30';
       g.beginPath();
       g.roundRect(cx - archW/2 - 6, archTop - 6, archW + 12, archH + 12, archW/2 + 6);
       g.fill();
-      // Window glass — warm gold for sunset glow.
-      const grad = g.createLinearGradient(0, archTop, 0, archTop + archH);
-      grad.addColorStop(0, '#f0c870');
-      grad.addColorStop(1, '#7a4a18');
-      g.fillStyle = grad;
+    }
+    // Punch the actual window holes — destination-out makes the alpha 0.
+    g.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < arches; i++) {
+      const cx = i * slot + slot / 2;
       g.beginPath();
       g.roundRect(cx - archW/2, archTop, archW, archH, archW/2);
       g.fill();
-      // Mullion (vertical divider).
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 2, archTop + archW/2, 4, archH - archW/2);
+    }
+    g.globalCompositeOperation = 'source-over';
+    // Add thin mullions over the now-transparent area (drawn back in stone).
+    g.fillStyle = '#3a2410';
+    for (let i = 0; i < arches; i++) {
+      const cx = i * slot + slot / 2;
+      g.fillRect(cx - 3, archTop + archW/2, 6, archH - archW/2);
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = THREE.RepeatWrapping;
-    tex.anisotropy = 8;
+    tex.anisotropy = 16;
     return tex;
   })();
 
+  // alphaTest cuts hard at 0.5 — gives crisp window edges without
+  // depth-sort issues that come with transparent materials.
   const drumMat = new THREE.MeshStandardMaterial({
-    map: drumTex, roughness: 0.55, metalness: 0.08,
+    map: drumTex, transparent: true, alphaTest: 0.5,
+    roughness: 0.55, metalness: 0.08,
     side: THREE.DoubleSide,
-    emissive: 0x6a4a18, emissiveIntensity: 0.35,
     envMapIntensity: 0.9,
   });
   const drum = new THREE.Mesh(
@@ -1973,34 +2022,6 @@ try {
   console.warn('[keyframe] could not parse saved animations, using defaults:', e);
 }
 const keyframePlayer = new KeyframePlayer(ANIMATIONS);
-// Legacy async PB fetch — left in but the collection is gone, so this just
-// silently fails through to defaults. Keeping for future re-enablement.
-(async () => {
-  _syncPill.begin();
-  try {
-    const res = await fetch(`${PB_URL}/api/collections/church_animations/records?perPage=50`);
-    if (!res.ok) throw new Error('PB animations status ' + res.status);
-    const json = await res.json();
-    const items = Array.isArray(json && json.items) ? json.items : [];
-    const map = {};
-    for (const rec of items) {
-      if (!rec || typeof rec !== 'object') continue;
-      if (!rec.anim_name || !Array.isArray(rec.tracks)) continue;
-      const dur = Number(rec.duration);
-      if (!Number.isFinite(dur) || dur <= 0) continue;
-      map[rec.anim_name] = { duration: dur, loop: !!rec.loop, tracks: rec.tracks };
-    }
-    if (Object.keys(map).length) {
-      ANIMATIONS = map;
-      keyframePlayer.animations = map;
-      console.info('[keyframe] loaded', Object.keys(map).length, 'PB animations');
-    }
-    _syncPill.end(true);
-  } catch (e) {
-    console.info('[keyframe] PB animations unavailable — using defaults/saved');
-    _syncPill.end(false);
-  }
-})();
 
 // =====================================================================
 //   PHOTO MODAL — HTML overlay, animation-driven

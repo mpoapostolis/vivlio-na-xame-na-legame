@@ -512,6 +512,82 @@
   #inspector-body .toolbtn.danger { color: #f29a8a; border-color: rgba(245,80,80,0.4); }
   #inspector-body .toolbtn.danger:hover { background: rgba(220,40,40,0.2); color: white; border-color: #d44; }
 
+  /* Inspector — friendly slider + paired number field */
+  #inspector-body .ins-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%; height: 6px;
+    background: linear-gradient(90deg, rgba(154,103,48,0.35), rgba(217,180,120,0.65));
+    border-radius: 3px;
+    outline: none;
+    margin-bottom: 4px;
+  }
+  #inspector-body .ins-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #efddb0;
+    border: 1px solid #6b4a22;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    cursor: pointer;
+  }
+  #inspector-body .ins-slider::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #efddb0;
+    border: 1px solid #6b4a22;
+    cursor: pointer;
+  }
+  #inspector-body .ins-row-pair {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 2px;
+  }
+  #inspector-body .ins-row-pair input {
+    flex: 1;
+    width: auto;
+  }
+  #inspector-body .ins-unit {
+    flex-shrink: 0;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(217,180,120,0.6);
+    font-variant-numeric: tabular-nums;
+  }
+  #inspector-body .ins-hint {
+    margin-top: 4px;
+    font-size: 10px;
+    font-style: italic;
+    color: rgba(217,180,120,0.5);
+    line-height: 1.4;
+  }
+  #inspector-body .ins-mini {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid rgba(217,180,120,0.3);
+    color: rgba(217,180,120,0.75);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  #inspector-body .ins-mini:hover { background: rgba(217,180,120,0.12); color: #efddb0; }
+  #inspector-body .opt {
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: rgba(217,180,120,0.45);
+    text-transform: lowercase;
+    margin-left: 4px;
+  }
+  #inspector-body .kf-counter {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(217,180,120,0.55);
+    margin-top: 4px;
+  }
+  #inspector-body textarea.hidden { display: none; }
+
   /* ============================================================ */
   /*  Save button — JS toggles `.primary` for dirty state           */
   /* ============================================================ */
@@ -1269,6 +1345,30 @@ const TOKEN_KEY = 'church.cms.token';
 const EASE_NAMES = ['linear','easeInQuad','easeOutQuad','easeInOutQuad',
   'easeInCubic','easeOutCubic','easeInOutCubic',
   'easeInQuart','easeOutQuart','easeOutBack','easeOutElastic','easeOutBounce'];
+
+// Friendlier Greek labels + hints + sensible slider ranges per property.
+// The inspector reads this so editors see "Mέγεθος" not "scale", and get a
+// slider with reasonable bounds instead of having to remember units.
+const PROP_META = {
+  // ── DOM modal animations ─────────────────────────────────────────
+  scale:      { label: 'Mέγεθος',          hint: '1 = κανονικό μέγεθος, 0.5 = μισό, 2 = διπλάσιο', min: 0,    max: 3,    step: 0.01 },
+  rotation:   { label: 'Περιστροφή',       hint: 'Σὲ rad (π ≈ 3.14 = 180°). Ἀρνητικὲς τιμὲς = ἀντίστροφη φορά', min: -3.14, max: 3.14, step: 0.01 },
+  opacity:    { label: 'Διαφάνεια',        hint: '0 = ἀόρατο, 1 = πλήρως ὁρατό',          min: 0,    max: 1,    step: 0.01 },
+  translateX: { label: 'Mετακίνηση X (px)',hint: 'Ὁριζόντια μετατόπιση σὲ pixels',         min: -800, max: 800,  step: 1    },
+  translateY: { label: 'Mετακίνηση Y (px)',hint: 'Κατακόρυφη μετατόπιση σὲ pixels',       min: -800, max: 800,  step: 1    },
+  // ── 3D scene animations ──────────────────────────────────────────
+  positionX:  { label: 'Θέση X',            hint: 'Ἀξονας ἀνατολή–δύση στὴ σκηνή',           min: -20,   max: 20,   step: 0.05 },
+  positionY:  { label: 'Θέση Y (ὕψος)',     hint: 'Πόσο ψηλὰ στὴ σκηνή',                     min: -5,    max: 20,   step: 0.05 },
+  positionZ:  { label: 'Θέση Z',            hint: 'Ἀξονας ἐμπρός–πίσω στὴ σκηνή',            min: -20,   max: 20,   step: 0.05 },
+  scaleX:     { label: 'Mέγεθος X',         hint: 'Ἐπιμήκυνση κατὰ ἄξονα X',                 min: 0,     max: 5,    step: 0.01 },
+  scaleY:     { label: 'Mέγεθος Y',         hint: 'Ἐπιμήκυνση κατὰ ἄξονα Y (ὕψος)',          min: 0,     max: 5,    step: 0.01 },
+  scaleZ:     { label: 'Mέγεθος Z',         hint: 'Ἐπιμήκυνση κατὰ ἄξονα Z',                 min: 0,     max: 5,    step: 0.01 },
+  rotationX:  { label: 'Περιστροφὴ X',      hint: 'Σὲ rad (π ≈ 3.14 = 180°)',                min: -6.28, max: 6.28, step: 0.01 },
+  rotationY:  { label: 'Περιστροφὴ Y',      hint: 'Σὲ rad (περιστροφὴ γύρω ἀπὸ τὸν ἄξονα Y)', min: -6.28, max: 6.28, step: 0.01 },
+  rotationZ:  { label: 'Περιστροφὴ Z',      hint: 'Σὲ rad (περιστροφὴ γύρω ἀπὸ τὸν ἄξονα Z)', min: -6.28, max: 6.28, step: 0.01 },
+};
+function _propLabel(prop) { return (PROP_META[prop] && PROP_META[prop].label) || prop; }
+
 // DOM-target animations don't use camera-relative bindings.
 // Leave empty so the inspector hides the binding chip row.
 const KNOWN_BINDINGS = [];
@@ -1757,11 +1857,11 @@ function renderEditor() {
 
       row.innerHTML = `
         <div class="track-label">
-          <button class="lock-btn ${locked ? 'locked' : ''}" data-lockkey="${lockKey}" title="Lock track">${lockIcon}</button>
-          <span class="target">${track.target}</span><span class="prop">·  ${prop}</span>
+          <button class="lock-btn ${locked ? 'locked' : ''}" data-lockkey="${lockKey}" title="κλείδωμα — δὲν θὰ μπορεῖς νὰ προσθέσεις/μετακινήσεις keyframes">${lockIcon}</button>
+          <span class="target" title="ἀντικείμενο ποὺ θὰ κινηθεῖ">${track.target}</span><span class="prop" title="ἰδιότητα ποὺ θὰ ἀλλάξει">· ${_propLabel(prop)}</span>
         </div>
-        <div class="track-bar" data-track="${trackIdx}" data-prop="${prop}"></div>
-        <button class="kf-add-btn" data-track="${trackIdx}" data-prop="${prop}" title="ἐπίσπευση keyframe (κλίκ στὸ μπάρ)">+</button>
+        <div class="track-bar" data-track="${trackIdx}" data-prop="${prop}" title="κλίκ ὁπουδήποτε γιὰ νὰ προσθέσεις keyframe"></div>
+        <button class="kf-add-btn" data-track="${trackIdx}" data-prop="${prop}" title="προσθήκη keyframe (ἢ κλίκ στὸ μπάρ)">+</button>
       `;
       const bar = row.querySelector('.track-bar');
       track.properties[prop].forEach((kf, kfIdx) => {
@@ -1917,46 +2017,116 @@ function renderInspector() {
   const track = State.animations[anim].tracks[trackIdx];
   const kf = track.properties[prop][kfIdx];
 
+  // Per-property metadata: friendly Greek label + hint + slider bounds.
+  const meta = PROP_META[prop] || { label: prop, hint: '', min: -10, max: 10, step: 0.01 };
+  const dur  = State.animations[anim].duration;
+  // Show keyframe value as a plain number whenever it's actually numeric;
+  // fall back to a JSON textarea only if the value is a complex object
+  // (e.g. {x,y,z}). That's the "advanced" path.
+  const isNumeric = typeof kf.value === 'number';
+  const valueAtSec = (kf.t * dur).toFixed(2);
+
   body.innerHTML = `
     <div class="target-prop">
-      <span class="target">${track.target}</span>  ·  <span class="prop">${prop}</span>  ·  kf #${kfIdx}
+      <span class="target">${track.target}</span>  ·  <span class="prop">${meta.label}</span>
+      <div class="kf-counter">keyframe #${kfIdx + 1} ἀπὸ ${track.properties[prop].length}</div>
     </div>
+
     <div class="ins-row">
-      <label>χρόνος (0.0 – 1.0 normalized)</label>
-      <input type="number" id="ins-time" step="0.01" min="0" max="1" value="${kf.t}">
+      <label>Mοmento στὴν ταινία</label>
+      <input type="range" id="ins-time-slider" min="0" max="1" step="0.01" value="${kf.t}"
+             class="ins-slider">
+      <div class="ins-row-pair">
+        <input type="number" id="ins-time" step="0.01" min="0" max="1" value="${kf.t.toFixed(3)}">
+        <span class="ins-unit">≈ ${valueAtSec}s ἀπὸ ${dur.toFixed(2)}s</span>
+      </div>
+      <p class="ins-hint">0.0 = ἀρχή, 0.5 = μέση, 1.0 = τέλος</p>
     </div>
+
+    ${isNumeric ? `
     <div class="ins-row">
-      <label>τιμή (JSON)</label>
-      <textarea id="ins-value" rows="2">${JSON.stringify(kf.value)}</textarea>
-      <div class="bindings">${KNOWN_BINDINGS.map(b =>
-        `<span class="binding-chip" data-binding="${b}">${b}</span>`).join('')}</div>
+      <label>${meta.label}</label>
+      <input type="range" id="ins-value-slider" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${kf.value}"
+             class="ins-slider">
+      <div class="ins-row-pair">
+        <input type="number" id="ins-value-num" step="${meta.step}" min="${meta.min}" max="${meta.max}" value="${kf.value}">
+        <button class="ins-mini" id="ins-toggle-advanced" title="προβολὴ ὡς JSON γιὰ σύνθετες τιμές">{}</button>
+      </div>
+      ${meta.hint ? `<p class="ins-hint">${meta.hint}</p>` : ''}
+      <textarea id="ins-value" rows="2" class="hidden"></textarea>
     </div>
+    ` : `
     <div class="ins-row">
-      <label>easing</label>
+      <label>Τιμή (JSON — σύνθετη)</label>
+      <textarea id="ins-value" rows="3">${JSON.stringify(kf.value)}</textarea>
+      <p class="ins-hint">${meta.hint || 'Ἀντικείμενο πολλαπλῶν τιμῶν (π.χ. {"x":1,"y":0,"z":0})'}</p>
+    </div>
+    `}
+
+    <div class="ins-row">
+      <label>Κίνηση (easing)</label>
       <select id="ins-ease">
         ${EASE_NAMES.map(name =>
           `<option value="${name}" ${(kf.ease || 'linear') === name ? 'selected' : ''}>${name}</option>`).join('')}
       </select>
+      <p class="ins-hint">πῶς "ταξιδεύει" ἀπὸ αὐτὸ τὸ keyframe στὸ ἑπόμενο</p>
     </div>
+
     <div class="ins-row">
-      <label>ἀρχεῖο ἤχου κατὰ τὴν μετάβαση (προαιρετικό)</label>
+      <label>Ἀρχεῖο ἤχου ὅταν φτάσει τὸ playhead ἐδῶ <span class="opt">(προαιρετικό)</span></label>
       <input type="text" id="ins-audio" placeholder="https://… ἢ /path/to/audio.mp3"
              value="${(kf.playAudio || '').replace(/"/g, '&quot;')}">
       <div class="bindings" style="margin-top:6px">
         <span class="binding-chip" data-audio-action="test">▶ δοκιμή</span>
         <span class="binding-chip" data-audio-action="clear">✕ καθαρισμός</span>
       </div>
+      <p class="ins-hint">πρόσθετος ἦχος ποὺ παίζει τὴ στιγμὴ ποὺ φτάνει ἐδῶ τὸ animation</p>
     </div>
-    <button class="toolbtn danger" id="ins-delete" style="width:100%;margin-top:8px">🗑 διαγραφή keyframe</button>
+
+    <button class="toolbtn danger" id="ins-delete" style="width:100%;margin-top:14px">🗑 διαγραφή keyframe</button>
   `;
 
-  document.getElementById('ins-time').addEventListener('change', e => {
+  // ─ Time: slider + number stay in sync; release commits to history.
+  const timeNum    = document.getElementById('ins-time');
+  const timeSlider = document.getElementById('ins-time-slider');
+  const commitTime = (raw, fromSlider) => {
+    const v = Math.max(0, Math.min(1, parseFloat(raw) || 0));
+    if (Math.abs(v - kf.t) < 1e-6) return;
     pushHistory();
-    kf.t = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+    kf.t = v;
     track.properties[prop].sort((a, b) => a.t - b.t);
     markDirty();
     renderEditor();
+  };
+  timeNum.addEventListener('change', e => commitTime(e.target.value, false));
+  timeSlider.addEventListener('input', e => {
+    timeNum.value = parseFloat(e.target.value).toFixed(3);
   });
+  timeSlider.addEventListener('change', e => commitTime(e.target.value, true));
+
+  // ─ Value: numeric slider/input for scalars, JSON textarea for objects.
+  const valNum    = document.getElementById('ins-value-num');
+  const valSlider = document.getElementById('ins-value-slider');
+  if (isNumeric) {
+    const commitVal = raw => {
+      const v = parseFloat(raw);
+      if (!Number.isFinite(v) || v === kf.value) return;
+      pushHistory();
+      kf.value = v;
+      markDirty();
+      renderEditor();
+    };
+    valNum.addEventListener('change', e => commitVal(e.target.value));
+    valSlider.addEventListener('input', e => { valNum.value = e.target.value; });
+    valSlider.addEventListener('change', e => commitVal(e.target.value));
+    // Advanced toggle reveals the raw JSON textarea for power users.
+    document.getElementById('ins-toggle-advanced').addEventListener('click', () => {
+      const ta = document.getElementById('ins-value');
+      ta.value = JSON.stringify(kf.value);
+      ta.classList.toggle('hidden');
+      ta.focus();
+    });
+  }
   document.getElementById('ins-value').addEventListener('change', e => {
     try {
       const parsed = JSON.parse(e.target.value);
