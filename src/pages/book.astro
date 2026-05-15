@@ -1067,7 +1067,9 @@ const cathedral = (() => {
     const x = Math.cos(angle) * COL_RADIUS;
     const z = Math.sin(angle) * COL_RADIUS;
     const sat = new THREE.Group();
-    sat.position.set(x, COL_HEIGHT + 0.90, z);
+    // Drum sits ON the shoulder roof (SHOULDER_Y = COL_HEIGHT + 0.55).
+    // Anything higher gives a visible "floating" gap from outside.
+    sat.position.set(x, COL_HEIGHT + 0.55, z);
     sat.name = 'cathedral.satellite.' + i;
     const drum = new THREE.Mesh(satDrumGeo, MAT.marble);
     drum.position.y = 0.25;
@@ -1546,6 +1548,31 @@ const cathedral = (() => {
   const skirt = new THREE.Mesh(skirtGeo, shoulderMat);
   skirt.position.y = SHOULDER_Y - skirtH / 2;
   group.add(skirt);
+  // Cornice — projecting marble ring around the shoulder edge, just
+  // above the skirt. Gives the roof a classical "lip" so it doesn't
+  // look like a bare cylinder cut.
+  const corniceTop = new THREE.Mesh(
+    new THREE.TorusGeometry(COL_RADIUS + 0.25, 0.07, 16, 96),
+    MAT.marble,
+  );
+  corniceTop.rotation.x = Math.PI / 2;
+  corniceTop.position.y = SHOULDER_Y + 0.06;
+  group.add(corniceTop);
+  const corniceBot = new THREE.Mesh(
+    new THREE.TorusGeometry(COL_RADIUS + 0.22, 0.05, 16, 96),
+    MAT.marble,
+  );
+  corniceBot.rotation.x = Math.PI / 2;
+  corniceBot.position.y = SHOULDER_Y - skirtH + 0.04;
+  group.add(corniceBot);
+  // Gold trim band along the very top edge.
+  const corniceGold = new THREE.Mesh(
+    new THREE.TorusGeometry(COL_RADIUS + 0.18, 0.02, 12, 96),
+    MAT.gold,
+  );
+  corniceGold.rotation.x = Math.PI / 2;
+  corniceGold.position.y = SHOULDER_Y + 0.18;
+  group.add(corniceGold);
 
   const WALL_RADIUS = COL_RADIUS - 0.05;   // walls just inside the columns
   const segAngle = (Math.PI * 2) / COL_COUNT;
