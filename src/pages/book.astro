@@ -47,10 +47,13 @@ import { PHOTO_NARRATIONS } from '../data/animations';
   #hud > *{pointer-events:auto}
   .brand{position:fixed;top:24px;left:32px;font-size:10px;letter-spacing:0.45em;text-transform:uppercase;opacity:0.55;font-family:'Inter',sans-serif}
   .brand b{display:block;font-family:'Cormorant Garamond',serif;font-weight:400;font-style:italic;font-size:22px;letter-spacing:0.02em;text-transform:none;margin-top:4px;color:#efddb0}
-  .pagecount{position:fixed;top:28px;right:32px;font-size:11px;letter-spacing:0.3em;opacity:0.6;font-family:'Inter',sans-serif}
+  /* Page-count + audio button stacked at top-CENTER over the book — feels
+     attached to the page itself rather than floating in the corner. */
+  .pagecount{position:fixed;top:22px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:0.3em;opacity:0.75;font-family:'Inter',sans-serif;z-index:11;
+    background:rgba(20,12,6,0.55);backdrop-filter:blur(8px);padding:5px 14px;border-radius:999px;border:1px solid rgba(217,180,120,0.18)}
   .pagecount em{font-style:italic;color:#efddb0;padding:0 6px;font-family:'Cormorant Garamond',serif}
 
-  .audio-btn{position:fixed;top:64px;right:32px;display:flex;align-items:center;gap:9px;padding:8px 16px 8px 12px;
+  .audio-btn{position:fixed;top:60px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;padding:8px 16px 8px 12px;
     background:rgba(20,12,6,0.7);backdrop-filter:blur(10px) saturate(140%);
     border:1px solid rgba(217,180,120,0.3);border-radius:999px;
     color:#d9b478;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.28em;text-transform:uppercase;
@@ -735,12 +738,12 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
-// Wider FOV + higher seat so the cathedral dome + columns fit the frame
-// at default load. Book now sits on a lectern at y≈0.85, so the camera
-// looks slightly higher than the geometric origin.
-const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 1.9, 5.0);
-camera.lookAt(0, 1.0, 0);
+// Camera lives INSIDE the cathedral now (walls at radius 5.45). Higher
+// seat so book + lectern + lower walls + satellite domes fit the frame
+// at default load; full central dome is reached by dragging up.
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 1.9, 4.0);
+camera.lookAt(0, 1.2, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -957,7 +960,7 @@ const cathedral = (() => {
     return tex;
   })();
 
-  const FLOOR_RADIUS = 16;
+  const FLOOR_RADIUS = 22;
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(FLOOR_RADIUS, 96),
     new THREE.MeshStandardMaterial({
@@ -975,11 +978,11 @@ const cathedral = (() => {
   // texture above, so we don't need extra ring/bar meshes any more.)
 
   // ── 12 columns in a regular dodecagon (Christ + 12 Apostles) ──────
-  // Heights tuned so the entire interior (column tops + drum + dome)
-  // fits the default camera framing without forcing the user to look up.
+  // 1.5× radius of the previous build so the camera has room to roam
+  // between book, columns, and walls.
   const COL_COUNT  = 12;
-  const COL_RADIUS = 3.6;
-  const COL_HEIGHT = 4.2;
+  const COL_RADIUS = 5.5;
+  const COL_HEIGHT = 5.0;
   const colShaftGeo = new THREE.CylinderGeometry(0.20, 0.24, COL_HEIGHT, 32, 1);
   const colCapGeo   = new THREE.CylinderGeometry(0.36, 0.20, 0.45,       32, 1);
   const colCapAbacus= new THREE.BoxGeometry(0.88, 0.10, 0.88);
@@ -1051,9 +1054,9 @@ const cathedral = (() => {
   // Drum is a cylinder of marble + 12 arched windows. Implement the
   // arches as alpha-cutout via a canvas texture so we get the look
   // without per-vertex window geometry.
-  const DRUM_RADIUS = 2.6;
-  const DRUM_HEIGHT = 1.2;
-  const DRUM_Y = COL_HEIGHT + 0.9;
+  const DRUM_RADIUS = 3.5;
+  const DRUM_HEIGHT = 1.5;
+  const DRUM_Y = COL_HEIGHT + 1.0;
 
   // Procedural arch-window texture — marble base with 12 alpha-cut arches.
   // The cutouts use globalCompositeOperation='destination-out' so the
@@ -1324,9 +1327,9 @@ const cathedral = (() => {
   // need for a second particle layer inside the cathedral group.)
 
   // ── Wooden lectern (ἀναλόγιον) under the book ─────────────────────
-  // The book's bottom was clipping into the floor. A walnut lectern with
-  // a top platform, central post, and square base fills the gap and
-  // grounds the book visually — it now sits where it would in a church.
+  // Walnut lectern: square base + tapered central post + broad top
+  // platform. Post is taller than the previous build so the book rests
+  // at a comfortable reading height (book bottom at y ≈ 0.35 world).
   const lecternMat = new THREE.MeshStandardMaterial({
     color: 0x5a3014, roughness: 0.62, metalness: 0.04, envMapIntensity: 0.8,
   });
@@ -1334,32 +1337,32 @@ const cathedral = (() => {
   lectern.name = 'cathedral.lectern';
   // Top platform — broader than the book footprint when closed.
   const lectTop = new THREE.Mesh(
-    new THREE.BoxGeometry(1.55, 0.06, 1.95),
+    new THREE.BoxGeometry(1.65, 0.06, 2.10),
     lecternMat,
   );
-  lectTop.position.y = 0.62;
+  lectTop.position.y = 0.96;
   lectTop.castShadow = !IS_LOW_PERF;
   lectern.add(lectTop);
   // Decorative gold trim band under the platform.
   const lectTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(1.50, 0.018, 1.90),
+    new THREE.BoxGeometry(1.60, 0.020, 2.05),
     MAT.gold,
   );
-  lectTrim.position.y = 0.58;
+  lectTrim.position.y = 0.92;
   lectern.add(lectTrim);
-  // Central tapered post.
+  // Central tapered post (taller).
   const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14, 0.22, 0.55, 20),
+    new THREE.CylinderGeometry(0.16, 0.24, 0.85, 20),
     lecternMat,
   );
-  lectPost.position.y = 0.28;
+  lectPost.position.y = 0.48;
   lectern.add(lectPost);
   // Square base.
   const lectBase = new THREE.Mesh(
-    new THREE.BoxGeometry(0.82, 0.08, 0.82),
+    new THREE.BoxGeometry(0.92, 0.10, 0.92),
     lecternMat,
   );
-  lectBase.position.y = 0.02;
+  lectBase.position.y = 0.05;
   lectBase.receiveShadow = !IS_LOW_PERF;
   lectern.add(lectBase);
   lectern.position.y = -0.62;
@@ -1734,10 +1737,10 @@ bookGroup.rotation.y = -Math.PI / 2;
 // Offset the whole group so the closed book is centered on the camera's lookAt.
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
-// Lift the book onto the lectern's top platform (lectern top at y≈0.0,
-// so book bottom needs to be just above that — book is centred at 0,
-// half-height = PAGE_HEIGHT/2 = 0.855).
-bookGroup.position.y = 0.85;
+// Lift the book onto the lectern's top platform. Lectern top sits at
+// world y = -0.62 + 0.96 ≈ 0.34; book is centred at PAGE_HEIGHT/2 above
+// that → 0.34 + 0.855 ≈ 1.20.
+bookGroup.position.y = 1.20;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
