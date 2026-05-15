@@ -742,8 +742,8 @@ scene.fog = new THREE.FogExp2(0x060302, 0.045);
 // ≈7.45, plenty of room around the lectern. Looking at the book centre
 // at its new higher reading position.
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 2.6, 4.6);
-camera.lookAt(0, 1.95, 0);
+camera.position.set(0, 2.95, 4.7);
+camera.lookAt(0, 2.30, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -1378,7 +1378,7 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.65, 0.06, 2.10),
     lecternMat,
   );
-  lectTop.position.y = 1.72;
+  lectTop.position.y = 2.07;
   lectTop.castShadow = !IS_LOW_PERF;
   lectern.add(lectTop);
   // Decorative gold trim band under the platform.
@@ -1386,15 +1386,14 @@ const cathedral = (() => {
     new THREE.BoxGeometry(1.60, 0.020, 2.05),
     MAT.gold,
   );
-  lectTrim.position.y = 1.68;
+  lectTrim.position.y = 2.03;
   lectern.add(lectTrim);
-  // Central tapered post — even taller so the book sits at a true
-  // pulpit reading height.
+  // Central tapered post — pulpit / ambon proportions.
   const lectPost = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.26, 1.60, 20),
+    new THREE.CylinderGeometry(0.16, 0.26, 1.95, 20),
     lecternMat,
   );
-  lectPost.position.y = 0.85;
+  lectPost.position.y = 1.025;
   lectern.add(lectPost);
   // Square base.
   const lectBase = new THREE.Mesh(
@@ -1856,8 +1855,8 @@ bookGroup.rotation.y = -Math.PI / 2;
 // During open states the group lerps back to x=0 so the spine is in the middle.
 bookGroup.position.x = -PAGE_WIDTH / 2;
 // Lift the book onto the lectern's top platform. Lectern top now at
-// world y ≈ 1.10, so book centre = 1.10 + 0.855 ≈ 1.95.
-bookGroup.position.y = 1.95;
+// world y ≈ 1.45, so book centre = 1.45 + 0.855 ≈ 2.30.
+bookGroup.position.y = 2.30;
 scene.add(bookGroup);
 // Expose to the keyframe editor — `book.group` can be animated (hover, spin
 // on intro, etc.) from the admin's animations panel.
