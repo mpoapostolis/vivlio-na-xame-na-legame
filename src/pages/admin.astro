@@ -962,6 +962,7 @@ function _recordToContent(rec) {
   return {
     _recordId:    rec.id,
     _collId:      rec.collectionId,
+    _order:       Number.isFinite(Number(rec.order)) ? Number(rec.order) : 0,
     type:         rec.type         || 'page',
     eyebrow:      rec.eyebrow      || '',
     title:        rec.title        || '',
@@ -1011,21 +1012,29 @@ async function load() {
     return;
   }
 
+  // IDs are the stable PB record id (not derived from `order`) so reorders
+  // don't churn DOM identities — auto-animate only fires when items actually
+  // change position, not when the order field is re-derived after a save.
   State.content      = {};
   State.contentLocks = {};
   for (const rec of pages) {
-    const id = 'p' + rec.order;
+    const id = rec.id;
     State.content[id]      = _recordToContent(rec);
     const locks = Array.isArray(rec.locked_fields) ? rec.locked_fields : [];
     State.contentLocks[id] = Object.fromEntries(locks.map(f => [f, true]));
   }
 
   // Rebuild the sidebar from live PB records — supports any slide count.
-  PAGES_DEFAULT = pages.map(rec => ({
-    id:    'p' + rec.order,
-    label: rec.label || ('Σελίδα ' + (rec.order + 1)),
+  PAGES_DEFAULT = pages.map((rec, i) => ({
+    id:    rec.id,
+    label: rec.label || ('Σελίδα ' + (i + 1)),
     hint:  rec.type  || 'page',
   }));
+
+  // If the previously-selected page survived the reload, keep the selection.
+  if (State.selectedPageId && !State.content[State.selectedPageId]) {
+    State.selectedPageId = null;
+  }
 
   // Animations live inline in book.astro now — no PB collection.
   State.animations   = deepClone(DEFAULT_ANIMATIONS);
@@ -2162,8 +2171,8 @@ async function addNewPage() {
   // book_index/side gymnastics any more.
   let maxOrder = -1;
   for (const id in State.content) {
-    const m = id.match(/^p(\d+)$/);
-    if (m) maxOrder = Math.max(maxOrder, parseInt(m[1]));
+    const o = State.content[id]._order;
+    if (typeof o === 'number' && o > maxOrder) maxOrder = o;
   }
   const newOrder = maxOrder + 1;
   const label    = 'Νέα σελίδα · ' + (newOrder + 1);
@@ -2189,7 +2198,7 @@ async function addNewPage() {
       return;
     }
     const rec = await res.json();
-    const pageId = 'p' + rec.order;
+    const pageId = rec.id;
     State.content[pageId]      = _recordToContent(rec);
     State.contentLocks[pageId] = {};
     State.selectedPageId       = pageId;
