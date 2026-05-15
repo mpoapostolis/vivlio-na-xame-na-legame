@@ -317,6 +317,7 @@ import { PHOTO_NARRATIONS } from '../data/animations';
 <script is:inline type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader }      from 'three/addons/loaders/RGBELoader.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { domToCanvas } from 'https://esm.sh/modern-screenshot@4.4.39';
 
@@ -734,9 +735,11 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060302);
 scene.fog = new THREE.FogExp2(0x060302, 0.045);
 
-const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 0.35, 3.4);          // closer + lower → book fills the frame head-on
-camera.lookAt(0, 0, 0);
+// Wider FOV + higher seat so the cathedral dome + columns fit the frame
+// at default load. Fly cam derives its initial yaw/pitch from this pose.
+const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 1.2, 4.6);
+camera.lookAt(0, 0.4, 0);
 
 // WebGPU first, WebGL2 fallback
 const renderer = HAS_WEBGPU
@@ -764,27 +767,26 @@ async function setupEnvironment() {
   pmrem = new THREE.PMREMGenerator(renderer);
   if (pmrem.compileEquirectangularShader) pmrem.compileEquirectangularShader();
 
-  // Try a beautiful equirectangular skybox (warm dusk sky, CC0 from
-  // Poly Haven). If it fails for any reason — CORS, network, the asset
-  // moved — we silently fall back to the procedural RoomEnvironment so
-  // the page never blocks on a slow CDN.
-  const SKYBOX_URL = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/jpg/2k/kloppenheim_06_puresky_2k.jpg';
+  // Beautiful equirectangular HDR skybox — Poly Haven (CC0). HDR gives
+  // proper highlights and physically-plausible reflections on the copper
+  // domes and gold cross. If the load fails (network / CORS / asset
+  // moved) we fall back silently to the procedural RoomEnvironment.
+  const SKYBOX_URL = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/kloppenheim_06_puresky_2k.hdr';
   let envTex = null;
   try {
-    const loader = new THREE.TextureLoader();
+    const loader = new RGBELoader();
     loader.setCrossOrigin('anonymous');
     const tex = await new Promise((resolve, reject) => {
       loader.load(SKYBOX_URL, resolve, undefined, () => reject(new Error('skybox load failed')));
     });
     tex.mapping = THREE.EquirectangularReflectionMapping;
-    tex.colorSpace = THREE.SRGBColorSpace;
     scene.background = tex;
     envTex = pmrem.fromEquirectangular(tex).texture;
-    // The sky's pale highlights wash out the candle-lit interior — drop
-    // the fog so the dusk reads at distance, and ditch the dark scene
-    // colour we set earlier (background is now the sky).
-    scene.fog.density = 0.012;
-    console.info('[env] equirect skybox loaded');
+    // Sky is bright — soften the fog so it reads at distance, and reduce
+    // tone-mapping a touch so candles don't go nuclear against the sky.
+    scene.fog.density = 0.010;
+    renderer.toneMappingExposure = 0.85;
+    console.info('[env] HDR skybox loaded');
   } catch (e) {
     console.info('[env] fallback to RoomEnvironment:', String(e).slice(0, 120));
     const result = pmrem.fromSceneAsync
@@ -925,9 +927,11 @@ const cathedral = (() => {
   }
 
   // ── 12 columns in a regular dodecagon (Christ + 12 Apostles) ──────
+  // Heights tuned so the entire interior (column tops + drum + dome)
+  // fits the default camera framing without forcing the user to look up.
   const COL_COUNT  = 12;
-  const COL_RADIUS = 4.6;
-  const COL_HEIGHT = 6.2;
+  const COL_RADIUS = 3.6;
+  const COL_HEIGHT = 4.2;
   const colShaftGeo = new THREE.CylinderGeometry(0.20, 0.24, COL_HEIGHT, 32, 1);
   const colCapGeo   = new THREE.CylinderGeometry(0.36, 0.20, 0.45,       32, 1);
   const colCapAbacus= new THREE.BoxGeometry(0.88, 0.10, 0.88);
@@ -999,9 +1003,9 @@ const cathedral = (() => {
   // Drum is a cylinder of marble + 12 arched windows. Implement the
   // arches as alpha-cutout via a canvas texture so we get the look
   // without per-vertex window geometry.
-  const DRUM_RADIUS = 3.4;
-  const DRUM_HEIGHT = 2.2;
-  const DRUM_Y = COL_HEIGHT + 1.7;
+  const DRUM_RADIUS = 2.6;
+  const DRUM_HEIGHT = 1.2;
+  const DRUM_Y = COL_HEIGHT + 0.9;
 
   // Procedural arch-window texture — marble base with 12 alpha-cut arches.
   // The cutouts use globalCompositeOperation='destination-out' so the
@@ -2388,15 +2392,19 @@ function animate() {
   const MIN_LOADING_MS = 2400;
   const elapsed = performance.now() - bootStart;
   const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+  // Skip auto-open when /book is embedded as the admin preview iframe —
+  // the admin sidebar drives page selection there, and an automatic
+  // goToPage(1) would race with the editor's first goToSheet message.
+  const embedded = window.parent !== window;
   setTimeout(() => {
     document.getElementById('loading').classList.add('hidden');
-    // Auto-open: 0.7s after the curtain starts fading, flip to the first
-    // inside spread so visitors land on a "story-in-progress" frame, not
-    // a closed cover. They can flip back via ← / ΠΡΟΗΓΟΥΜΕΝΗ if they want
-    // to admire the cover. ensureAudio() is intentionally skipped — the
-    // flip sound needs a user gesture per browser policy, so the first
-    // auto-open is silent and subsequent flips fire normally.
-    setTimeout(() => goToPage(1), 700);
+    if (!embedded) {
+      // Standalone /book: open to the first inside spread so visitors
+      // land on a "story-in-progress" frame, not a closed cover. The
+      // inaugural flip is silent (browser autoplay policy needs a user
+      // gesture); subsequent flips ring normally.
+      setTimeout(() => goToPage(1), 700);
+    }
   }, wait);
 })();
 </script>
