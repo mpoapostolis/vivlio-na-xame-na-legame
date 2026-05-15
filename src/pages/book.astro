@@ -1364,6 +1364,10 @@ function updateUI() {
 document.getElementById('prev').addEventListener('click', () => { ensureAudio(); goToPage(targetPage - 1); });
 document.getElementById('next').addEventListener('click', () => { ensureAudio(); goToPage(targetPage + 1); });
 window.addEventListener('keydown', e => {
+  // Don't intercept when the user is typing in a form field — matters
+  // especially when /book is embedded in the admin's preview iframe.
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
   if (e.key === 'ArrowRight' || e.key === ' ') { ensureAudio(); goToPage(targetPage + 1); }
   if (e.key === 'ArrowLeft')                    { ensureAudio(); goToPage(targetPage - 1); }
   if (e.key === 'Escape') { closeModal(); stopNarration(); }
@@ -1408,6 +1412,9 @@ async function _previewLiveRecord(listIndex, rec) {
       ? cover(rec.title || rec.label || '', _stripHtml(rec.lead || rec.body || ''), rec.eyebrow || '')
       : page(data);
 
+    // Render to canvas BEFORE touching the existing material — if the
+    // rasteriser throws (broken image, timeout), the old texture is still
+    // live and we just bail without leaking a half-allocated CanvasTexture.
     const canvas = await renderHtmlToCanvas(built);
     const newTex = new THREE.CanvasTexture(canvas);
     newTex.colorSpace = THREE.SRGBColorSpace;
@@ -1418,7 +1425,9 @@ async function _previewLiveRecord(listIndex, rec) {
     const oldTex = mat.map;
     mat.map = newTex;
     mat.needsUpdate = true;
-    if (oldTex && oldTex.dispose) oldTex.dispose();
+    // Dispose AFTER the swap so we never leave the material pointing at a
+    // disposed map mid-frame.
+    if (oldTex && oldTex !== newTex && oldTex.dispose) oldTex.dispose();
 
     // Keep the photo bbox cache in sync so click-to-zoom still hits correctly.
     if (sideName === 'front') pageInst.frontPhotos = built.photos;

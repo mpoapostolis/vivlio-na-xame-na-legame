@@ -1096,14 +1096,26 @@ async function _saveAnim(name) {
 
 async function save() {
   if (!State.token) { toast('μη συνδεδεμένος', 'error'); return; }
+  // Track which pages failed so we can keep them in dirtyPages — clearing
+  // them unconditionally would lose work silently if a PATCH 4xx'd out.
+  const failedPages = new Set();
+  const failedAnims = new Set();
   let pageCount = 0, animCount = 0;
-  for (const pid of State.dirtyPages)  { if (await _savePage(pid)) pageCount++; }
-  for (const name of State.dirtyAnims) { if (await _saveAnim(name)) animCount++; }
-  State.dirtyPages.clear();
-  State.dirtyAnims.clear();
-  State.dirty = false;
+  for (const pid of State.dirtyPages) {
+    if (await _savePage(pid)) pageCount++; else failedPages.add(pid);
+  }
+  for (const name of State.dirtyAnims) {
+    if (await _saveAnim(name)) animCount++; else failedAnims.add(name);
+  }
+  State.dirtyPages = failedPages;
+  State.dirtyAnims = failedAnims;
+  State.dirty = failedPages.size > 0 || failedAnims.size > 0;
   refreshSaveBtn();
-  toast(`Ἀποθηκεύθηκαν ${pageCount} σελίδες ✓`);
+  if (failedPages.size > 0) {
+    toast(`✕ ${failedPages.size} σελίδ${failedPages.size === 1 ? 'α δὲν ἀποθηκεύθηκε' : 'ες δὲν ἀποθηκεύθηκαν'} · προσπαθεῖστε ξανά`, 'error');
+  } else {
+    toast(`Ἀποθηκεύθηκαν ${pageCount} σελίδες ✓`);
+  }
   if (typeof renderPagesList === 'function') renderPagesList();
   // Refresh the live book preview iframe if it's open
   const iframe = document.getElementById('book-preview-iframe');
@@ -2250,32 +2262,43 @@ async function moveToIndex(fromId, toIdx) {
     const rec = State.content[p.id];
     if (rec && rec._recordId) records.push({ id: rec._recordId, newOrder: i });
   }
+  // Use a TMP_BASE that's clearly above any plausible production order so
+  // we never collide with real records — even if another editor is mid-move.
   const TMP_BASE = 90000;
   const H = authHeader({ 'Content-Type': 'application/json' });
+  // Helper that resolves to true/false instead of throwing — lets us detect
+  // a partial failure cleanly rather than relying on Promise.all's all-or-
+  // nothing rejection semantics.
+  const patchOrder = async (id, order) => {
+    try {
+      const res = await fetch(`${PB_URL}/api/collections/church_pages/records/${id}`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ order }),
+      });
+      return res.ok;
+    } catch (_) { return false; }
+  };
+
+  let allOk = true;
   try {
-    await Promise.all(records.map((r, i) =>
-      fetch(`${PB_URL}/api/collections/church_pages/records/${r.id}`, {
-        method: 'PATCH', headers: H,
-        body: JSON.stringify({ order: TMP_BASE + i }),
-      })
-    ));
-    await Promise.all(records.map(r =>
-      fetch(`${PB_URL}/api/collections/church_pages/records/${r.id}`, {
-        method: 'PATCH', headers: H,
-        body: JSON.stringify({ order: r.newOrder }),
-      })
-    ));
+    const r1 = await Promise.all(records.map((r, i) => patchOrder(r.id, TMP_BASE + i)));
+    if (r1.some(ok => !ok)) allOk = false;
+    const r2 = await Promise.all(records.map(r => patchOrder(r.id, r.newOrder)));
+    if (r2.some(ok => !ok)) allOk = false;
   } catch (e) {
-    toast('✕ ἀποτυχία ἀλλαγῆς σειρᾶς', 'error');
-    return;
+    allOk = false;
   }
 
+  // Resync from the server in BOTH paths so a partial failure can't leave
+  // the sidebar drifting from the actual records.
   await load();
   renderAll();
-  // The iframe still has the pre-reorder state cached — force a fresh fetch.
+  // Iframe still has the pre-reorder PAGES pairing cached — re-fetch.
   const iframe = document.getElementById('book-preview-iframe');
   if (iframe) iframe.src = iframe.src;
-  toast('✓ ἀλλαγὴ σειρᾶς');
+
+  if (allOk) toast('✓ ἀλλαγὴ σειρᾶς');
+  else       toast('✕ μερικὴ ἀποτυχία · ἡ σειρὰ ἐπαναφέρθηκε ἀπὸ τὸν διακομιστή', 'error');
 }
 
 /**
@@ -2303,20 +2326,31 @@ async function reorderPage(pageId, direction) {
   } catch (e) { toast('✕ δίκτυο: ' + e.message, 'error'); return; }
 
   // PocketBase enforces unique=true on `order` → we can't write the same value
-  // twice. Use a 3-step swap via a temporary sentinel value above the current max.
-  const TMP = 99999;
-  try {
-    const H = authHeader({ 'Content-Type': 'application/json' });
-    await fetch(`${PB_URL}/api/collections/church_pages/records/${recA.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: TMP })       });
-    await fetch(`${PB_URL}/api/collections/church_pages/records/${recB.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: recA.order }) });
-    await fetch(`${PB_URL}/api/collections/church_pages/records/${recA.id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ order: recB.order }) });
-  } catch (e) {
-    toast('✕ ἀποτυχία ἀλλαγῆς σειρᾶς', 'error');
-    return;
-  }
+  // twice. Use a 3-step swap via a temporary sentinel value well above any
+  // plausible production order (TMP_BASE + i in moveToIndex uses 90000+, so
+  // pick 95000 here to stay clear of concurrent reorders).
+  const TMP = 95000;
+  const H = authHeader({ 'Content-Type': 'application/json' });
+  const tryPatch = async (id, order) => {
+    try {
+      const res = await fetch(`${PB_URL}/api/collections/church_pages/records/${id}`, {
+        method: 'PATCH', headers: H, body: JSON.stringify({ order }),
+      });
+      return res.ok;
+    } catch (_) { return false; }
+  };
+
+  const ok =
+    (await tryPatch(recA.id, TMP)) &&
+    (await tryPatch(recB.id, recA.order)) &&
+    (await tryPatch(recA.id, recB.order));
+
+  // Resync from the server in BOTH paths so a partial failure doesn't leave
+  // recA / recB stuck at non-final orders.
   await load();
   renderAll();
-  toast('✓ ἀλλαγὴ σειρᾶς');
+  if (ok) toast('✓ ἀλλαγὴ σειρᾶς');
+  else    toast('✕ ἀποτυχία ἀλλαγῆς σειρᾶς · ἐπαναφορὰ ἀπὸ διακομιστή', 'error');
 }
 
 /** Hard delete a page record + reload. Editor confirms first. */
